@@ -1,0 +1,5 @@
+C:/Users/fjs_0/Documents/denno/YummyTemplate/.utmp/RelWithDebInfo/4b602r72/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/fjs_0/Documents/denno/YummyTemplate/.utmp/RelWithDebInfo/4b602r72/arm64-v8a/CMakeFiles/rebuild_cache.dir
+C:/Users/fjs_0/Documents/denno/YummyTemplate/.utmp/RelWithDebInfo/4b602r72/arm64-v8a/GameActivity/CMakeFiles/game.dir
+C:/Users/fjs_0/Documents/denno/YummyTemplate/.utmp/RelWithDebInfo/4b602r72/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
+C:/Users/fjs_0/Documents/denno/YummyTemplate/.utmp/RelWithDebInfo/4b602r72/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir
