@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using Food3DModel.Interface;
 using GLTFast;
 using R3;
@@ -10,11 +11,11 @@ namespace Food3DModel.ViewModel
     {
         [Inject] IFood3DModelAPIHandler _food3DModelAPIHandler;
         
-        public ReactiveProperty<GameObject> Food3DModel { get; }
+        public ReactiveProperty<GltfImport> FoodGLTF { get; }
         
         public Food3DModelViewModel()
         {
-            Food3DModel = new ReactiveProperty<GameObject>(null);
+            FoodGLTF = new ReactiveProperty<GltfImport>(null);
         }
         
         public async UniTask LoadFood3DModel(string foodName)
