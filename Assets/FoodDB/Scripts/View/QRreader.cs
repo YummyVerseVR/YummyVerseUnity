@@ -1,13 +1,17 @@
 using System;
+using Food3DModel.Interface;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Zenject;
 using ZXing;
 
 namespace Food3DModel.View
 {
     public class QRreader : MonoBehaviour
     {
+        [Inject] private IQRViewModel _viewModel;
+        
         // カメラ許可のための定数定義
         private const string Permission = UnityEngine.Android.Permission.Camera;
 
@@ -24,7 +28,6 @@ namespace Food3DModel.View
         private RawImage _rawImage;
         private WebCamTexture _webCamTexture = null;
 
-        private string _readValue = "";
         
         // アプリ起動時に実行される初期化処理
         private void Awake()
@@ -91,9 +94,18 @@ namespace Food3DModel.View
             // ピクセルデータからQRコードをデコード
             Result result = reader.Decode(rawRGB, width, height);
 
-            // デコード結果が存在する場合はそのテキストを返し、無ければ空文字を返す
-            _readValue = result.Text;
-            return "Read val:  " + ((result != null) ? result.Text : string.Empty);
+            if (result != null)
+            {
+                // 読み取ったデータをViewModelに送信
+                _viewModel.SetQRValue(result.Text);
+    
+                // デコード結果が存在する場合はそのテキストを返し、無ければ空文字を返す
+                return "Read val:  " + ((result != null) ? result.Text : string.Empty);
+            }
+            else
+            {
+                return "Read val:  " + "None";
+            }
         }
 
         // カメラの切り替え

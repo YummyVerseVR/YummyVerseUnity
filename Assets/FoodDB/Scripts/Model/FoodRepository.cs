@@ -12,6 +12,12 @@ namespace Food3DModel.Model
     {
         public ReactiveProperty<GameObject> Food3DModel { get; private set; }
         public ReactiveProperty<AudioClip> ChewingSound { get; private set; }
+        
+        public FoodRepository()
+        {
+            Food3DModel = new ReactiveProperty<GameObject>();
+            ChewingSound = new ReactiveProperty<AudioClip>();
+        }
         public async void Set3DModel(string glbBase64)
         {
             try
@@ -20,7 +26,7 @@ namespace Food3DModel.Model
                 byte[] glbBytes = Convert.FromBase64String(glbBase64);
 
                 // 2. 一時ファイルとして保存（Application.temporaryCachePathを使用）
-                string tempPath = Path.Combine(Application.temporaryCachePath, "tempModel.glb");
+                string tempPath = Path.Combine(Application.temporaryCachePath, "test.glb");
                 File.WriteAllBytes(tempPath, glbBytes);
 
                 Debug.Log($"[ModelLoader] Saved temporary glb to: {tempPath}");
@@ -68,7 +74,8 @@ namespace Food3DModel.Model
             // 1. base64エンコードされた音声データをデコード
             byte[] audioBytes = Convert.FromBase64String(chewingSoundBase64);
             // 2. 一時ファイルとして保存（Application.temporaryCachePathを使用）
-            string tempPath = Path.Combine(Application.temporaryCachePath, "tempChewingSound.wav");
+            string tempPath = Path.Combine(Application.temporaryCachePath, "tempChewingSound.mp3");
+            File.WriteAllBytes(tempPath, audioBytes);
             
             using (WWW www = new WWW("file://" + tempPath))  //※あくまでローカルファイルとする
             {

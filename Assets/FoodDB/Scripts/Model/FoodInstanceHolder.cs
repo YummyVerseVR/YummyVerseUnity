@@ -1,10 +1,11 @@
+using NUnit.Framework;
 using R3;
 using UnityEngine;
 using Zenject;
 
 namespace Food3DModel.Model
 {
-    public class FoodInstanceHandler: IInitializable
+    public class FoodInstanceHolder: IInitializable
     {
         [Inject] IFoodRepositoryReader _foodRepositoryReader;
         
@@ -14,6 +15,7 @@ namespace Food3DModel.Model
         {
             _foodRepositoryReader.Food3DModel.Where(v => v != null).Subscribe(v =>
             {
+                Debug.Log("FoodInstanceHolder: 3Dモデルの更新");
                 GameObject.Destroy(_foodInstance);
                 _foodInstance = GameObject.Instantiate(v);
             });

@@ -23,6 +23,10 @@ namespace FoodDB.Scripts.ViewModel
                     {
                         Debug.LogErrorFormat($"このGUID \"{guid}\" は登録されていません");
                     }
+                    else
+                    {
+                        Debug.Log("QRコード認識成功。　Guid: " + guid);
+                    }
                 }
                 else
                 {
