@@ -1,7 +1,87 @@
+using System;
+using System.IO;
+using Cysharp.Threading.Tasks;
+using Food3DModel.Interface;
+using GLTFast;
+using R3;
+using UnityEngine;
+
 namespace Food3DModel.Model
 {
-    public class FoodRepository
+    public class FoodRepository: IFoodRepositoryReader, IFoodRepositoryWriter
     {
+        public ReactiveProperty<GameObject> Food3DModel { get; private set; }
+        public ReactiveProperty<AudioClip> ChewingSound { get; private set; }
+        public async void Set3DModel(string glbBase64)
+        {
+            try
+            {
+                // 1. base64エンコードされたglbをデコード
+                byte[] glbBytes = Convert.FromBase64String(glbBase64);
+
+                // 2. 一時ファイルとして保存（Application.temporaryCachePathを使用）
+                string tempPath = Path.Combine(Application.temporaryCachePath, "tempModel.glb");
+                File.WriteAllBytes(tempPath, glbBytes);
+
+                Debug.Log($"[ModelLoader] Saved temporary glb to: {tempPath}");
+
+                // 3. glTFastでロード
+                var gltf = new GltfImport();
+                var success = await gltf.Load(tempPath);
+
+                if (!success)
+                {
+                    Debug.LogError("[ModelLoader] Failed to load glb model.");
+                    return;
+                }
+
+                // 4. 古いモデルがあれば破棄
+                if (Food3DModel != null)
+                {
+                    GameObject.Destroy(Food3DModel.Value);
+                }
+
+                // 5. GameObjectにインスタンス化
+                Food3DModel.Value = new GameObject("LoadedGLBModel");
+                success = await gltf.InstantiateMainSceneAsync(Food3DModel.Value.transform);
+
+                if (!success)
+                {
+                    Debug.LogError("[ModelLoader] Failed to instantiate model.");
+                }
+                else
+                {
+                    Debug.Log("[ModelLoader] Successfully loaded and instantiated model.");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ModelLoader] Exception: {e.Message}\n{e.StackTrace}");
+            }
+        }
         
+
+        public async UniTaskVoid SetChewingSound(string chewingSoundBase64)
+        {
+            AudioClip audioClip;
+            
+            // 1. base64エンコードされた音声データをデコード
+            byte[] audioBytes = Convert.FromBase64String(chewingSoundBase64);
+            // 2. 一時ファイルとして保存（Application.temporaryCachePathを使用）
+            string tempPath = Path.Combine(Application.temporaryCachePath, "tempChewingSound.wav");
+            
+            using (WWW www = new WWW("file://" + tempPath))  //※あくまでローカルファイルとする
+            {
+                await UniTask.WaitWhile(() => !www.isDone);
+
+                audioClip = www.GetAudioClip(false, true);
+                if (audioClip.loadState != AudioDataLoadState.Loaded)
+                {
+                    //ここにロード失敗処理
+                    Debug.Log("Failed to load AudioClip.");
+                }
+            }
+            ChewingSound.Value = audioClip;
+        }
     }
 }

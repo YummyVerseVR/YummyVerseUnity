@@ -7,12 +7,9 @@ namespace Food3DModel.Model
     // DBを叩いて食べ物の3Dモデルと咀嚼音のデータを取得するクラス
     public class TestFoodDBHandler: IFoodDBHandler
     {
-        public FoodDBBody Request(Guid userId)
+        public bool Request(Guid userId)
         {
-            return new FoodDBBody(
-                LoadtestGLBDataBase64(),
-                LoadtestChewSoundDataBase64()
-            );
+            return true;
         }
         
         private string LoadtestGLBDataBase64()

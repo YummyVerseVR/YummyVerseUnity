@@ -5,6 +5,6 @@ namespace Food3DModel.Interface
 {
     public interface IFoodDBHandler
     {
-        FoodDBBody Request(Guid userId);
+        bool Request(Guid userId); //リクエスト成功かどうか返す。
     }
 }

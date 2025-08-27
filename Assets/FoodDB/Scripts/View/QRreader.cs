@@ -24,6 +24,8 @@ namespace Food3DModel.View
         private RawImage _rawImage;
         private WebCamTexture _webCamTexture = null;
 
+        private string _readValue = "";
+        
         // アプリ起動時に実行される初期化処理
         private void Awake()
         {
@@ -74,7 +76,7 @@ namespace Food3DModel.View
         }
 
         // QRコードの読み取り処理
-        private static string Read(WebCamTexture texture)
+        private string Read(WebCamTexture texture)
         {
             // ZXingのBarcodeReaderクラスを使用してQRコードをデコード
             BarcodeReader reader = new BarcodeReader();
@@ -90,6 +92,7 @@ namespace Food3DModel.View
             Result result = reader.Decode(rawRGB, width, height);
 
             // デコード結果が存在する場合はそのテキストを返し、無ければ空文字を返す
+            _readValue = result.Text;
             return "Read val:  " + ((result != null) ? result.Text : string.Empty);
         }
 
