@@ -1,6 +1,10 @@
 using System;
+using System.Buffers.Text;
+using Cysharp.Threading.Tasks;
 using Food3DModel.Interface;
+using Newtonsoft.Json;
 using UnityEngine;
+using UnityEngine.Networking;
 using Zenject;
 
 namespace Food3DModel.Model
@@ -10,15 +14,43 @@ namespace Food3DModel.Model
     {
         [Inject] private IFoodRepositoryWriter _foodRepositoryWriter;
         
-        public void Initialize()
+        private const string APIEndpoint = "http://localhost:8000/"; // 仮のAPIエンドポイント
+       
+        
+        public async void Initialize()
         {
-            Debug.Log(Application.persistentDataPath);
+            WWWForm form = new WWWForm();
+            form.AddField("user_id", "7b998836-903e-4878-ae8e-839a2ef13373");
+            using (UnityWebRequest req = UnityWebRequest.Post(APIEndpoint + "create/user", form))
+            {
+                // FastAPI の Form(...) は application/x-www-form-urlencoded を期待してるから
+                req.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+                await req.SendWebRequest();
+
+                if (req.result == UnityWebRequest.Result.Success)
+                {
+                    Debug.Log("Response: " + req.downloadHandler.text);
+                }
+                else
+                {
+                    Debug.LogError("Error: " + req.error + "\n" + req.downloadHandler.text);
+                }
+            }
         }
         
-        public bool Request(Guid userId)
+        
+        
+        
+        public async UniTask<bool> Request(Guid userId)
         {
-            _foodRepositoryWriter.Set3DModel(LoadtestGLBDataBase64());
-            _foodRepositoryWriter.SetChewingSound(LoadtestChewSoundDataBase64());
+            using(UnityWebRequest req = UnityWebRequest.Get(APIEndpoint + userId + "/model"))
+            {
+                await req.SendWebRequest();
+                string b64 = Convert.ToBase64String(req.downloadHandler.data);
+                Debug.Log(b64);
+            }
+
             return true;
         }
         

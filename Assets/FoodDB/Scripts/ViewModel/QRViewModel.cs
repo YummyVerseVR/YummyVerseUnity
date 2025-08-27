@@ -14,11 +14,11 @@ namespace FoodDB.Scripts.ViewModel
 
         public void Initialize()
         {
-            _qrValue.Subscribe(v =>
+            _qrValue.Subscribe(async v => 
             {
                 if (Guid.TryParse(v, out Guid guid))
                 {
-                    var res =_dbHandler.Request(guid);
+                    var res = await _dbHandler.Request(guid);
                     if (!res)
                     {
                         Debug.LogErrorFormat($"このGUID \"{guid}\" は登録されていません");
