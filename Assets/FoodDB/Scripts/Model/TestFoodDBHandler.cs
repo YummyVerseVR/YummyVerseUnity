@@ -1,5 +1,6 @@
 using System;
 using System.Buffers.Text;
+using System.IO;
 using Cysharp.Threading.Tasks;
 using Food3DModel.Interface;
 using Newtonsoft.Json;
@@ -48,7 +49,13 @@ namespace Food3DModel.Model
             {
                 await req.SendWebRequest();
                 string b64 = Convert.ToBase64String(req.downloadHandler.data);
-                Debug.Log(b64);
+                _foodRepositoryWriter.Set3DModel(b64);
+            }
+            using(UnityWebRequest req = UnityWebRequest.Get(APIEndpoint + userId + "/audio"))
+            {
+                await req.SendWebRequest();
+                string b64 = Convert.ToBase64String(req.downloadHandler.data);
+                _foodRepositoryWriter.SetChewingSound(b64);
             }
 
             return true;
