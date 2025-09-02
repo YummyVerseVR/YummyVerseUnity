@@ -1,127 +1,92 @@
-using System;
-using Food3DModel.Interface;
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
-using Zenject;
-using ZXing;
-
-namespace Food3DModel.View
-{
-    public class QRreader : MonoBehaviour
-    {
-        [Inject] private IQRViewModel _viewModel;
-        
-        // カメラ許可のための定数定義
-        private const string Permission = UnityEngine.Android.Permission.Camera;
-
-        [SerializeField] private TextMeshPro resultText; // QRコードの読み取り結果を表示するText
-
-        [SerializeField] private Renderer targetRenderer; // 映像を貼りたいオブジェクト
-        [SerializeField] private RenderTexture renderTexture; // RenderTextureアセットをInspectorで割り当てておく
-
-        
-        private WebCamDevice[] _webCamDevice; // 利用可能なカメラデバイス
-        private int _selectingCamera = 0; // 選択中のカメラ
-
-        // UI
-        private RawImage _rawImage;
-        private WebCamTexture _webCamTexture = null;
-
-        
-        // アプリ起動時に実行される初期化処理
-        private void Awake()
-        {
-            // カメラの使用許可をユーザーにリクエスト
-            UnityEngine.Android.Permission.RequestUserPermission(Permission);
-            targetRenderer.material.mainTexture = renderTexture;
-        }
-
-
-        private void Update()
-        {
-            // Webカメラがまだセットされていない場合
-            if (_webCamTexture == null)
-            {
-                // カメラの使用がユーザーによって許可されているかチェック
-                if (UnityEngine.Android.Permission.HasUserAuthorizedPermission(Permission))
-                {
-                    // デバイスのスクリーンの幅と高さを取得
-                    var width = Screen.width;
-                    var height = Screen.height;
-
-                    // Webカメラの映像を取得するために新しいWebCamTextureを作成
-                    _webCamTexture = new WebCamTexture(width, height);
-
-                    // Webカメラの映像をスタート
-                    _webCamTexture.Play();
-
-                    // Webカメラの映像をRawImageに表示
-                    
-
-                    // 利用可能なカメラデバイスを取得
-                    _webCamDevice = WebCamTexture.devices;
-                }
-            }
-            else
-            {
-                // Webカメラの映像からQRコードを読み取り、その結果をTextコンポーネントに表示
-                resultText.text = Read(this._webCamTexture);
-                if (Input.GetKeyDown(KeyCode.Tab))
-                {
-                    Debug.Log("ちゃんげ");
-                    ChangeCamera();
-                }
-                Graphics.Blit(_webCamTexture, renderTexture);
-            }
-
-            
-        }
-
-        // QRコードの読み取り処理
-        private string Read(WebCamTexture texture)
-        {
-            // ZXingのBarcodeReaderクラスを使用してQRコードをデコード
-            BarcodeReader reader = new BarcodeReader();
-
-            // Webカメラの映像をピクセルデータとして取得
-            Color32[] rawRGB = texture.GetPixels32();
-
-            // Webカメラの映像の幅と高さを取得
-            int width = texture.width;
-            int height = texture.height;
-
-            // ピクセルデータからQRコードをデコード
-            Result result = reader.Decode(rawRGB, width, height);
-
-            if (result != null)
-            {
-                // 読み取ったデータをViewModelに送信
-                _viewModel.SetQRValue(result.Text);
-    
-                // デコード結果が存在する場合はそのテキストを返し、無ければ空文字を返す
-                return "Read val:  " + ((result != null) ? result.Text : string.Empty);
-            }
-            else
-            {
-                return "Read val:  " + "None";
-            }
-        }
-
-        // カメラの切り替え
-        public void ChangeCamera()
-        {
-            int cameras = _webCamDevice.Length; //カメラの個数
-            if (cameras < 1) return; // カメラが1台しかなかったら実行せず終了
-
-            // カメラのインデックスをインクリメント
-            _selectingCamera++;
-            _selectingCamera %= cameras;
-
-            _webCamTexture.Stop(); // カメラを停止
-            _webCamTexture = new WebCamTexture(_webCamDevice[_selectingCamera].name); //カメラを変更
-            // webCameraRawImage.texture = _webCamTexture;
-            _webCamTexture.Play(); // 別カメラを開始
-        }
-    }
-}
+// using System;
+// using Food3DModel.Interface;
+// using UnityEngine;
+// using UnityEngine.UI;
+// using TMPro;
+// using Zenject;
+// using ZXing;
+// using UnityEngine.XR.ARFoundation;
+// using UnityEngine.XR.ARSubsystems;
+// using Unity.Collections;
+// using ZXing.Unity;
+// using IBarcodeReader = ZXing.IBarcodeReader;
+//
+// namespace Food3DModel.View
+// {
+//     public class QRreader : MonoBehaviour
+//     {
+//         [Inject] private IQRViewModel _viewModel;
+//
+//         [SerializeField] private TextMeshPro resultText; // 読み取り結果を表示
+//         [SerializeField] private Renderer targetRenderer; // パススルー映像を表示するオブジェクト
+//         [SerializeField] private RenderTexture renderTexture; // 描画先RT
+//         [SerializeField] private ARCameraManager cameraManager; // AR Foundationのカメラ
+//
+//         private IBarcodeReader barcodeReader = new BarcodeReader();
+//
+//         private void Awake()
+//         {
+//             // レンダラーにRenderTextureを割り当て
+//             if (targetRenderer != null && renderTexture != null)
+//             {
+//                 targetRenderer.material.mainTexture = renderTexture;
+//             }
+//
+//             Application.targetFrameRate = 120;
+//         }
+//
+//         private void OnEnable()
+//         {
+//             if (cameraManager != null)
+//                 cameraManager.frameReceived += OnCameraFrameReceived;
+//         }
+//
+//         private void OnDisable()
+//         {
+//             if (cameraManager != null)
+//                 cameraManager.frameReceived -= OnCameraFrameReceived;
+//         }
+//
+//         private void OnCameraFrameReceived(ARCameraFrameEventArgs args)
+//         {
+//             if (!cameraManager.TryAcquireLatestCpuImage(out XRCpuImage image))
+//                 return;
+//
+//             var conversionParams = new XRCpuImage.ConversionParams
+//             {
+//                 inputRect = new RectInt(0, 0, image.width, image.height),
+//                 outputDimensions = new Vector2Int(image.width, image.height),
+//                 outputFormat = TextureFormat.RGBA32,
+//                 transformation = XRCpuImage.Transformation.MirrorY
+//             };
+//
+//             // NativeArrayで確保
+//             int size = image.GetConvertedDataSize(conversionParams);
+//             var rawTextureData = new NativeArray<byte>(size, Allocator.Temp);
+//
+//             image.Convert(conversionParams, rawTextureData);
+//             image.Dispose();
+//
+//             // ZXing用にbyte[]に変換
+//             var rawBytes = rawTextureData.ToArray();
+//             rawTextureData.Dispose();
+//
+//             var result = barcodeReader.Decode(
+//                 rawBytes,
+//                 conversionParams.outputDimensions.x,
+//                 conversionParams.outputDimensions.y,
+//                 RGBLuminanceSource.BitmapFormat.RGBA32);
+//
+//             if (result != null)
+//             {
+//                 _viewModel.SetQRValue(result.Text);
+//                 resultText.text = "Read val: " + result.Text;
+//                 Debug.Log("QRコード検出: " + result.Text);
+//             }
+//             else
+//             {
+//                 resultText.text = "Read val: None";
+//             }
+//         }
+//     }
+// }

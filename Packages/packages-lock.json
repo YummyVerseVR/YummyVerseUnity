@@ -23,6 +23,25 @@
       "dependencies": {},
       "hash": "a7c6b49a0141a5bff9b1983e38137522ef61977d"
     },
+    "com.meta.xr.mrutilitykit": {
+      "version": "78.0.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.meta.xr.sdk.core": "78.0.0",
+        "com.unity.textmeshpro": "3.0.6",
+        "com.unity.ai.navigation": "1.1.4",
+        "com.unity.nuget.newtonsoft-json": "3.0.2"
+      },
+      "url": "https://packages.unity.com"
+    },
+    "com.meta.xr.sdk.core": {
+      "version": "78.0.0",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.svermeulen.extenject": {
       "version": "https://github.com/Mathijs-Bakker/Extenject.git?path=UnityProject/Assets/Plugins/Zenject/Source",
       "depth": 0,
@@ -43,6 +62,15 @@
         "com.unity.modules.unitywebrequest": "1.0.0",
         "com.unity.scriptablebuildpipeline": "2.4.0",
         "com.unity.modules.unitywebrequestassetbundle": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.ai.navigation": {
+      "version": "2.0.8",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.ai": "1.0.0"
       },
       "url": "https://packages.unity.com"
     },
@@ -301,6 +329,14 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.textmeshpro": {
+      "version": "5.0.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.ugui": "2.0.0"
+      }
+    },
     "com.unity.ugui": {
       "version": "2.0.0",
       "depth": 1,
@@ -413,6 +449,15 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.xr.oculus": {
+      "version": "4.5.2",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.xr.management": "4.4.0"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.xr.openxr": {
       "version": "1.15.1",
       "depth": 0,
@@ -424,6 +469,27 @@
         "com.unity.xr.legacyinputhelpers": "2.1.2"
       },
       "url": "https://packages.unity.com"
+    },
+    "jp.co.hololab.questcameratools.core": {
+      "version": "https://github.com/HoloLabInc/QuestCameraTools-Unity.git?path=packages/jp.co.hololab.questcameratools.core",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "0226e5c018c7cf38c8100f81aa060b5742d3c4da"
+    },
+    "jp.co.hololab.questcameratools.qr": {
+      "version": "https://github.com/HoloLabInc/QuestCameraTools-Unity.git?path=packages/jp.co.hololab.questcameratools.qr",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "0226e5c018c7cf38c8100f81aa060b5742d3c4da"
+    },
+    "jp.co.hololab.questcameratools.qr.libraries": {
+      "version": "https://github.com/HoloLabInc/QuestCameraTools-Unity.git?path=packages/jp.co.hololab.questcameratools.qr.libraries",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "0226e5c018c7cf38c8100f81aa060b5742d3c4da"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
