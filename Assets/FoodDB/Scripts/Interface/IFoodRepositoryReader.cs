@@ -6,6 +6,8 @@ namespace Food3DModel.Model
     public interface IFoodRepositoryReader
     {
         ReactiveProperty<GameObject> Food3DModel { get; }
+        
+        ReactiveProperty<Transform> FoodTransform { get; }
         ReactiveProperty<AudioClip> ChewingSound { get; } 
     }
 }

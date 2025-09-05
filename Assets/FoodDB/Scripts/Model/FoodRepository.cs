@@ -13,11 +13,20 @@ namespace Food3DModel.Model
         public ReactiveProperty<GameObject> Food3DModel { get; private set; }
         public ReactiveProperty<AudioClip> ChewingSound { get; private set; }
         
+        public ReactiveProperty<Transform> FoodTransform { get; private set; }
+        
         public FoodRepository()
         {
             Food3DModel = new ReactiveProperty<GameObject>();
             ChewingSound = new ReactiveProperty<AudioClip>();
+            FoodTransform = new ReactiveProperty<Transform>();
         }
+        
+        public void SetFoodTransform(Transform transform)
+        {
+            FoodTransform.Value = transform;
+        }
+        
         public async void Set3DModel(string glbBase64)
         {
             try
@@ -49,7 +58,7 @@ namespace Food3DModel.Model
 
                 // 5. GameObjectにインスタンス化
                 Food3DModel.Value = new GameObject("LoadedGLBModel");
-                success = await gltf.InstantiateMainSceneAsync(Food3DModel.Value.transform);
+                success = await gltf.InstantiateMainSceneAsync(FoodTransform.Value);
 
                 if (!success)
                 {

@@ -9,7 +9,8 @@ namespace FoodDB.Scripts.ViewModel
     public class QRViewModel: IQRViewModel, IInitializable
     {
         [Inject] private IFoodDBHandler _dbHandler;
-
+        [Inject] private IFoodRepositoryWriter _foodRepositoryWriter;
+        
         private ReactiveProperty<string> _qrValue = new ReactiveProperty<string>();
 
         public void Initialize()
@@ -35,11 +36,12 @@ namespace FoodDB.Scripts.ViewModel
             });
         }
         
-        public void SetQRValue(string value)
+        public void OnDetectQRCode(string value, Transform qrTransform)
         {
             if (_qrValue.Value != value)
             {
                 _qrValue.Value = value;
+                
             }
         }
     }

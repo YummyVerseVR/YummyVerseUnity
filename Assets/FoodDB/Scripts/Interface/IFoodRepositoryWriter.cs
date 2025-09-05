@@ -7,5 +7,7 @@ namespace Food3DModel.Interface
     {
         void Set3DModel(string glbBase64);
         UniTaskVoid SetChewingSound(string chewingSoundBase64);
+        
+        void SetFoodTransform(Transform transform);
     }
 }
