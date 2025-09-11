@@ -1,3 +1,4 @@
+using Food3DModel.Interface;
 using FoodDB.Scripts.ViewModel;
 using Meta.XR.MRUtilityKit;
 using TMPro;
@@ -8,7 +9,7 @@ namespace Food3DModel.View
 {
     public class QRView: MonoBehaviour
     {
-        [Inject] private QRViewModel _viewModel;
+        [Inject] private IQRViewModel _viewModel;
         
         [SerializeField] TextMeshPro _debugText;
         public void OnTrackableAdded(MRUKTrackable trackable)

@@ -67,6 +67,7 @@ namespace Food3DModel.Model
                 else
                 {
                     Debug.Log("[ModelLoader] Successfully loaded and instantiated model.");
+                    // Food3DModel.Value.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f); // スケール調整
                 }
             }
             catch (Exception e)
