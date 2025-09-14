@@ -6,7 +6,7 @@ public class ControllerController : MonoBehaviour
 
     void Update()
     {
-        if (OVRInput.GetDown(OVRInput.RawButton.RIndexTrigger))
+        if (OVRInput.GetDown(OVRInput.RawButton.B))
         {
             if (SceneManager.GetActiveScene().name == "Title")
             {
