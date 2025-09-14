@@ -52,5 +52,5 @@ adb shell setprop debug.oculus.experimentalEnabled 1
 Quest 3のWi-Fi設定を確認してください。
 
 ## APIエンドポイントの設定が間違っていないか
-`Assets/FoodDB/Scripts/Model/TestFoodDBHandler.cs` の変数 ` private const string APIEndpoint` がAPIエンドポイントのURLになっています。URLが実際に運用されているサーバーのものと一致するかどうか確認してください。一致していなかった場合、この変数を正しいURLに変更して再び [アプリケーションのビルド](#3. プロジェクトを開いてビルドする)を行なってください。
+`Assets/FoodDB/Scripts/Model/TestFoodDBHandler.cs` の変数 ` private const string APIEndpoint` がAPIエンドポイントのURLになっています。URLが実際に運用されているサーバーのものと一致するかどうか確認してください。一致していなかった場合、この変数を正しいURLに変更して再び アプリケーションのビルドを行なってください。
 </details>
