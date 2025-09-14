@@ -12,6 +12,9 @@ EditorBuildSettings:
     path: Assets/Scenes/EatingFoodold.unity
     guid: cc332796050a941bfaaa614f3e9a4be9
   - enabled: 1
+    path: Assets/Scenes/Title.unity
+    guid: 47cbcad8315674579b0f0a91f807da88
+  - enabled: 1
     path: Assets/Scenes/QRTrackMR.unity
     guid: 8062ee36d44a34e9ea62c96c0f0c4f3a
   - enabled: 0
