@@ -47,6 +47,7 @@ adb shell setprop debug.oculus.experimentalEnabled 1
 
 上のようなログが表示されない場合、以下の項目を確認してください。
 <details><summary>上のログが出ない際の確認項目</summary>
+ 
 ## Quest 3がインターネットに接続しているか
 Quest 3のWi-Fi設定を確認してください。
 
