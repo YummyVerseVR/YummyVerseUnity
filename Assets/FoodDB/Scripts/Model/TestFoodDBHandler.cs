@@ -15,8 +15,8 @@ namespace Food3DModel.Model
     {
         [Inject] private IFoodRepositoryWriter _foodRepositoryWriter;
         
-        // private const string APIEndpoint = "http://192.168.10.123:8000/"; // 仮のAPIエンドポイント。俺のmacのローカルIP(自宅でのIP)
-        private const string APIEndpoint = "http://192.168.8.170:8000/"; // 仮のAPIエンドポイント。俺のmacのローカルIP(MCC WifiでのIP)
+        private const string APIEndpoint = "http://192.168.10.123:8000/"; // 仮のAPIエンドポイント。俺のmacのローカルIP(自宅でのIP)
+        // private const string APIEndpoint = "http://192.168.8.170:8000/"; // 仮のAPIエンドポイント。俺のmacのローカルIP(MCC WifiでのIP)
         
         public async void Initialize()
         {
