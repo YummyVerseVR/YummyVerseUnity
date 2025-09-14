@@ -45,17 +45,25 @@ namespace Food3DModel.Model
         
         public async UniTask<bool> Request(Guid userId)
         {
+            // 3Dモデルを読み込む
             using(UnityWebRequest req = UnityWebRequest.Get(APIEndpoint + userId + "/model"))
             {
                 await req.SendWebRequest();
                 string b64 = Convert.ToBase64String(req.downloadHandler.data);
                 _foodRepositoryWriter.Set3DModel(b64);
             }
+            // 咀嚼音を読み込む
             using(UnityWebRequest req = UnityWebRequest.Get(APIEndpoint + userId + "/audio"))
             {
                 await req.SendWebRequest();
                 string b64 = Convert.ToBase64String(req.downloadHandler.data);
                 _foodRepositoryWriter.SetChewingSound(b64);
+            }
+            
+            // QRコードを読み取ったことをDBに通知
+            using(UnityWebRequest req = UnityWebRequest.Get(APIEndpoint + "/notify/" + userId))
+            {
+                await req.SendWebRequest();
             }
 
             return true;
