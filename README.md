@@ -10,7 +10,7 @@ Unity Hubをインストールし、Unity Editorのバージョン6000.2.0f1を�
 このリポジトリをクローンします。
 安定して動くバージョンは最新のmainブランチにあります。
 
-[label]: ## 3. プロジェクトを開いてビルドする
+## 3. プロジェクトを開いてビルドする
 Ctrl + Shift + B (MacOSの場合はCmd + Shift + B)でビルドウィンドウを開き、PlatformsをMeta Questに設定してBuildを押します。
 
 
