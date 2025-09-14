@@ -10,7 +10,7 @@ Unity Hubをインストールし、Unity Editorのバージョン6000.2.0f1を�
 このリポジトリをクローンします。
 安定して動くバージョンは最新のmainブランチにあります。
 
-## 3. プロジェクトを開いてビルドする
+[label]: ## 3. プロジェクトを開いてビルドする
 Ctrl + Shift + B (MacOSの場合はCmd + Shift + B)でビルドウィンドウを開き、PlatformsをMeta Questに設定してBuildを押します。
 
 
@@ -52,5 +52,5 @@ adb shell setprop debug.oculus.experimentalEnabled 1
 Quest 3のWi-Fi設定を確認してください。
 
 ## APIエンドポイントの設定が間違っていないか
-`Assets/FoodDB/Scripts/Model/TestFoodDBHandler.cs` の ` private const string APIEndpoint` がAPIエンドポイントのURLになっています。URLが実際に運用されているサーバーのものと一致するかどうか確認してください。
+`Assets/FoodDB/Scripts/Model/TestFoodDBHandler.cs` の変数 ` private const string APIEndpoint` がAPIエンドポイントのURLになっています。URLが実際に運用されているサーバーのものと一致するかどうか確認してください。一致していなかった場合、この変数を正しいURLに変更して再び [アプリケーションのビルド](#3. プロジェクトを開いてビルドする)を行なってください。
 </details>
