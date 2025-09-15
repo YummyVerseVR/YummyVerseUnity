@@ -66,6 +66,7 @@ namespace Food3DModel.Model
                 }
                 else
                 {
+                    FoodTransform.Value.Find("world").Rotate(90, 0,0);
                     Debug.Log("[ModelLoader] Successfully loaded and instantiated model.");
                     // Food3DModel.Value.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f); // スケール調整
                 }

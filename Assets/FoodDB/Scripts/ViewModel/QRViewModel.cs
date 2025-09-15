@@ -41,9 +41,9 @@ namespace FoodDB.Scripts.ViewModel
             if (_qrValue.Value != value)
             {
                 _qrValue.Value = value;
-                qrTransform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-                qrTransform.position = new Vector3(qrTransform.position.x, qrTransform.position.y + 5f, qrTransform.position.z);
-                _foodRepositoryWriter.SetFoodTransform(qrTransform);
+                Transform newTransform = qrTransform;
+                newTransform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+                _foodRepositoryWriter.SetFoodTransform(newTransform);
                 
             }
         }

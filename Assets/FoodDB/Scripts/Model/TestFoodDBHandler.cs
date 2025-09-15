@@ -15,7 +15,7 @@ namespace Food3DModel.Model
     {
         [Inject] private IFoodRepositoryWriter _foodRepositoryWriter;
         
-        private const string APIEndpoint = "http://upiscium.f5.si:8001"; // 本番環境用のAPIエンドポイント
+        private const string APIEndpoint = "http://upiscium.f5.si:8001/"; // 本番環境用のAPIエンドポイント
         // private const string APIEndpoint = "http://192.168.8.170:8000/"; // 仮のAPIエンドポイント。俺のmacのローカルIP(MCC WifiでのIP)
         
         public async void Initialize()
@@ -61,7 +61,7 @@ namespace Food3DModel.Model
             }
             
             // QRコードを読み取ったことをDBに通知
-            using(UnityWebRequest req = UnityWebRequest.Get(APIEndpoint + "/notify/" + userId))
+            using(UnityWebRequest req = UnityWebRequest.Get(APIEndpoint + "notify/" + userId))
             {
                 await req.SendWebRequest();
             }
