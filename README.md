@@ -17,9 +17,11 @@ Ctrl + Shift + B (MacOSの場合はCmd + Shift + B)でビルドウィンドウ�
 ## 4. Quest 3で実験的機能を有効にする
 
 <strong>
+<font color="Red">
 ⚠️注意⚠️ 
 
 この作業はQuest 3を再起動するたびに行なってください 
+</font>
 </strong>
 
 Meta Quest Developer Hubをインストールし、Quest 3をPCに接続します。
