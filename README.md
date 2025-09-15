@@ -15,8 +15,8 @@ Ctrl + Shift + B (MacOSの場合はCmd + Shift + B)でビルドウィンドウ�
 
 
 ## 4. Quest 3で実験的機能を有効にする
-** ⚠️注意⚠️ **
-** この作業はQuest 3を再起動するたびに行なってください **
+　** ⚠️注意⚠️ **　
+　** この作業はQuest 3を再起動するたびに行なってください **　
 
 Meta Quest Developer Hubをインストールし、Quest 3をPCに接続します。
 次に、左側のメニューから `Device Manager` を選択し、画面下部の `Custom Command` セクションの `Create Command` ボタンを押します。
