@@ -2,7 +2,7 @@ using PCVR.Model;
 using UnityEngine;
 using Zenject;
 
-public class QRCodeInstaller : Installer<QRCodeInstaller>
+public class QRCodeInstaller : MonoInstaller<QRCodeInstaller>
 {
     public override void InstallBindings()
     {
