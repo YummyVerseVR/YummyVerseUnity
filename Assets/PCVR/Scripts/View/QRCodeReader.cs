@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using PCVR.Model.Interfaces;
 using TMPro;
 using UnityEngine;
@@ -8,117 +7,101 @@ using UnityEngine.UI;
 using Zenject;
 using ZXing;
 
-namespace PCVR.View
+namespace PCVR.Scripts.View
 {
     public class QRCodeReader : MonoBehaviour
     {
-        [Inject] private readonly IQRCodeManager _qrCodeManager;
+        [Inject] private readonly IQRCodeManager  _qrCodeManager;
+        
+        // カメラ許可のための定数定義
+        private const string Permission = UnityEngine.Android.Permission.Camera;
 
-        [Tooltip("Webカメラの映像を表示するRawImage")]
-        public RawImage cameraFeedRawImage;
+        [SerializeField] private TextMeshProUGUI resultText; // QRコードの読み取り結果を表示するText
+        [SerializeField] private RawImage webCameraRawImage; // Webカメラの映像を表示するRawImage
 
-        [Tooltip("読み取ったQRコードの値を表示するText")]
-        public TextMeshProUGUI resultText;
+        private WebCamDevice[] _webCamDevice; // 利用可能なカメラデバイス
+        private int _selectingCamera = 0; // 選択中のカメラ
 
-        private WebCamTexture webCamTexture;
-        private BarcodeReader barcodeReader;
-        private bool isCameraReady = false;
+        // UI
+        private RawImage _rawImage;
+        private WebCamTexture _webCamTexture = null;
 
-        private void Start()
+        // アプリ起動時に実行される初期化処理
+        private void Awake()
         {
-            barcodeReader = new BarcodeReader();
-            StartCoroutine(InitializeCameraCoroutine());
+            // カメラの使用許可をユーザーにリクエスト
+            UnityEngine.Android.Permission.RequestUserPermission(Permission);
         }
 
         private void Update()
         {
-            if (!isCameraReady || webCamTexture == null || !webCamTexture.isPlaying)
-                return;
-
-            if (webCamTexture.width < 100 || webCamTexture.height < 100)
-                return;
-
-            try
+            // Webカメラがまだセットされていない場合
+            if (_webCamTexture == null)
             {
-                var pixels = webCamTexture.GetPixels32();
-                var result = barcodeReader.Decode(pixels, webCamTexture.width, webCamTexture.height);
-                if (result != null)
+                // カメラの使用がユーザーによって許可されているかチェック
+                if (UnityEngine.Android.Permission.HasUserAuthorizedPermission(Permission))
                 {
-                    resultText.text = result.Text;
-                    _qrCodeManager.UserId.Value = Guid.Parse(result.Text);
-                    SceneManager.LoadScene("PCVRTest");
+                    // デバイスのスクリーンの幅と高さを取得
+                    var width = Screen.width;
+                    var height = Screen.height;
+
+                    // Webカメラの映像を取得するために新しいWebCamTextureを作成
+                    _webCamTexture = new WebCamTexture(width, height);
+
+                    // Webカメラの映像をスタート
+                    _webCamTexture.Play();
+
+                    // Webカメラの映像をRawImageに表示
+                    webCameraRawImage.texture = this._webCamTexture;
+
+                    // 利用可能なカメラデバイスを取得
+                    _webCamDevice = WebCamTexture.devices;
                 }
             }
-            catch (Exception e)
+            else
             {
-                Debug.LogWarning($"QRコード解析中にエラー: {e.Message}");
+                // Webカメラの映像からQRコードを読み取り、その結果をTextコンポーネントに表示
+                var readvalue = Read(this._webCamTexture);
+                resultText.text = readvalue;
+                _qrCodeManager.UserId.Value = Guid.Parse(readvalue);
+                SceneManager.LoadScene("PCVRTest");
             }
         }
 
-        private IEnumerator InitializeCameraCoroutine()
+        // QRコードの読み取り処理
+        private static string Read(WebCamTexture texture)
         {
-            WebCamDevice[] devices = WebCamTexture.devices;
-            if (devices.Length == 0)
-            {
-                Debug.LogError("使用可能なWebカメラが見つかりません。");
-                resultText.text = "カメラが見つかりません";
-                yield break;
-            }
+            // ZXingのBarcodeReaderクラスを使用してQRコードをデコード
+            BarcodeReader reader = new BarcodeReader();
 
-            // もし裏面カメラがある場合、フロントではなく裏面を選ぶ
-            string selectedDeviceName = devices[0].name;
-            foreach (var device in devices)
-            {
-                if (!device.isFrontFacing)
-                {
-                    selectedDeviceName = device.name;
-                    break;
-                }
-            }
+            // Webカメラの映像をピクセルデータとして取得
+            Color32[] rawRGB = texture.GetPixels32();
 
-            // WebCamTexture生成（明示的な解像度指定を追加）
-            webCamTexture = new WebCamTexture(selectedDeviceName, 1280, 720, 30);
+            // Webカメラの映像の幅と高さを取得
+            int width = texture.width;
+            int height = texture.height;
 
-            // RawImageに反映
-            cameraFeedRawImage.texture = webCamTexture;
-            cameraFeedRawImage.material = null; // マテリアル干渉防止
-            cameraFeedRawImage.color = Color.white; // 黒背景を防ぐ
+            // ピクセルデータからQRコードをデコード
+            Result result = reader.Decode(rawRGB, width, height);
 
-            webCamTexture.Play();
-
-            // 実際にフレームが届くまで待つ
-            yield return new WaitUntil(() => webCamTexture.didUpdateThisFrame && webCamTexture.width > 100);
-
-            isCameraReady = true;
-            Debug.Log($"WebCam started: {webCamTexture.width}x{webCamTexture.height} ({selectedDeviceName})");
-
-            // アスペクト比補正
-            StartCoroutine(AdjustAspectRatio());
+            // デコード結果が存在する場合はそのテキストを返し、無ければ空文字を返す
+            return ((result != null) ? result.Text : string.Empty);
         }
 
-        private IEnumerator AdjustAspectRatio()
+        // カメラの切り替え
+        public void ChangeCamera()
         {
-            yield return new WaitUntil(() => webCamTexture.width > 100);
+            int cameras = _webCamDevice.Length; //カメラの個数
+            if (cameras < 1) return; // カメラが1台しかなかったら実行せず終了
 
-            AspectRatioFitter aspectRatioFitter = cameraFeedRawImage.GetComponent<AspectRatioFitter>();
-            if (aspectRatioFitter == null)
-                aspectRatioFitter = cameraFeedRawImage.gameObject.AddComponent<AspectRatioFitter>();
+            // カメラのインデックスをインクリメント
+            _selectingCamera++;
+            _selectingCamera %= cameras;
 
-            aspectRatioFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
-            aspectRatioFitter.aspectRatio = (float)webCamTexture.width / webCamTexture.height;
-
-            // 映像の反転対応（多くのWebカメラで必要）
-            cameraFeedRawImage.rectTransform.localScale = new Vector3(
-                webCamTexture.videoVerticallyMirrored ? -1 : 1,
-                1,
-                1
-            );
-        }
-
-        private void OnDestroy()
-        {
-            if (webCamTexture != null && webCamTexture.isPlaying)
-                webCamTexture.Stop();
+            _webCamTexture.Stop(); // カメラを停止
+            _webCamTexture = new WebCamTexture(_webCamDevice[_selectingCamera].name); //カメラを変更
+            webCameraRawImage.texture = _webCamTexture;
+            _webCamTexture.Play(); // 別カメラを開始
         }
     }
 }

@@ -12,20 +12,17 @@ EditorBuildSettings:
     path: Assets/Scenes/EatingFoodold.unity
     guid: cc332796050a941bfaaa614f3e9a4be9
   - enabled: 0
-    path: Assets/Scenes/Title.unity
-    guid: 47cbcad8315674579b0f0a91f807da88
-  - enabled: 0
     path: Assets/Scenes/QRTrackMR.unity
     guid: 8062ee36d44a34e9ea62c96c0f0c4f3a
   - enabled: 0
     path: Assets/Scenes/ARTrack.unity
     guid: a1214aaffdc2240ea91da4ee4fe13a31
   - enabled: 1
-    path: Assets/PCVR/Scenes/PCVRTest.unity
-    guid: dd97d6cd7b42940bf802cae690ad3645
-  - enabled: 1
     path: Assets/PCVR/Scenes/Title.unity
     guid: dde345271d44997418d77045c09196bd
+  - enabled: 1
+    path: Assets/PCVR/Scenes/PCVRTest.unity
+    guid: dd97d6cd7b42940bf802cae690ad3645
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: e32369820b8b04427bb022f665e404f7, type: 2}
     Unity.XR.WindowsMR.Settings: {fileID: 11400000, guid: dc5a169419fa04987b057f65238cf3ba, type: 2}
