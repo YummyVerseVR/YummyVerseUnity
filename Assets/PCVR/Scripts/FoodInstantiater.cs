@@ -12,7 +12,7 @@ namespace PCVR
     public class FoodInstantiater : MonoBehaviour
     {
         [Inject] private IQRCodeManager QRCodeManager;
-        private string endpoint = "http://yummy-control-server.upiscium.f5.si:8000/";
+        private string endpoint = "http://yummy-control-server.upiscium.f5.si/";
         // private string endpoint = "http://localhost:8001/";
         private string id = "7b998836-903e-4878-ae8e-839a2ef13373";
 
