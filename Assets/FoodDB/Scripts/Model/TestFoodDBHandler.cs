@@ -20,24 +20,24 @@ namespace Food3DModel.Model
         
         public async void Initialize()
         {
-            WWWForm form = new WWWForm();
-            form.AddField("user_id", "7b998836-903e-4878-ae8e-839a2ef13373");
-            using (UnityWebRequest req = UnityWebRequest.Post(APIEndpoint + "create/user", form))
-            {
-                // FastAPI の Form(...) は application/x-www-form-urlencoded を期待してるから
-                req.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-
-                await req.SendWebRequest();
-
-                if (req.result == UnityWebRequest.Result.Success)
-                {
-                    Debug.Log("Response: " + req.downloadHandler.text);
-                }
-                else
-                {
-                    Debug.LogError("Error: " + req.error + "\n" + req.downloadHandler.text);
-                }
-            }
+            // WWWForm form = new WWWForm();
+            // form.AddField("user_id", "fd252c3c-fdf7-419d-a24c-87f94dc626df");
+            // using (UnityWebRequest req = UnityWebRequest.Post(APIEndpoint + "create/user", form))
+            // {
+            //     // FastAPI の Form(...) は application/x-www-form-urlencoded を期待してるから
+            //     req.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            //
+            //     await req.SendWebRequest();
+            //
+            //     if (req.result == UnityWebRequest.Result.Success)
+            //     {
+            //         Debug.Log("Response: " + req.downloadHandler.text);
+            //     }
+            //     else
+            //     {
+            //         Debug.LogError("Error: " + req.error + "\n" + req.downloadHandler.text);
+            //     }
+            // }
         }
         
         
