@@ -3,6 +3,7 @@ using System.IO;
 using Cysharp.Threading.Tasks;
 using Food3DModel.Interface;
 using GLTFast;
+using Oculus.Interaction;
 using R3;
 using UnityEngine;
 
@@ -58,6 +59,8 @@ namespace Food3DModel.Model
 
                 // 5. GameObjectにインスタンス化
                 Food3DModel.Value = new GameObject("LoadedGLBModel");
+                
+                
                 success = await gltf.InstantiateMainSceneAsync(FoodTransform.Value);
 
                 if (!success)
@@ -67,6 +70,17 @@ namespace Food3DModel.Model
                 else
                 {
                     Debug.Log("[ModelLoader] Successfully loaded and instantiated model.");
+                    FoodTransform.Value.Find("world").Rotate(90, 0,0);
+                    FoodTransform.Value.Find("world").Translate(0,0.05f,0);
+                    FoodTransform.Value.gameObject.AddComponent<BoxCollider>();
+                    FoodTransform.Value.gameObject.GetComponent<BoxCollider>().size = Vector3.one * 1.4f;
+                    FoodTransform.Value.gameObject.AddComponent<Rigidbody>();
+                    FoodTransform.Value.gameObject.GetComponent<Rigidbody>().useGravity = false;
+                    FoodTransform.Value.gameObject.AddComponent<Grabbable>();
+                    FoodTransform.Value.gameObject.AddComponent<GrabFreeTransformer>();
+                    FoodTransform.Value.gameObject.AddComponent<GrabInteractable>();
+                    FoodTransform.Value.gameObject.GetComponent<GrabInteractable>().InjectRigidbody(FoodTransform.Value.gameObject.GetComponent<Rigidbody>());
+
                     // Food3DModel.Value.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f); // スケール調整
                 }
             }

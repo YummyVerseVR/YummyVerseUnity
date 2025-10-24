@@ -95,7 +95,7 @@
 			],
 			"sysroot" : 
 			{
-				"path" : "/Applications/Unity/Hub/Editor/6000.2.0f1/PlaybackEngines/AndroidPlayer/NDK/toolchains/llvm/prebuilt/darwin-x86_64/sysroot"
+				"path" : "/Applications/Unity/Hub/Editor/6000.2.6f2/PlaybackEngines/AndroidPlayer/NDK/toolchains/llvm/prebuilt/darwin-x86_64/sysroot"
 			}
 		}
 	],
@@ -136,7 +136,7 @@
 		"language" : "CXX",
 		"sysroot" : 
 		{
-			"path" : "/Applications/Unity/Hub/Editor/6000.2.0f1/PlaybackEngines/AndroidPlayer/NDK/toolchains/llvm/prebuilt/darwin-x86_64/sysroot"
+			"path" : "/Applications/Unity/Hub/Editor/6000.2.6f2/PlaybackEngines/AndroidPlayer/NDK/toolchains/llvm/prebuilt/darwin-x86_64/sysroot"
 		}
 	},
 	"name" : "game",

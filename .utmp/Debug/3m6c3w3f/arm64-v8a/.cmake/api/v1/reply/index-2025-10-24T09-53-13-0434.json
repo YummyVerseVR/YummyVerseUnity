@@ -8,10 +8,10 @@
 		},
 		"paths" : 
 		{
-			"cmake" : "/Applications/Unity/Hub/Editor/6000.2.0f1/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake",
-			"cpack" : "/Applications/Unity/Hub/Editor/6000.2.0f1/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cpack",
-			"ctest" : "/Applications/Unity/Hub/Editor/6000.2.0f1/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/ctest",
-			"root" : "/Applications/Unity/Hub/Editor/6000.2.0f1/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/share/cmake-3.22"
+			"cmake" : "/Applications/Unity/Hub/Editor/6000.2.6f2/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cmake",
+			"cpack" : "/Applications/Unity/Hub/Editor/6000.2.6f2/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/cpack",
+			"ctest" : "/Applications/Unity/Hub/Editor/6000.2.6f2/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/ctest",
+			"root" : "/Applications/Unity/Hub/Editor/6000.2.6f2/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/share/cmake-3.22"
 		},
 		"version" : 
 		{
@@ -26,7 +26,7 @@
 	"objects" : 
 	[
 		{
-			"jsonFile" : "codemodel-v2-0085c85dd0328b94d91e.json",
+			"jsonFile" : "codemodel-v2-92a63ce1a969914db33e.json",
 			"kind" : "codemodel",
 			"version" : 
 			{
@@ -35,7 +35,7 @@
 			}
 		},
 		{
-			"jsonFile" : "cache-v2-3f696b68738d204e12e0.json",
+			"jsonFile" : "cache-v2-d824fbf267a4d78d0822.json",
 			"kind" : "cache",
 			"version" : 
 			{
@@ -44,7 +44,7 @@
 			}
 		},
 		{
-			"jsonFile" : "cmakeFiles-v1-510421ceaad00c07f4fa.json",
+			"jsonFile" : "cmakeFiles-v1-d512761e2b6ed293ba1d.json",
 			"kind" : "cmakeFiles",
 			"version" : 
 			{
@@ -59,7 +59,7 @@
 		{
 			"cache-v2" : 
 			{
-				"jsonFile" : "cache-v2-3f696b68738d204e12e0.json",
+				"jsonFile" : "cache-v2-d824fbf267a4d78d0822.json",
 				"kind" : "cache",
 				"version" : 
 				{
@@ -69,7 +69,7 @@
 			},
 			"cmakeFiles-v1" : 
 			{
-				"jsonFile" : "cmakeFiles-v1-510421ceaad00c07f4fa.json",
+				"jsonFile" : "cmakeFiles-v1-d512761e2b6ed293ba1d.json",
 				"kind" : "cmakeFiles",
 				"version" : 
 				{
@@ -79,7 +79,7 @@
 			},
 			"codemodel-v2" : 
 			{
-				"jsonFile" : "codemodel-v2-0085c85dd0328b94d91e.json",
+				"jsonFile" : "codemodel-v2-92a63ce1a969914db33e.json",
 				"kind" : "codemodel",
 				"version" : 
 				{
