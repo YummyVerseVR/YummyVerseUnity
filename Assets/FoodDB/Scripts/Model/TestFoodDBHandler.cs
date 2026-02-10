@@ -14,8 +14,7 @@ namespace Food3DModel.Model
     public class TestFoodDBHandler: IFoodDBHandler, IInitializable
     {
         [Inject] private IFoodRepositoryWriter _foodRepositoryWriter;
-        
-        private const string APIEndpoint = "http://yummy-control-server.upiscium.f5.si/"; // 本番環境用のAPIエンドポイント
+        private const string APIEndpoint = "https://yummy-control-server.upiscium.dev/"; // 本番環境用のAPIエンドポイント
         // private const string APIEndpoint = "http://192.168.8.170:8000/"; // 仮のAPIエンドポイント。俺のmacのローカルIP(MCC WifiでのIP)
         
         public async void Initialize()
@@ -60,11 +59,6 @@ namespace Food3DModel.Model
                 _foodRepositoryWriter.SetChewingSound(b64);
             }
             
-            // QRコードを読み取ったことをDBに通知
-            using(UnityWebRequest req = UnityWebRequest.Get(APIEndpoint + "notify/" + userId))
-            {
-                await req.SendWebRequest();
-            }
 
             return true;
         }

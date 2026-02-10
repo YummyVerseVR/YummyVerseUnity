@@ -10,7 +10,7 @@ namespace Food3DModel.View
         [Inject] private QRViewModel _viewModel;
         public void OnTrackableAdded()
         {
-            _viewModel.OnDetectQRCode("fd252c3c-fdf7-419d-a24c-87f94dc626df", this.transform);
+            _viewModel.OnDetectQRCode("cef7509e-e99d-4482-ae49-7a3b9f4b6668", this.transform);
         }
     }
 }
