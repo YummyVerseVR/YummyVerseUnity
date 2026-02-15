@@ -1,8 +1,9 @@
 using GLTFast;
 using YummyVerse.Scripts.Model.Interface;
 using Zenject;
-using R3
+using R3;
 using UnityEngine;
+using YummyVerse.Scripts.ViewModel.Interface;
 
 namespace YummyVerse.Scripts.ViewModel
 {
