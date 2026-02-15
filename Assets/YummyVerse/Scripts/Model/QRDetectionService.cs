@@ -8,15 +8,13 @@ namespace YummyVerse.Scripts.Model
 {
     public class QRDetectionService : IQRDetectionService
     {
-        public ReactiveProperty<QRDetection> OnDetected { get; } = new();
+        public ReactiveProperty<Guid> OnChangeGUID { get; } = new();
+        public ReactiveProperty<Transform> OnChangeTransform { get; }  = new();
+
         public void NotifyDetectQR(Guid guid, Transform transform)
         {
-            QRDetection qrDetection = new()
-            {
-                guid = guid,
-                transform = transform
-            };
-            OnDetected.Value = qrDetection;
+            OnChangeGUID.Value = guid; // Guidは値型なので、中身が変われば更新通知が飛ぶ。
+            OnChangeTransform.OnNext(transform); // Transformは参照型なので、毎回強制的に更新通知する(中身更新毎に更新通知したほうが重い気がする)
         }
     }
 }

@@ -24,9 +24,9 @@ namespace YummyVerse.Scripts.ViewModel
         /// </summary>
         /// <param name="trackable">追尾対象の物体(QRコードを想定</param>
         /// <exception cref="NotImplementedException"></exception>
-        public void HandleTrackableAdded(MRUKTrackable trackable)
+        public void HandleTrackableAdded(IQRTrackable trackable)
         {
-            var qrStr = trackable.MarkerPayloadString; // QRコードの値
+            var qrStr = trackable.qrPayload; // QRコードの値
             var transform = trackable.transform; // QRのMR座標系におけるTransform
             var validationResult = _qrValueValidator.Validate(qrStr);
             if (validationResult.IsValid)

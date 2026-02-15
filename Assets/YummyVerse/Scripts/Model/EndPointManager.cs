@@ -5,7 +5,7 @@ namespace YummyVerse.Scripts.Model
 {
     public class EndPointManager : IEndPointManager
     {
-        public string baseEndPointUrl { get; private set; } = "https://yummy-control-server.upiscium.dev";
+        public string baseEndPointUrl { get; private set; } = "https://yummy-control-server.upiscium.dev/";
         public bool UpdateEndPointUrl(string url)
         {
             if (string.IsNullOrWhiteSpace(url))

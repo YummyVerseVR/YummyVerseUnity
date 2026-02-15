@@ -12,7 +12,7 @@ namespace YummyVerse.Scripts.ViewModel
         private readonly IFoodContext _foodContext;
         private readonly IQRDetectionService _qrDetectionService;
 
-        public ReactiveProperty<GltfImport> foodGltf { get; } = new();
+        public ReactiveProperty<GltfImport> foodGltf { get; } = new(new());
         public ReactiveProperty<Transform> foodTransform { get; } = new();
 
         public FoodViewModel(IFoodContext foodContext, IQRDetectionService qrDetectionService)
@@ -23,10 +23,16 @@ namespace YummyVerse.Scripts.ViewModel
 
         public void Initialize()
         {
+            // ダウンロードが発生したらGltfImportを更新
             _foodContext.downloadResult.Where(v => v.success).Subscribe(v =>
             {
                 foodGltf.Value = v.Food.GltfImport;
-                foodTransform.Value = _qrDetectionService.OnDetected.Value.transform;
+            });
+            
+            // QRの位置情報が更新されたらtransformを更新
+            _qrDetectionService.OnChangeTransform.Subscribe(v =>
+            {
+                foodTransform.OnNext(v);
             });
         }
         

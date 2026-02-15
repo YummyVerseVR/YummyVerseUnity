@@ -7,7 +7,9 @@ namespace YummyVerse.Scripts.Model.Interface
 {
     public interface IQRDetectionService
     {
-        ReactiveProperty<QRDetection> OnDetected { get; }
+        ReactiveProperty<Guid> OnChangeGUID { get; }
+        ReactiveProperty<Transform> OnChangeTransform { get; }
+        
         void NotifyDetectQR(Guid guid, Transform transform);
     }
 }
