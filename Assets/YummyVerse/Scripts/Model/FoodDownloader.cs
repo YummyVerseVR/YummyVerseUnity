@@ -45,6 +45,7 @@ namespace YummyVerse.Scripts.Model
             // glTFastでロード
             var gltf = new GltfImport();
             result.Food.GltfImport = gltf;
+            
             return result;
         }
     }
