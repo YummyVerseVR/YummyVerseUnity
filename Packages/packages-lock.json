@@ -212,7 +212,7 @@
       "source": "builtin",
       "dependencies": {
         "com.unity.ide.visualstudio": "2.0.23",
-        "com.unity.ide.rider": "3.0.37",
+        "com.unity.ide.rider": "3.0.39",
         "com.unity.editorcoroutines": "1.0.0",
         "com.unity.performance.profile-analyzer": "1.2.3",
         "com.unity.test-framework": "1.6.0",
@@ -220,8 +220,8 @@
       }
     },
     "com.unity.ide.rider": {
-      "version": "3.0.37",
-      "depth": 1,
+      "version": "3.0.39",
+      "depth": 0,
       "source": "registry",
       "dependencies": {
         "com.unity.ext.nunit": "1.0.6"
