@@ -19,7 +19,7 @@ namespace YummyVerse.Scripts.Model.Dummies
         
         public async UniTask<FoodDownloadResult> Download(Guid guid, CancellationToken ct)
         {
-            var result = new FoodDownloadResult();
+            var result = new FoodDownloadResult() { RequestedGuid =  guid };
             var gltfPath = Application.persistentDataPath + "/TestData/test.glb";
             Debug.Log(gltfPath);
 

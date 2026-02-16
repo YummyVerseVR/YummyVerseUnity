@@ -22,7 +22,7 @@ namespace YummyVerse.Scripts.Model
         
         public async UniTask<FoodDownloadResult> Download(Guid guid,CancellationToken ct)
         {
-            FoodDownloadResult result = new FoodDownloadResult();
+            FoodDownloadResult result = new FoodDownloadResult() { RequestedGuid = guid };
             using UnityWebRequest req = UnityWebRequest.Get(_endPointManager.baseEndPointUrl + guid.ToString() + "/model");
             req.timeout = 10; // 20秒でタイムアウトするように設定
             

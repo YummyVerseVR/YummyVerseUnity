@@ -1,0 +1,63 @@
+{
+    "version": 1,
+    "name": "Restaurant",
+    "maps": [
+        {
+            "name": "Eating",
+            "id": "8ff5d377-fe3d-4619-abf0-c20d035e455d",
+            "actions": [
+                {
+                    "name": "TurnOnMenu",
+                    "type": "Button",
+                    "id": "14768a5c-edef-4b3f-aed8-3f39612a4b4b",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "3a2101fc-8096-495e-b68f-c24315ae7577",
+                    "path": "<XRController>{RightHand}/primaryButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TurnOnMenu",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "Menu",
+            "id": "90cd608d-7121-4023-9024-95927c3ee093",
+            "actions": [
+                {
+                    "name": "TurnOffMenu",
+                    "type": "Button",
+                    "id": "e62da4ed-c2c4-4c87-adf0-340c9fdb1383",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "beffcd68-fd70-446a-a867-d27f56a8b2de",
+                    "path": "<XRController>{RightHand}/primaryButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TurnOffMenu",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}
