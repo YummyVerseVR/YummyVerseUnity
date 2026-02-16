@@ -15,25 +15,27 @@ namespace YummyVerse.Scripts.Model
 {
     public class FoodContext : IFoodContext, IInitializable, IDisposable
     {
-        private readonly IFoodDownloader _foodDownloader;
+        private IFoodFetchable _foodFetchable;
         private readonly IQRDetectionService _qrDetectionService;
+        private readonly IFoodFetchableFactory _foodFetchableFactory;
         
-        private CompositeDisposable _disposables  = new CompositeDisposable();
+        private readonly CompositeDisposable _disposables  = new CompositeDisposable();
         
-        public ReactiveProperty<FoodDownloadResult> downloadResult { get; private set; } = new ();
+        public ReactiveProperty<FoodDownloadResult> downloadResult { get; } = new ();
         
-        public FoodContext(IFoodDownloader downloader, IQRDetectionService qrDetectionService)
+        public FoodContext(IQRDetectionService qrDetectionService,  IFoodFetchableFactory foodFetchableFactory)
         {
-            this._foodDownloader = downloader;
             this._qrDetectionService = qrDetectionService;
+            this._foodFetchableFactory = foodFetchableFactory;
         }
 
         public void Initialize()
         {
             // QRコードに映っているGuidが更新されたらダウンロードを開始する。
             _qrDetectionService.OnChangeGUID.Where(v => v != Guid.Empty).SubscribeAwait(async (v, ct) =>
-            { 
-                downloadResult.Value = await _foodDownloader.Download(v, ct);
+            {
+                _foodFetchable = _foodFetchableFactory.Create();
+                downloadResult.Value = await _foodFetchable.Download(v, ct);
             }).AddTo(_disposables);
         }
         

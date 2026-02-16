@@ -11,10 +11,11 @@ namespace YummyVerse.Scripts.ViewModel
     {
         private readonly IEndPointManager _endPointManager;
         private readonly IFoodContext _foodContext;
+        private readonly ISettingManager _settingManager;
         
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
         
-        public ReactiveProperty<bool> IsVisible { get; } = new();
+        public ReactiveProperty<bool> IsVisible { get; } = new(true);
         public ReactiveProperty<string> APIEndPointUrl { get; }  = new();
         public ReactiveProperty<string> LastRequestHTTPStatus { get; } = new();
         public ReactiveProperty<string> LastRequestGuid { get; }  = new();
@@ -23,6 +24,12 @@ namespace YummyVerse.Scripts.ViewModel
         public event Action OnAPIEndPointValidationError = delegate { };
         
         public ReactiveProperty<HttpStatusCode> ConnectionTestResult { get; } = new(0);
+
+        public ConfigUIViewModel(IEndPointManager endPointManager, IFoodContext foodContext, ISettingManager settingManager)
+        {
+            _endPointManager = endPointManager;
+            _foodContext = foodContext;
+        }
 
         public void Initialize()
         {
@@ -54,6 +61,12 @@ namespace YummyVerse.Scripts.ViewModel
                 return;
             }
             OnAPIEndPointValidationError.Invoke();
+        }
+
+        public void SetStandaloneMode(bool isStandalone)
+        {
+            IsStandaloneMode.Value = isStandalone;
+            _settingManager.isStandaloneMode.Value = isStandalone;
         }
 
         public void ConnectionTest()

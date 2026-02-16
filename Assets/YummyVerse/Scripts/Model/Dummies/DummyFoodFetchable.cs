@@ -13,7 +13,7 @@ namespace YummyVerse.Scripts.Model.Dummies
     /// <summary>
     /// サーバーに依存せずローカルからGltfを読み込む
     /// </summary>
-    public class DummyFoodDownloader : IFoodDownloader
+    public class DummyFoodFetchable : IFoodFetchable
     {
         
         

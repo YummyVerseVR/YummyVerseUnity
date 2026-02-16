@@ -16,6 +16,9 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         ReactiveProperty<HttpStatusCode> ConnectionTestResult { get; }
 
         void UpdateEndPointUrl(string url);
+        
+        void SetStandaloneMode(bool isStandalone);
+        
         void ConnectionTest();
     }
 }

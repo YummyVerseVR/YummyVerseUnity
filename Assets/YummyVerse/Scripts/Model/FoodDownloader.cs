@@ -11,7 +11,7 @@ using Cysharp.Threading.Tasks;
 
 namespace YummyVerse.Scripts.Model
 {
-    public class FoodDownloader : IFoodDownloader
+    public class FoodDownloader : IFoodFetchable
     {
         private readonly IEndPointManager _endPointManager;
 

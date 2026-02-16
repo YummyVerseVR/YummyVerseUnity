@@ -9,9 +9,9 @@ namespace YummyVerse.Scripts.Model.DI
         {
             Container.BindInterfacesAndSelfTo<EndPointManager>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<FoodContext>().AsSingle().NonLazy();
-            // Container.BindInterfacesAndSelfTo<DummyFoodDownloader>().AsSingle().NonLazy();
-            Container.BindInterfacesAndSelfTo<FoodDownloader>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<FoodFetchableFactory>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<QRDetectionService>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<SettingManager>().AsSingle().NonLazy();
         }
     }
 }

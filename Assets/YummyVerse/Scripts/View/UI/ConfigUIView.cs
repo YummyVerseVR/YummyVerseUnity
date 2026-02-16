@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,6 +19,7 @@ namespace YummyVerse.Scripts.View
         [SerializeField] private Toggle standaloneModeToggle;
         [SerializeField] private CanvasGroup canvasGroup;
         
+        
         private IConfigUIViewModel _configUIViewModel;
 
         [Inject]
@@ -28,9 +30,11 @@ namespace YummyVerse.Scripts.View
 
         private void Start()
         {
-            _configUIViewModel.IsVisible.Subscribe(v =>
+            _configUIViewModel.IsVisible.Subscribe(isVisible =>
             {
-            });
+                if (isVisible) canvasGroup.DOFade(1, 0.1f);
+                else canvasGroup.DOFade(0, 0.1f);
+            }).AddTo(this);
             
             _configUIViewModel.LastRequestHTTPStatus.Subscribe(v =>
             {
@@ -41,28 +45,10 @@ namespace YummyVerse.Scripts.View
             {
                 lastRequestGuid.text = "Last Request GUID : " + v;
             }).AddTo(this);
-
-            Observable.FromEvent(
-                    h => _configUIViewModel.OnAPIEndPointValidationError += h,
-                    h => _configUIViewModel.OnAPIEndPointValidationError -= h)
-                .Subscribe(_ => ShowAPIEndPointValidationError()).AddTo(this);
-
-            _configUIViewModel.ConnectionTestResult.Subscribe(ShowTestConnectionResult).AddTo(this);
             
             apiEndPointUrl.onEndEdit.AddListener(v => _configUIViewModel.UpdateEndPointUrl(v));
-        }
-
-        // APIバリデーションのエラーダイアログを表示する
-        private void ShowAPIEndPointValidationError()
-        {
             
+            standaloneModeToggle.onValueChanged.AddListener(v => _configUIViewModel.SetStandaloneMode(v));
         }
-        
-        // Test Connectionの結果のダイアログを表示する
-        private void ShowTestConnectionResult(HttpStatusCode httpStatusCode)
-        {
-            
-        }
-        
     }
 }
