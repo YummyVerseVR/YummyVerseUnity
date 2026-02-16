@@ -30,7 +30,6 @@ namespace YummyVerse.Scripts.View
         {
             _configUIViewModel.IsVisible.Subscribe(v =>
             {
-                canvasGroup
             });
             
             _configUIViewModel.LastRequestHTTPStatus.Subscribe(v =>
