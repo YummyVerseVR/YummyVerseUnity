@@ -17,6 +17,10 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private Toggle standaloneModeToggle;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private Slider foodScaleSlider;
+        [SerializeField] private Camera targetCamera;
+        [SerializeField] private Transform uiTransform;
+        
+        private float displayDistanceFromCamera = 0.6f;
         
         
         private IConfigUIViewModel _configUIViewModel;
@@ -31,7 +35,11 @@ namespace YummyVerse.Scripts.View.UI
         {
             _configUIViewModel.IsVisible.Subscribe(isVisible =>
             {
-                if (isVisible) canvasGroup.DOFade(1, 0.1f);
+                if (isVisible)
+                {
+                    SetMenuPositionInFrontOfCamera();
+                    canvasGroup.DOFade(1, 0.1f);
+                }
                 else canvasGroup.DOFade(0, 0.1f);
             }).AddTo(this);
             
@@ -50,6 +58,19 @@ namespace YummyVerse.Scripts.View.UI
             standaloneModeToggle.onValueChanged.AddListener(v => _configUIViewModel.SetStandaloneMode(v));
             
             foodScaleSlider.onValueChanged.AddListener(v => _configUIViewModel.SetFoodScale(v));
+        }
+
+        private void SetMenuPositionInFrontOfCamera()
+        {
+            if (targetCamera == null || uiTransform == null)
+            {
+                Debug.LogWarning("ConfigUIView: targetCamera or uiTransform is not assigned.");
+                return;
+            }
+
+            var cameraTransform = targetCamera.transform;
+            uiTransform.position = cameraTransform.position + cameraTransform.forward * displayDistanceFromCamera;
+            uiTransform.rotation = Quaternion.LookRotation(cameraTransform.forward, cameraTransform.up);
         }
     }
 }

@@ -17,7 +17,7 @@ namespace YummyVerse.Scripts.ViewModel
         
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
         
-        public ReactiveProperty<bool> IsVisible { get; } = new(true);
+        public ReactiveProperty<bool> IsVisible { get; } = new(false);
         public ReactiveProperty<string> APIEndPointUrl { get; }  = new();
         public ReactiveProperty<string> LastRequestHTTPStatus { get; } = new();
         public ReactiveProperty<string> LastRequestGuid { get; }  = new();
