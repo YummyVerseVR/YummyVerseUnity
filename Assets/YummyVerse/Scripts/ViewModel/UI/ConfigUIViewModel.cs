@@ -12,6 +12,8 @@ namespace YummyVerse.Scripts.ViewModel
         private readonly IEndPointManager _endPointManager;
         private readonly IFoodContext _foodContext;
         private readonly ISettingManager _settingManager;
+        private readonly IFoodScaleManager _foodScaleManager;
+        private readonly IInputLayer _inputLayer;
         
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
         
@@ -25,11 +27,17 @@ namespace YummyVerse.Scripts.ViewModel
         
         public ReactiveProperty<HttpStatusCode> ConnectionTestResult { get; } = new(0);
 
-        public ConfigUIViewModel(IEndPointManager endPointManager, IFoodContext foodContext, ISettingManager settingManager)
+        public ConfigUIViewModel(IEndPointManager endPointManager, 
+            IFoodContext foodContext, 
+            ISettingManager settingManager,  
+            IFoodScaleManager foodScaleManager,
+            IInputLayer inputLayer)
         {
             _endPointManager = endPointManager;
             _foodContext = foodContext;
             _settingManager = settingManager;
+            _foodScaleManager = foodScaleManager;
+            _inputLayer = inputLayer;
         }
 
         public void Initialize()
@@ -40,6 +48,12 @@ namespace YummyVerse.Scripts.ViewModel
                 LastRequestHTTPStatus.Value = v.StatusCode.ToString();
                 LastRequestGuid.Value = v.RequestedGuid.ToString();
             }).AddTo(_disposables);
+            
+            // ボタンが押されたら表示状態を反転
+            Observable.FromEvent(
+                    h => _inputLayer.OnConfigUIButtonClicked += h,
+                    h => _inputLayer.OnConfigUIButtonClicked -= h)
+                .Subscribe(_ => IsVisible.Value = !IsVisible.Value).AddTo(_disposables);
         }
         
         public void Dispose()
@@ -68,6 +82,11 @@ namespace YummyVerse.Scripts.ViewModel
         {
             IsStandaloneMode.Value = isStandalone;
             _settingManager.isStandaloneMode.Value = isStandalone;
+        }
+
+        public void SetFoodScale(float scale)
+        {
+            _foodScaleManager.UpdateFoodScale(scale);
         }
 
         public void ConnectionTest()

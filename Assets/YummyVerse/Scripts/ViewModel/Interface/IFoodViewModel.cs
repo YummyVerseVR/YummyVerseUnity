@@ -11,5 +11,7 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         /// </summary>
         ReactiveProperty<GltfImport> foodGltf { get; }
         ReactiveProperty<Transform> foodTransform { get; }
+        
+        ReactiveProperty<float>  foodScale { get; }
     }
 }

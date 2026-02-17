@@ -6,16 +6,18 @@ namespace YummyVerse.Scripts.Model
     {
         private readonly ISettingManager _settingManager;
         private readonly IEndPointManager _endPointManager;
+        private readonly LocalFoodSO _localFoodSO;
         
-        public FoodFetchableFactory(ISettingManager settingManager,  IEndPointManager endPointManager)
+        public FoodFetchableFactory(ISettingManager settingManager,  IEndPointManager endPointManager, LocalFoodSO localFoodSO)
         {
             _settingManager = settingManager;
             _endPointManager = endPointManager;
+            _localFoodSO = localFoodSO;
         }
         
         public IFoodFetchable Create()
         {
-            if (_settingManager.isStandaloneMode.Value) return new LocalFoodLoader();
+            if (_settingManager.isStandaloneMode.Value) return new LocalFoodLoader(_localFoodSO);
             return new FoodDownloader(_endPointManager);
         }
     }

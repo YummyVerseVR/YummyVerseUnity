@@ -7,15 +7,33 @@ using GLTFast;
 using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
+using YummyVerse.Scripts.Model.Struct.SO;
 
 namespace YummyVerse.Scripts.Model
 {
     public class LocalFoodLoader : IFoodFetchable
     {
+        private readonly LocalFoodSO _localFoodSO;
+
+        public LocalFoodLoader(LocalFoodSO localFoodSO)
+        {
+            _localFoodSO = localFoodSO;
+        }
+        
         public async UniTask<FoodDownloadResult> Download(Guid guid, CancellationToken ct)
         {
             var result = new FoodDownloadResult() { RequestedGuid =  guid };
-            var gltfPath = Application.persistentDataPath + "/TestData/curry.glb";
+            
+            _localFoodSO.TryGetLocalFood(guid, out var  localFood);
+
+            var foodNameStr = localFood switch
+            {
+                LocalFoods.Curry => "curry.glb",
+                LocalFoods.Shrimp => "shrimp.glb",
+                LocalFoods.Hamburg => "hamburg.glb"
+            };
+
+            var gltfPath = Application.persistentDataPath + "/TestData/" + foodNameStr;
             Debug.Log(gltfPath);
 
             if (string.IsNullOrWhiteSpace(gltfPath) || !File.Exists(gltfPath))

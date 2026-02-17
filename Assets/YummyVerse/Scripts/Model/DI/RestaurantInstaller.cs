@@ -12,6 +12,8 @@ namespace YummyVerse.Scripts.Model.DI
             Container.BindInterfacesAndSelfTo<FoodFetchableFactory>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<QRDetectionService>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<SettingManager>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<FoodScaleManager>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<InputLayer>().AsSingle().NonLazy();
         }
     }
 }

@@ -11,14 +11,18 @@ namespace YummyVerse.Scripts.ViewModel
     {
         private readonly IFoodContext _foodContext;
         private readonly IQRDetectionService _qrDetectionService;
+        private readonly IFoodScaleManager _foodScaleManager;
 
         public ReactiveProperty<GltfImport> foodGltf { get; } = new(new());
         public ReactiveProperty<Transform> foodTransform { get; } = new();
+        
+        public ReactiveProperty<float> foodScale { get; } = new();
 
-        public FoodViewModel(IFoodContext foodContext, IQRDetectionService qrDetectionService)
+        public FoodViewModel(IFoodContext foodContext, IQRDetectionService qrDetectionService,  IFoodScaleManager foodScaleManager)
         {
             _foodContext = foodContext;
             _qrDetectionService = qrDetectionService;
+            _foodScaleManager = foodScaleManager;
         }
 
         public void Initialize()
@@ -34,6 +38,9 @@ namespace YummyVerse.Scripts.ViewModel
             {
                 foodTransform.OnNext(v);
             });
+            
+            // FoodScaleの設定値が更新されたらscaleを変呼応
+            _foodScaleManager.FoodScale.Subscribe(v => foodScale.Value = v);
         }
         
     }

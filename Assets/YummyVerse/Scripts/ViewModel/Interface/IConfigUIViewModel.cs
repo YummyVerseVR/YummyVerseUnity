@@ -19,6 +19,8 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         
         void SetStandaloneMode(bool isStandalone);
         
+        void SetFoodScale(float scale);
+        
         void ConnectionTest();
     }
 }

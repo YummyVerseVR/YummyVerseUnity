@@ -1,14 +1,12 @@
-using System;
-using System.Net;
 using DG.Tweening;
+using R3;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using YummyVerse.Scripts.ViewModel.Interface;
 using Zenject;
-using R3;
 
-namespace YummyVerse.Scripts.View
+namespace YummyVerse.Scripts.View.UI
 {
     public class ConfigUIView : MonoBehaviour
     {
@@ -18,6 +16,7 @@ namespace YummyVerse.Scripts.View
         [SerializeField] private TextMeshProUGUI lastRequestGuid;
         [SerializeField] private Toggle standaloneModeToggle;
         [SerializeField] private CanvasGroup canvasGroup;
+        [SerializeField] private Slider foodScaleSlider;
         
         
         private IConfigUIViewModel _configUIViewModel;
@@ -49,6 +48,8 @@ namespace YummyVerse.Scripts.View
             apiEndPointUrl.onEndEdit.AddListener(v => _configUIViewModel.UpdateEndPointUrl(v));
             
             standaloneModeToggle.onValueChanged.AddListener(v => _configUIViewModel.SetStandaloneMode(v));
+            
+            foodScaleSlider.onValueChanged.AddListener(v => _configUIViewModel.SetFoodScale(v));
         }
     }
 }

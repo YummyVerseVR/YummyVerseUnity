@@ -27,8 +27,9 @@ namespace YummyVerse.Scripts.View
             _foodViewModel.foodGltf.SubscribeAwait(async (v, ct) =>
             {
                 await InstantiateFood(v, _foodViewModel.foodTransform.Value, ct);
-            });
-            _foodViewModel.foodTransform.Subscribe(SetFoodTransform);
+            }).AddTo(this);
+            _foodViewModel.foodTransform.Subscribe(SetFoodTransform).AddTo(this);
+            _foodViewModel.foodScale.Subscribe(SetFoodScale).AddTo(this);
         }
 
         /// <summary>
@@ -62,6 +63,15 @@ namespace YummyVerse.Scripts.View
             SetFoodTransform(initialTransform);
             Debug.Log("モデルを再生成");
         }
-        
+
+        /// <summary>
+        /// 食べ物のスケールを変更
+        /// </summary>
+        /// <param name="scale">スケール</param>
+        private void SetFoodScale(float scale)
+        {
+            if(_foodRoot == null) return;
+            _foodRoot.transform.localScale = new Vector3(scale, scale, scale);
+        }
     }
 }
