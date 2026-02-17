@@ -21,7 +21,6 @@ namespace YummyVerse.Scripts.Model.Dummies
         {
             var result = new FoodDownloadResult() { RequestedGuid =  guid };
             var gltfPath = Application.persistentDataPath + "/TestData/test.glb";
-            Debug.Log(gltfPath);
 
             if (string.IsNullOrWhiteSpace(gltfPath) || !File.Exists(gltfPath))
             {
@@ -31,7 +30,7 @@ namespace YummyVerse.Scripts.Model.Dummies
 
             try
             {
-                var gltfImport = new GltfImport();
+                var gltfImport = GltfImportFactory.Create();
                 var loaded = await gltfImport.Load(gltfPath, cancellationToken: ct);
                 result.StatusCode = loaded ? HttpStatusCode.OK : HttpStatusCode.InternalServerError;
                 if (loaded)

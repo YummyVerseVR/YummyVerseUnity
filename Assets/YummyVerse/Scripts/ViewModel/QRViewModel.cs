@@ -27,7 +27,7 @@ namespace YummyVerse.Scripts.ViewModel
         public void HandleTrackableAdded(IQRTrackable trackable)
         {
             var qrStr = trackable.qrPayload; // QRコードの値
-            var transform = trackable.transform; // QRのMR座標系におけるTransform
+            var transform = trackable.transform; // QRのTransformを参照で保持して追従させる
             var validationResult = _qrValueValidator.Validate(qrStr);
             if (validationResult.IsValid)
             {

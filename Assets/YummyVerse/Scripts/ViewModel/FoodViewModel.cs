@@ -36,7 +36,12 @@ namespace YummyVerse.Scripts.ViewModel
             // QRの位置情報が更新されたらtransformを更新
             _qrDetectionService.OnChangeTransform.Subscribe(v =>
             {
-                foodTransform.OnNext(v);
+                var previous = foodTransform.Value;
+                foodTransform.Value = v;
+                if (ReferenceEquals(previous, v))
+                {
+                    foodTransform.OnNext(v);
+                }
             });
             
             // FoodScaleの設定値が更新されたらscaleを変呼応

@@ -1967,6 +1967,8 @@ MonoBehaviour:
   standaloneModeToggle: {fileID: 6080511290999071888}
   canvasGroup: {fileID: 2764984737716230343}
   foodScaleSlider: {fileID: 1789025749620040766}
+  targetCamera: {fileID: 0}
+  uiTransform: {fileID: 500786508898637685}
 --- !u!114 &5219836823556852555
 MonoBehaviour:
   m_ObjectHideFlags: 0

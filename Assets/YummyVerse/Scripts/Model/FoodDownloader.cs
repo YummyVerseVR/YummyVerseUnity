@@ -43,7 +43,13 @@ namespace YummyVerse.Scripts.Model
             await File.WriteAllBytesAsync(tempPath, glbBytes, ct);
 
             // glTFastでロード
-            var gltf = new GltfImport();
+            var gltf = GltfImportFactory.Create();
+            var loaded = await gltf.Load(tempPath, cancellationToken: ct);
+            if (!loaded)
+            {
+                result.StatusCode = HttpStatusCode.InternalServerError;
+                return result;
+            }
             result.Food.GltfImport = gltf;
             
             return result;
