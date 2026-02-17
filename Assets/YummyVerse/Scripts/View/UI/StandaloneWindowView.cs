@@ -2,10 +2,11 @@ using DG.Tweening;
 using R3;
 using UnityEngine;
 using UnityEngine.UI;
+using YummyVerse.Scripts.Model.Struct.SO;
 using YummyVerse.Scripts.ViewModel.Interface;
 using Zenject;
 
-namespace YummyVerse.Scripts.View
+namespace YummyVerse.Scripts.View.UI
 {
     public class StandaloneWindowView : MonoBehaviour
     {
@@ -29,6 +30,9 @@ namespace YummyVerse.Scripts.View
                 if(isVisible)  ShowWindow();
                 else HideWindow();
             }).AddTo(this);
+            shrimpButton.OnClickAsObservable().Subscribe(_ => _viewModel.SpawnLocalFood(LocalFoods.Shrimp)).AddTo(this);
+            curryButton.OnClickAsObservable().Subscribe(_ => _viewModel.SpawnLocalFood(LocalFoods.Curry)).AddTo(this);
+            hamburgButton.OnClickAsObservable().Subscribe(_ => _viewModel.SpawnLocalFood(LocalFoods.Hamburg)).AddTo(this);
         }
         private void ShowWindow()
         {

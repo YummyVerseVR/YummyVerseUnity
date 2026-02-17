@@ -29,6 +29,7 @@ namespace YummyVerse.Scripts.ViewModel
         {
             _endPointManager = endPointManager;
             _foodContext = foodContext;
+            _settingManager = settingManager;
         }
 
         public void Initialize()
