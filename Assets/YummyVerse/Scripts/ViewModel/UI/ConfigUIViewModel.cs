@@ -14,13 +14,14 @@ namespace YummyVerse.Scripts.ViewModel
         private readonly ISettingManager _settingManager;
         private readonly IFoodScaleManager _foodScaleManager;
         private readonly IInputLayer _inputLayer;
+        private readonly IQRDetectionService _qrDetectionService;
         
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
         
         public ReactiveProperty<bool> IsVisible { get; } = new(false);
         public ReactiveProperty<string> APIEndPointUrl { get; }  = new();
         public ReactiveProperty<string> LastRequestHTTPStatus { get; } = new();
-        public ReactiveProperty<string> LastRequestGuid { get; }  = new();
+        public ReactiveProperty<string> LastDetectedGuid { get; }  = new();
         public ReactiveProperty<bool> IsStandaloneMode { get; }  = new();
         
         public event Action OnAPIEndPointValidationError = delegate { };
@@ -31,22 +32,29 @@ namespace YummyVerse.Scripts.ViewModel
             IFoodContext foodContext, 
             ISettingManager settingManager,  
             IFoodScaleManager foodScaleManager,
-            IInputLayer inputLayer)
+            IInputLayer inputLayer,
+            IQRDetectionService qrDetectionService
+            )
         {
             _endPointManager = endPointManager;
             _foodContext = foodContext;
             _settingManager = settingManager;
             _foodScaleManager = foodScaleManager;
             _inputLayer = inputLayer;
+            _qrDetectionService = qrDetectionService;
         }
 
         public void Initialize()
         {
-            // ダウンロード結果が更新されたらViewModel側でも更新
+            // ダウンロード結果が更新されたらStatusCodeを更新
             _foodContext.downloadResult.Subscribe(v =>
             {
                 LastRequestHTTPStatus.Value = v.StatusCode.ToString();
-                LastRequestGuid.Value = v.RequestedGuid.ToString();
+            }).AddTo(_disposables);
+
+            _qrDetectionService.OnChangeGUID.Subscribe(v =>
+            {
+                LastDetectedGuid.Value = v.ToString();
             }).AddTo(_disposables);
             
             // ボタンが押されたら表示状態を反転
@@ -62,7 +70,7 @@ namespace YummyVerse.Scripts.ViewModel
             IsVisible?.Dispose();
             APIEndPointUrl?.Dispose();
             LastRequestHTTPStatus?.Dispose();
-            LastRequestGuid?.Dispose();
+            LastDetectedGuid?.Dispose();
             IsStandaloneMode?.Dispose();
             ConnectionTestResult?.Dispose();
         }

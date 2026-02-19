@@ -9,7 +9,7 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         ReactiveProperty<bool> IsVisible { get; } // 設定メニューを表示中かどうか
         ReactiveProperty<string> APIEndPointUrl { get; }
         ReactiveProperty<string> LastRequestHTTPStatus { get; }
-        ReactiveProperty<string> LastRequestGuid { get; }
+        ReactiveProperty<string> LastDetectedGuid { get; }
         ReactiveProperty<bool> IsStandaloneMode { get; }
 
         event Action OnAPIEndPointValidationError;

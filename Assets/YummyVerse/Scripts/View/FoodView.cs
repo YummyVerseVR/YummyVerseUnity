@@ -28,43 +28,18 @@ namespace YummyVerse.Scripts.View
             _foodAnchor = new GameObject("FoodWorldAnchor").transform;
             _foodRoot = new GameObject("FoodRoot");
             _foodRoot.transform.SetParent(_foodAnchor, false);
+            
+            
             _foodViewModel.foodGltf.SubscribeAwait(async (v, ct) =>
             {
                 await InstantiateFood(v, _foodViewModel.foodTransform.Value, ct);
             }).AddTo(this);
+            
+            
             _foodViewModel.foodTransform.Subscribe(SetFoodTransform).AddTo(this);
             _foodViewModel.foodScale.Subscribe(SetFoodScale).AddTo(this);
         }
 
-        private void LateUpdate()
-        {
-            if (!_debugTrackableHierarchy) return;
-            var trackable = _foodViewModel.foodTransform.Value;
-            if (trackable != null)
-            {
-                Debug.Log($"[QR] name:{trackable.name} parent:{trackable.parent?.name} root:{trackable.root.name}");
-            }
-
-            if (_foodRoot != null)
-            {
-                var foodTransform = _foodRoot.transform;
-                Debug.Log($"[FOOD] parent:{foodTransform.parent?.name} root:{foodTransform.root.name}");
-            }
-        }
-
-        /// <summary>
-        /// 回転、座標を設定
-        /// </summary>
-        /// <param name="targetTransform">食べ物の回転と座標</param>
-        private void SetFoodTransform(Transform targetTransform)
-        {
-            if(_foodRoot == null || _foodAnchor == null) return; // 食べ物の3Dモデルが未設定の場合には位置を設定できない
-            if (targetTransform == null) return; // 初期値未設定時は座標を適用しない
-            _foodAnchor.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);
-            _foodRoot.transform.localPosition = Vector3.zero;
-            _foodRoot.transform.localRotation = Quaternion.identity;
-        }
-        
         /// <summary>
         /// シーンに食べ物を生成
         /// </summary>
@@ -81,8 +56,35 @@ namespace YummyVerse.Scripts.View
             }
             var instantiator = new GameObjectInstantiator(gltfImport, _foodRoot.transform);
             await gltfImport.InstantiateMainSceneAsync(instantiator, ct);
+            
+            // 食べ物のモデルが変わったときにはオブジェクトごと再生成されているため、
+            // マテリアル互換性チェック・Transform設定・Scale調整を再び呼び出す。
             ApplyMaterialCompatibility();
             SetFoodTransform(initialTransform);
+            SetFoodScale(_foodViewModel.foodScale.Value);
+        }
+        
+        /// <summary>
+        /// 回転、座標を設定
+        /// </summary>
+        /// <param name="targetTransform">食べ物の回転と座標</param>
+        private void SetFoodTransform(Transform targetTransform)
+        {
+            if(_foodRoot == null || _foodAnchor == null) return; // 食べ物の3Dモデルが未設定の場合には位置を設定できない
+            if (targetTransform == null) return; // 初期値未設定時は座標を適用しない
+            _foodAnchor.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);
+            _foodRoot.transform.localPosition = Vector3.zero;
+            _foodRoot.transform.localRotation = Quaternion.identity;
+        }
+        
+        /// <summary>
+        /// 食べ物のスケールを変更
+        /// </summary>
+        /// <param name="scale">スケール</param>
+        private void SetFoodScale(float scale)
+        {
+            if(_foodRoot == null) return;
+            _foodRoot.transform.localScale = new Vector3(scale, scale, scale);
         }
 
         private void ApplyMaterialCompatibility()
@@ -153,14 +155,5 @@ namespace YummyVerse.Scripts.View
             target.SetFloat(targetProperty, source.GetFloat(sourceProperty));
         }
 
-        /// <summary>
-        /// 食べ物のスケールを変更
-        /// </summary>
-        /// <param name="scale">スケール</param>
-        private void SetFoodScale(float scale)
-        {
-            if(_foodRoot == null) return;
-            _foodRoot.transform.localScale = new Vector3(scale, scale, scale);
-        }
     }
 }

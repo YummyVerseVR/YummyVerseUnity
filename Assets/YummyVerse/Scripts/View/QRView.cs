@@ -1,4 +1,5 @@
 using Meta.XR.MRUtilityKit;
+using TMPro;
 using UnityEngine;
 using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.ViewModel.Interface;

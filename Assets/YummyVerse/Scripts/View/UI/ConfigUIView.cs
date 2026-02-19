@@ -20,11 +20,10 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private Camera targetCamera;
         [SerializeField] private Transform uiTransform;
         
-        private float displayDistanceFromCamera = 0.6f;
-        
-        
         private IConfigUIViewModel _configUIViewModel;
 
+        private float displayDistanceFromCamera = 0.6f;
+        
         [Inject]
         public void Construct(IConfigUIViewModel configUIViewModel)
         {
@@ -45,12 +44,16 @@ namespace YummyVerse.Scripts.View.UI
             
             _configUIViewModel.LastRequestHTTPStatus.Subscribe(v =>
             {
-                lastRequestHttpStatus.text = "Last Request HTTP Status : " + v;
+                lastRequestHttpStatus.text = "Last Request HTTP Status "
+                                             + (_configUIViewModel.IsStandaloneMode.Value ? "(Overridden by Standalone Mode) : " : ": ")
+                                             + v;
             }).AddTo(this);
 
-            _configUIViewModel.LastRequestGuid.Subscribe(v =>
+            _configUIViewModel.LastDetectedGuid.Subscribe(v =>
             {
-                lastRequestGuid.text = "Last Request GUID : " + v;
+                lastRequestGuid.text = "Last Request GUID " 
+                                       + (_configUIViewModel.IsStandaloneMode.Value ? "(Overridden by Standalone Mode) : " : ": ")
+                                       + v;
             }).AddTo(this);
             
             apiEndPointUrl.onEndEdit.AddListener(v => _configUIViewModel.UpdateEndPointUrl(v));
