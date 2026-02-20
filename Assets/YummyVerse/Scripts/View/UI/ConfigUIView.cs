@@ -55,12 +55,23 @@ namespace YummyVerse.Scripts.View.UI
                                        + (_configUIViewModel.IsStandaloneMode.Value ? "(Overridden by Standalone Mode) : " : ": ")
                                        + v;
             }).AddTo(this);
+
+            _configUIViewModel.APIEndPointUrl.Subscribe(SetAPIEndPointUrl).AddTo(this);
             
             apiEndPointUrl.onEndEdit.AddListener(v => _configUIViewModel.UpdateEndPointUrl(v));
             
             standaloneModeToggle.onValueChanged.AddListener(v => _configUIViewModel.SetStandaloneMode(v));
             
             foodScaleSlider.onValueChanged.AddListener(v => _configUIViewModel.SetFoodScale(v));
+            
+            testConnectionButton.OnClickAsObservable()
+                .SubscribeAwait(async (_, ct) => await _configUIViewModel.ConnectionTest(ct))
+                .AddTo(this);
+        }
+
+        private void SetAPIEndPointUrl(string url)
+        {
+            apiEndPointUrl.text = url;
         }
 
         private void SetMenuPositionInFrontOfCamera()

@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b611877cc7754346b327b6aa3cfc1fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.View.FoodView
+  _debugTrackableHierarchy: 0
 --- !u!114 &6816351977732592424
 MonoBehaviour:
   m_ObjectHideFlags: 0

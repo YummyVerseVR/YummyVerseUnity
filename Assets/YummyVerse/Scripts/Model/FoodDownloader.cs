@@ -28,9 +28,10 @@ namespace YummyVerse.Scripts.Model
             
             await req.SendWebRequest().WithCancellation(ct); // モデルをダウンロードする
 
-            result.StatusCode = (HttpStatusCode)req.responseCode; // タイムアウト時は0になる
+            result.StatusCode = (HttpStatusCode)req.responseCode;
+            result.IsConnectionError = req.result == UnityWebRequest.Result.ConnectionError;
             
-            // 0 or 400番台 or 500番台ならエラーがあるので、モデルの読み込みは行わずにreturn
+            // 0(失敗) or 400番台 or 500番台ならエラーがあるので、モデルの読み込みは行わずにreturn
             if (result.StatusCode is >= (HttpStatusCode)400 or 0)
             {
                 return result;

@@ -75,6 +75,7 @@ namespace YummyVerse.Scripts.View
             _foodAnchor.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);
             _foodRoot.transform.localPosition = Vector3.zero;
             _foodRoot.transform.localRotation = Quaternion.identity;
+            _foodRoot.transform.Rotate(90,0,0);
         }
         
         /// <summary>

@@ -1,6 +1,9 @@
 using System;
 using System.Net;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using R3;
+using YummyVerse.Scripts.Model.Struct;
 
 namespace YummyVerse.Scripts.ViewModel.Interface
 {
@@ -11,9 +14,10 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         ReactiveProperty<string> LastRequestHTTPStatus { get; }
         ReactiveProperty<string> LastDetectedGuid { get; }
         ReactiveProperty<bool> IsStandaloneMode { get; }
+        ReactiveProperty<float> FoodScale { get; }
 
         event Action OnAPIEndPointValidationError;
-        ReactiveProperty<HttpStatusCode> ConnectionTestResult { get; }
+        ReactiveProperty<TestConnectionResult> ConnectionTestResult { get; }
 
         void UpdateEndPointUrl(string url);
         
@@ -21,6 +25,6 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         
         void SetFoodScale(float scale);
         
-        void ConnectionTest();
+        UniTask ConnectionTest(CancellationToken ct);
     }
 }

@@ -1,7 +1,10 @@
 using System;
 using System.Net;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using R3;
 using YummyVerse.Scripts.Model.Interface;
+using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.ViewModel.Interface;
 using Zenject;
 
@@ -15,6 +18,7 @@ namespace YummyVerse.Scripts.ViewModel
         private readonly IFoodScaleManager _foodScaleManager;
         private readonly IInputLayer _inputLayer;
         private readonly IQRDetectionService _qrDetectionService;
+        private readonly INetworkConnectionTester _networkConnectionTester;
         
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
         
@@ -23,17 +27,19 @@ namespace YummyVerse.Scripts.ViewModel
         public ReactiveProperty<string> LastRequestHTTPStatus { get; } = new();
         public ReactiveProperty<string> LastDetectedGuid { get; }  = new();
         public ReactiveProperty<bool> IsStandaloneMode { get; }  = new();
+        public ReactiveProperty<float> FoodScale { get; } = new();
         
         public event Action OnAPIEndPointValidationError = delegate { };
         
-        public ReactiveProperty<HttpStatusCode> ConnectionTestResult { get; } = new(0);
+        public ReactiveProperty<TestConnectionResult> ConnectionTestResult { get; } = new();
 
         public ConfigUIViewModel(IEndPointManager endPointManager, 
             IFoodContext foodContext, 
             ISettingManager settingManager,  
             IFoodScaleManager foodScaleManager,
             IInputLayer inputLayer,
-            IQRDetectionService qrDetectionService
+            IQRDetectionService qrDetectionService,
+            INetworkConnectionTester networkConnectionTester
             )
         {
             _endPointManager = endPointManager;
@@ -42,14 +48,17 @@ namespace YummyVerse.Scripts.ViewModel
             _foodScaleManager = foodScaleManager;
             _inputLayer = inputLayer;
             _qrDetectionService = qrDetectionService;
+            _networkConnectionTester = networkConnectionTester;
         }
 
         public void Initialize()
         {
             // ダウンロード結果が更新されたらStatusCodeを更新
+            // ConnectionErrorの場合は出力結果を上書き
             _foodContext.downloadResult.Subscribe(v =>
             {
-                LastRequestHTTPStatus.Value = v.StatusCode.ToString();
+                if (v.IsConnectionError) LastRequestHTTPStatus.Value = "Network Connection Error";
+                else LastRequestHTTPStatus.Value = v.StatusCode.ToString();
             }).AddTo(_disposables);
 
             _qrDetectionService.OnChangeGUID.Subscribe(v =>
@@ -57,11 +66,13 @@ namespace YummyVerse.Scripts.ViewModel
                 LastDetectedGuid.Value = v.ToString();
             }).AddTo(_disposables);
             
-            // ボタンが押されたら表示状態を反転
+            // コントローラーのボタンが押されたら表示状態を反転
             Observable.FromEvent(
                     h => _inputLayer.OnConfigUIButtonClicked += h,
                     h => _inputLayer.OnConfigUIButtonClicked -= h)
                 .Subscribe(_ => IsVisible.Value = !IsVisible.Value).AddTo(_disposables);
+
+            FoodScale.Value = _foodScaleManager.FoodScale.Value;
         }
         
         public void Dispose()
@@ -94,12 +105,15 @@ namespace YummyVerse.Scripts.ViewModel
 
         public void SetFoodScale(float scale)
         {
-            _foodScaleManager.UpdateFoodScale(scale);
+            var success = _foodScaleManager.UpdateFoodScale(scale);
+            if(!success) return;
+            FoodScale.Value = scale;
         }
 
-        public void ConnectionTest()
+        public async UniTask ConnectionTest(CancellationToken ct)
         {
-            throw new NotImplementedException();
+            var result = await _networkConnectionTester.TestConnection(ct);
+            ConnectionTestResult.Value = result;
         }
 
     }
