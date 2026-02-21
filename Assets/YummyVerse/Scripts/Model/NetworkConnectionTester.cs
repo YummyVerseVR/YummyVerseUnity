@@ -1,5 +1,6 @@
 using System.Net;
 using System.Threading;
+using System;
 using Cysharp.Threading.Tasks;
 using R3;
 using UnityEngine.Networking;
@@ -23,12 +24,26 @@ namespace YummyVerse.Scripts.Model
         public async UniTask<TestConnectionResult> TestConnection(CancellationToken ct)
         {
             var url = _endPointManager.baseEndPointUrl;
-            var result = new TestConnectionResult();
+            var result = new TestConnectionResult
+            {
+                success = false,
+                StatusCode = 0
+            };
             using UnityWebRequest req = UnityWebRequest.Get(url);
             req.timeout = 10;
-            var res = await req.SendWebRequest().WithCancellation(ct);
-            result.success = res.result != UnityWebRequest.Result.ConnectionError;
-            result.StatusCode = (HttpStatusCode)res.responseCode;
+
+            try
+            {
+                var res = await req.SendWebRequest().WithCancellation(ct);
+                result.success = res.result != UnityWebRequest.Result.ConnectionError;
+                result.StatusCode = (HttpStatusCode)res.responseCode;
+            }
+            catch (OperationCanceledException) when (req.result == UnityWebRequest.Result.ConnectionError)
+            {
+                result.success = false;
+                result.StatusCode = 0;
+            }
+
             return result;
         }
     }

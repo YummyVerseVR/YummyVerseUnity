@@ -57,7 +57,7 @@ namespace YummyVerse.Scripts.ViewModel
             // ConnectionErrorの場合は出力結果を上書き
             _foodContext.downloadResult.Subscribe(v =>
             {
-                if (v.IsConnectionError) LastRequestHTTPStatus.Value = "Network Connection Error";
+                if (!v.success) LastRequestHTTPStatus.Value = "Network Connection Error";
                 else LastRequestHTTPStatus.Value = v.StatusCode.ToString();
             }).AddTo(_disposables);
 
@@ -73,6 +73,7 @@ namespace YummyVerse.Scripts.ViewModel
                 .Subscribe(_ => IsVisible.Value = !IsVisible.Value).AddTo(_disposables);
 
             FoodScale.Value = _foodScaleManager.FoodScale.Value;
+            APIEndPointUrl.Value = _endPointManager.baseEndPointUrl;
         }
         
         public void Dispose()
@@ -113,7 +114,7 @@ namespace YummyVerse.Scripts.ViewModel
         public async UniTask ConnectionTest(CancellationToken ct)
         {
             var result = await _networkConnectionTester.TestConnection(ct);
-            ConnectionTestResult.Value = result;
+            ConnectionTestResult.OnNext(result); // 接続するたびに結果を強制通知
         }
 
     }

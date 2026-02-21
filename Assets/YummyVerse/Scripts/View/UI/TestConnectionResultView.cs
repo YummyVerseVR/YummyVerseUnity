@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using YummyVerse.Scripts.ViewModel.Interface;
 using Zenject;
 using R3;
+using YummyVerse.Scripts.Model.Struct;
 
 namespace YummyVerse.Scripts.ViewModel
 {
@@ -31,13 +32,13 @@ namespace YummyVerse.Scripts.ViewModel
             okButton.onClick.AddListener(OnClickOk);
         }
 
-        private void ShowStatusDialog(HttpStatusCode status)
+        private void ShowStatusDialog(TestConnectionResult status)
         {
             canvasGroup.DOFade(1, 0.1f);
             canvasGroup.interactable = true;
             canvasGroup.blocksRaycasts = true;
-            statusCode.text = ((int)status).ToString();
-            statusDescription.text = status.ToString();
+            statusCode.text = status.success ? "No Connection Error" : "Connection Error";
+            statusDescription.text = "Status : " + status.StatusCode;
         }
         
         private void OnClickOk()

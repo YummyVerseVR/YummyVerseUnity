@@ -25,11 +25,16 @@ namespace YummyVerse.Scripts.Model
             FoodDownloadResult result = new FoodDownloadResult() { RequestedGuid = guid };
             using UnityWebRequest req = UnityWebRequest.Get(_endPointManager.baseEndPointUrl + guid.ToString() + "/model");
             req.timeout = 10; // 10秒でタイムアウトするように設定
-            
-            await req.SendWebRequest().WithCancellation(ct); // モデルをダウンロードする
 
-            result.StatusCode = (HttpStatusCode)req.responseCode;
-            result.IsConnectionError = req.result == UnityWebRequest.Result.ConnectionError;
+            try
+            {
+                await req.SendWebRequest().WithCancellation(ct); // モデルをダウンロードする
+                result.StatusCode = (HttpStatusCode)req.responseCode;
+            }
+            catch (OperationCanceledException) when (req.result == UnityWebRequest.Result.ConnectionError)
+            {
+                result.StatusCode = 0;
+            }
             
             // 0(失敗) or 400番台 or 500番台ならエラーがあるので、モデルの読み込みは行わずにreturn
             if (result.StatusCode is >= (HttpStatusCode)400 or 0)

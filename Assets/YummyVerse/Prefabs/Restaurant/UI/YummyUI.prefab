@@ -2018,7 +2018,7 @@ GameObject:
   - component: {fileID: 4648718280289249920}
   - component: {fileID: 8633671686370625909}
   - component: {fileID: 5219836823556852555}
-  - component: {fileID: 2492653267449090321}
+  - component: {fileID: 1838733814143722623}
   - component: {fileID: 2734785894328321341}
   - component: {fileID: 2528361463992955457}
   - component: {fileID: 2614805185669813836}
@@ -2079,7 +2079,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.ValidationErrorDialogView
   canvasGroup: {fileID: 3809161625165071239}
   _okButton: {fileID: 8254688649231039568}
---- !u!114 &2492653267449090321
+--- !u!114 &1838733814143722623
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2088,11 +2088,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 8854211564068036764}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f686a79d2d046c89363cbccccc6fbae, type: 3}
+  m_Script: {fileID: 11500000, guid: 10db7109d70145b7b2d69e79b7e679a7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.ValidationErrorDialogView
-  canvasGroup: {fileID: 3809161625165071239}
-  _okButton: {fileID: 8254688649231039568}
+  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.TestConnectionResultView
+  canvasGroup: {fileID: 6142183812357160586}
+  okButton: {fileID: 950291354691267157}
+  statusCode: {fileID: 8120677582170952229}
+  statusDescription: {fileID: 556551139248779920}
 --- !u!114 &2734785894328321341
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2978,11 +2980,38 @@ PrefabInstance:
       addedObject: {fileID: 627105350595928160}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ee824579eadf66544a0c3913fec1debf, type: 3}
+--- !u!114 &556551139248779920 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1234312488749823225, guid: ee824579eadf66544a0c3913fec1debf, type: 3}
+  m_PrefabInstance: {fileID: 1628170995082839657}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &1567574835039521004 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 241305303253945989, guid: ee824579eadf66544a0c3913fec1debf, type: 3}
   m_PrefabInstance: {fileID: 1628170995082839657}
   m_PrefabAsset: {fileID: 0}
+--- !u!225 &6142183812357160586 stripped
+CanvasGroup:
+  m_CorrespondingSourceObject: {fileID: 4874310172068165859, guid: ee824579eadf66544a0c3913fec1debf, type: 3}
+  m_PrefabInstance: {fileID: 1628170995082839657}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8120677582170952229 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7361729357112857676, guid: ee824579eadf66544a0c3913fec1debf, type: 3}
+  m_PrefabInstance: {fileID: 1628170995082839657}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2188860397658056257
 PrefabInstance:
   m_ObjectHideFlags: 0

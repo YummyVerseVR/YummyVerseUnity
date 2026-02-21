@@ -14,6 +14,7 @@ namespace YummyVerse.Scripts.Model.DI
             Container.BindInterfacesAndSelfTo<SettingManager>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<FoodScaleManager>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<InputLayer>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<NetworkConnectionTester>().AsSingle().NonLazy();
         }
     }
 }
