@@ -38,6 +38,11 @@ namespace YummyVerse.Scripts.Model
                 result.success = res.result != UnityWebRequest.Result.ConnectionError;
                 result.StatusCode = (HttpStatusCode)res.responseCode;
             }
+            catch (UnityWebRequestException)
+            {
+                result.success = req.result != UnityWebRequest.Result.ConnectionError;
+                result.StatusCode = (HttpStatusCode)req.responseCode;
+            }
             catch (OperationCanceledException) when (req.result == UnityWebRequest.Result.ConnectionError)
             {
                 result.success = false;

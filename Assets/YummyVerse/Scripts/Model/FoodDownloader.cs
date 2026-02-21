@@ -31,6 +31,10 @@ namespace YummyVerse.Scripts.Model
                 await req.SendWebRequest().WithCancellation(ct); // モデルをダウンロードする
                 result.StatusCode = (HttpStatusCode)req.responseCode;
             }
+            catch (UnityWebRequestException)
+            {
+                result.StatusCode = req.responseCode > 0 ? (HttpStatusCode)req.responseCode : 0;
+            }
             catch (OperationCanceledException) when (req.result == UnityWebRequest.Result.ConnectionError)
             {
                 result.StatusCode = 0;

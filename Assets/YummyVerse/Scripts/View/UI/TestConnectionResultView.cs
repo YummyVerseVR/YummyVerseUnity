@@ -27,7 +27,8 @@ namespace YummyVerse.Scripts.ViewModel
 
         private void Start()
         {
-            _configUIViewModel.ConnectionTestResult.Subscribe(ShowStatusDialog).AddTo(this);
+            // StatusCodeが0以上(発生し得る値)に変わったらダイアログを表示
+            _configUIViewModel.ConnectionTestResult.Where(v => v.StatusCode >= 0).Subscribe(ShowStatusDialog).AddTo(this);
             
             okButton.onClick.AddListener(OnClickOk);
         }
@@ -37,8 +38,9 @@ namespace YummyVerse.Scripts.ViewModel
             canvasGroup.DOFade(1, 0.1f);
             canvasGroup.interactable = true;
             canvasGroup.blocksRaycasts = true;
-            statusCode.text = status.success ? "No Connection Error" : "Connection Error";
+            statusCode.text = status.success ? "Reached Host" : "Not Reached Host";
             statusDescription.text = "Status : " + status.StatusCode;
+            statusDescription.color = (status.StatusCode is  >= (HttpStatusCode)400 or 0 ? Color.red : Color.white);
         }
         
         private void OnClickOk()
