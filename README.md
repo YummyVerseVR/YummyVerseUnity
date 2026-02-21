@@ -58,18 +58,18 @@ adb shell setprop debug.oculus.experimentalEnabled 1
 
   - `Standalone Foods` ウィンドウでは食べ物の名前が書かれたボタンを押すことで、食べ物を表示することができます。
 
-  > [!NOTE]
-  > `Standalone Mode` においても、食べ物の表示位置は **QRコードを認識した位置** になります。そのため、`Standalone Mode` 使用時は、食べ物を表示したい位置に **YummuVerse用の** 任意のQRコードを配置してください。
+> [!NOTE]
+> `Standalone Mode` においても、食べ物の表示位置は **QRコードを認識した位置** になります。そのため、`Standalone Mode` 使用時は、食べ物を表示したい位置に **YummuVerse用の** 任意のQRコードを配置してください。
 
-  > [!WARNING]
-  > StandaloneModeでは、Quest 3上の `storage/emulated/0/Android/data/com.DefaultCompany.YummyTemplate/TestData` 内から以下の3つのファイルを参照しています。(余談ですが、このパスがUnityにおける `Application.PersistentDataPath` 内の`TestData` フォルダです。)
-  > - `curry.glb`
-  > - `shrimp.glb`
-  > - `hamburg.glb`
-  >
-  > **これらのファイルが配置されていない場合、StandaloneModeは動作しません！！！！**
-  >
-  > 2026/2/21 時点で、ファイルの転送は `adb` コマンドを使った方法が利用可能であることを確認しています。
+> [!WARNING]
+> StandaloneModeでは、Quest 3上の `storage/emulated/0/Android/data/com.DefaultCompany.YummyTemplate/TestData` 内から以下の3つのファイルを参照しています。(余談ですが、このパスがUnityにおける `Application.PersistentDataPath` 内の`TestData` フォルダです。)
+> - `curry.glb`
+> - `shrimp.glb`
+> - `hamburg.glb`
+>
+> **これらのファイルが配置されていない場合、StandaloneModeは動作しません！！！！**
+>
+> 2026/2/21 時点で、ファイルの転送は `adb` コマンドを使った方法が利用可能であることを確認しています。
 
 # トラブルシューティング
 ## 確認項目( `StandaloneMode` が無効)
