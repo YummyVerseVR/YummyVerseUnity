@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f96af0a03a77415b819b6ba89f76a1c, type: 3}
+  m_Name: LocalFoodSO
+  m_EditorClassIdentifier: Assembly-CSharp::LocalFoodSO
+  entries:
+  - food: 0
+    Guid: f49f84d6-6eda-4032-a4c3-4e15b8bb13e8
+  - food: 1
+    Guid: 94d453ba-92fa-4b73-8fb7-7b03adb5e2b6
+  - food: 2
+    Guid: 67c262f2-f558-4126-90ef-8d672a7ec8da
