@@ -5,7 +5,7 @@ namespace YummyVerse.Scripts.Model
 {
     public class FoodScaleManager : IFoodScaleManager
     {
-        public ReactiveProperty<float> FoodScale { get; } = new ReactiveProperty<float>(0.5f);
+        public ReactiveProperty<float> FoodScale { get; } = new ReactiveProperty<float>(0.2f);
 
         public bool UpdateFoodScale(float scale)
         {

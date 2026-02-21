@@ -38,8 +38,15 @@ namespace YummyVerse.Scripts.View.UI
                 {
                     SetMenuPositionInFrontOfCamera();
                     canvasGroup.DOFade(1, 0.1f);
+                    canvasGroup.interactable = true;
+                    canvasGroup.blocksRaycasts = true;
                 }
-                else canvasGroup.DOFade(0, 0.1f);
+                else
+                {
+                    canvasGroup.DOFade(0, 0.1f);
+                    canvasGroup.interactable = false;
+                    canvasGroup.blocksRaycasts = false;
+                }
             }).AddTo(this);
             
             _configUIViewModel.LastRequestHTTPStatus.Subscribe(v =>
@@ -67,6 +74,8 @@ namespace YummyVerse.Scripts.View.UI
             testConnectionButton.OnClickAsObservable()
                 .SubscribeAwait(async (_, ct) => await _configUIViewModel.ConnectionTest(ct))
                 .AddTo(this);
+            
+            foodScaleSlider.value = _configUIViewModel.FoodScale.Value;
         }
 
         private void SetAPIEndPointUrl(string url)

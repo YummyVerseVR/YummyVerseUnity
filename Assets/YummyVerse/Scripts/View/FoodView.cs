@@ -29,7 +29,6 @@ namespace YummyVerse.Scripts.View
             _foodRoot = new GameObject("FoodRoot");
             _foodRoot.transform.SetParent(_foodAnchor, false);
             
-            
             _foodViewModel.foodGltf.SubscribeAwait(async (v, ct) =>
             {
                 await InstantiateFood(v, _foodViewModel.foodTransform.Value, ct);

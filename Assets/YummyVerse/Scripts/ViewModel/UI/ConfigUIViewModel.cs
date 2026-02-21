@@ -31,7 +31,12 @@ namespace YummyVerse.Scripts.ViewModel
         
         public event Action OnAPIEndPointValidationError = delegate { };
         
-        public ReactiveProperty<TestConnectionResult> ConnectionTestResult { get; } = new();
+        // StatusCodeの初期値は未使用の値を設定
+        public ReactiveProperty<TestConnectionResult> ConnectionTestResult { get; } = 
+            new( new TestConnectionResult() {
+                success =  false,
+                StatusCode = (HttpStatusCode)(-1)
+        });
 
         public ConfigUIViewModel(IEndPointManager endPointManager, 
             IFoodContext foodContext, 
