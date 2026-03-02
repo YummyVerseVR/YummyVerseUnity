@@ -16,6 +16,7 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private Button shrimpButton;
         [SerializeField] private Button curryButton;
         [SerializeField] private Button hamburgButton;
+        [SerializeField] private Button dragonStakeButton;
 
         [Inject]
         private void Construct(IStandaloneWindowViewModel viewModel)
@@ -33,6 +34,7 @@ namespace YummyVerse.Scripts.View.UI
             shrimpButton.OnClickAsObservable().Subscribe(_ => _viewModel.SpawnLocalFood(LocalFoods.Shrimp)).AddTo(this);
             curryButton.OnClickAsObservable().Subscribe(_ => _viewModel.SpawnLocalFood(LocalFoods.Curry)).AddTo(this);
             hamburgButton.OnClickAsObservable().Subscribe(_ => _viewModel.SpawnLocalFood(LocalFoods.Hamburg)).AddTo(this);
+            dragonStakeButton.OnClickAsObservable().Subscribe(_ => _viewModel.SpawnLocalFood(LocalFoods.DragonSteak)).AddTo(this);
         }
         private void ShowWindow()
         {

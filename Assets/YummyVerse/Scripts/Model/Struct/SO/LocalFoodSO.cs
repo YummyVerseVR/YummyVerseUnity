@@ -18,10 +18,28 @@ public class LocalFoodSO : ScriptableObject
     [SerializeField]
     private List<LocalFoodEntry> entries = new();
 
-    private Dictionary<LocalFoods, string> _dict  = new();
+    private Dictionary<LocalFoods, string> _dict  = new(); // LocalFoods→内部Guid の対応付け
 
-    private Dictionary<Guid, LocalFoods> _foodict = new();
+    private Dictionary<Guid, LocalFoods> _foodict = new(); // 内部Guid→LocalFoods の対応付け
 
+    // LocalFoods に対応する内部Guidを返す(内部的にはそのGuidの食べ物を読み込んだものとして扱う。)
+    public bool TryGetGuid(LocalFoods food, out Guid guid)
+    {
+        if (_dict.Count == 0) InitializeDict();
+        var success =_dict.TryGetValue(food, out var tmp);
+        guid = success ? Guid.Parse(tmp) :  Guid.Empty;
+        return success;
+    }
+
+    // 与えられたGuidが内部的にどのLocalFoodsに対応しているかを返す。(.glbファイル読み込み用)
+    public bool TryGetLocalFood(Guid guid, out LocalFoods food)
+    {
+        if (_foodict.Count == 0) InitializeFoodict();
+        var success = _foodict.TryGetValue(guid, out var tmp);
+        food = success ? tmp :  default(LocalFoods);
+        return success;
+    }
+    
     private void InitializeDict()
     {
         foreach (var e in entries)
@@ -51,19 +69,4 @@ public class LocalFoodSO : ScriptableObject
         }
     }
 
-    public bool TryGetGuid(LocalFoods food, out Guid guid)
-    {
-        if (_dict.Count == 0) InitializeDict();
-        var success =_dict.TryGetValue(food, out var tmp);
-        guid = success ? Guid.Parse(tmp) :  Guid.Empty;
-        return success;
-    }
-
-    public bool TryGetLocalFood(Guid guid, out LocalFoods food)
-    {
-        if (_foodict.Count == 0) InitializeFoodict();
-        var success = _foodict.TryGetValue(guid, out var tmp);
-        food = success ? tmp :  default(LocalFoods);
-        return success;
-    }
 }

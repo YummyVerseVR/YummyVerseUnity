@@ -19,3 +19,5 @@ MonoBehaviour:
     Guid: 94d453ba-92fa-4b73-8fb7-7b03adb5e2b6
   - food: 2
     Guid: 67c262f2-f558-4126-90ef-8d672a7ec8da
+  - food: 3
+    Guid: 9c075279-7ab3-452f-9f53-7ec28c3a5d5c

@@ -30,7 +30,8 @@ namespace YummyVerse.Scripts.Model
             {
                 LocalFoods.Curry => "curry.glb",
                 LocalFoods.Shrimp => "shrimp.glb",
-                LocalFoods.Hamburg => "hamburg.glb"
+                LocalFoods.Hamburg => "hamburg.glb",
+                LocalFoods.DragonSteak => "dragonsteak.glb",
             };
 
             var gltfPath = Application.persistentDataPath + "/TestData/" + foodNameStr;

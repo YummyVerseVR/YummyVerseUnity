@@ -66,6 +66,7 @@ adb shell setprop debug.oculus.experimentalEnabled 1
 > - `curry.glb`
 > - `shrimp.glb`
 > - `hamburg.glb`
+> - `dragonsteak.glb`
 >
 > **これらのファイルが配置されていない場合、StandaloneModeは動作しません！！！！**
 >

@@ -4,6 +4,7 @@ namespace YummyVerse.Scripts.Model.Struct.SO
     {
         Shrimp,
         Curry,
-        Hamburg
+        Hamburg,
+        DragonSteak
     }
 }
