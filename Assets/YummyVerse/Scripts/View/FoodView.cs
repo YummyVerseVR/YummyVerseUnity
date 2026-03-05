@@ -16,6 +16,7 @@ namespace YummyVerse.Scripts.View
 
         private Transform _foodAnchor;
         private GameObject _foodRoot; // シーンに生成する食べ物の3Dモデルは、このGameObjectの子として生成される。
+        private Transform _currentQRTransform;
 
         [Inject]
         public void Construct(IFoodViewModel foodViewModel)
@@ -64,6 +65,15 @@ namespace YummyVerse.Scripts.View
         }
         
         /// <summary>
+        /// QRコードのTransformへ毎フレーム追従させる
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (_currentQRTransform == null || _foodAnchor == null) return;
+            _foodAnchor.SetPositionAndRotation(_currentQRTransform.position, _currentQRTransform.rotation);
+        }
+
+        /// <summary>
         /// 回転、座標を設定
         /// </summary>
         /// <param name="targetTransform">食べ物の回転と座標</param>
@@ -71,6 +81,7 @@ namespace YummyVerse.Scripts.View
         {
             if(_foodRoot == null || _foodAnchor == null) return; // 食べ物の3Dモデルが未設定の場合には位置を設定できない
             if (targetTransform == null) return; // 初期値未設定時は座標を適用しない
+            _currentQRTransform = targetTransform;
             _foodAnchor.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);
             _foodRoot.transform.localPosition = Vector3.zero;
             _foodRoot.transform.localRotation = Quaternion.identity;
