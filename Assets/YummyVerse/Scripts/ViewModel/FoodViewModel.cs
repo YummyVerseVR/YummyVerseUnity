@@ -13,19 +13,23 @@ namespace YummyVerse.Scripts.ViewModel
         private readonly IFoodContext _foodContext;
         private readonly IQRDetectionService _qrDetectionService;
         private readonly IFoodScaleManager _foodScaleManager;
+        private readonly IInputLayer _inputLayer;
         
-        private CompositeDisposable _disposables = new CompositeDisposable();
 
         public ReactiveProperty<GltfImport> foodGltf { get; } = new(new());
         public ReactiveProperty<Transform> foodTransform { get; } = new();
         
         public ReactiveProperty<float> foodScale { get; } = new();
+        public event Action OnFoodDestroy;
+        
+        private CompositeDisposable _disposables = new CompositeDisposable();
 
-        public FoodViewModel(IFoodContext foodContext, IQRDetectionService qrDetectionService,  IFoodScaleManager foodScaleManager)
+        public FoodViewModel(IFoodContext foodContext, IQRDetectionService qrDetectionService,  IFoodScaleManager foodScaleManager, IInputLayer inputLayer)
         {
             _foodContext = foodContext;
             _qrDetectionService = qrDetectionService;
             _foodScaleManager = foodScaleManager;
+            _inputLayer = inputLayer;
         }
 
         public void Initialize()
@@ -49,6 +53,12 @@ namespace YummyVerse.Scripts.ViewModel
             
             // FoodScaleの設定値が更新されたらscaleを変更
             _foodScaleManager.FoodScale.Subscribe(v => foodScale.Value = v).AddTo(_disposables);
+            
+            // 食べ物破壊ボタンが押されたら食べ物破壊イベントを発火
+            Observable.FromEvent(
+                h => _inputLayer.OnFoodDestroyButtonClicked += h,
+                h => _inputLayer.OnFoodDestroyButtonClicked -= h
+                ).Subscribe(_ => OnFoodDestroy?.Invoke()).AddTo(_disposables);
         }
 
         public void Dispose()
