@@ -64,6 +64,8 @@ namespace YummyVerse.Scripts.View
             SetFoodScale(_foodViewModel.foodScale.Value);
         }
         
+        
+        
         /// <summary>
         /// QRコードのTransformへ毎フレーム追従させる
         /// </summary>

@@ -1,3 +1,4 @@
+using System;
 using Meta.XR.MRUtilityKit;
 using TMPro;
 using UnityEngine;
@@ -24,7 +25,7 @@ namespace YummyVerse.Scripts.View
         {
             if (trackable.TrackableType == OVRAnchor.TrackableType.QRCode)
             {
-                _qrViewModel.HandleTrackableAdded(new MRUKTrackableAdapter(trackable));
+                _qrViewModel.HandleTrackableAdded(new MRUKTrackableAdapter(trackable.transform, trackable.MarkerPayloadString));
             }
         }
     }
