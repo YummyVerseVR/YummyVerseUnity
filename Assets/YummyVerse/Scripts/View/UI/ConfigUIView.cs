@@ -69,13 +69,17 @@ namespace YummyVerse.Scripts.View.UI
             
             standaloneModeToggle.onValueChanged.AddListener(v => _configUIViewModel.SetStandaloneMode(v));
             
+            // スライダーの値が変化したら、その値をViewModelに知らせる
             foodScaleSlider.onValueChanged.AddListener(v => _configUIViewModel.SetFoodScale(v));
+            
+            // ViewModel側で値が設定された場合(スライダーで設定された値が有効である場合や、初期値が設定された場合)、その値をスライダーの見た目に反映する。
+            // (SetValueWithoutNotifyを用いて値を設定しているため、onValueChangedは発火しない。)
+            _configUIViewModel.FoodScale.Subscribe(v => foodScaleSlider.SetValueWithoutNotify(v)).AddTo(this);
             
             testConnectionButton.OnClickAsObservable()
                 .SubscribeAwait(async (_, ct) => await _configUIViewModel.ConnectionTest(ct))
                 .AddTo(this);
             
-            foodScaleSlider.value = _configUIViewModel.FoodScale.Value;
         }
 
         private void SetAPIEndPointUrl(string url)
