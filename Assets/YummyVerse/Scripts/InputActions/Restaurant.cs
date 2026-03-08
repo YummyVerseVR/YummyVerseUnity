@@ -128,7 +128,7 @@ namespace YummyVerse.Scripts.InputActions
                 {
                     ""name"": """",
                     ""id"": ""4a7e3cfc-2019-4e44-9ab4-d2df043db647"",
-                    ""path"": ""<XRController>{RightHand}/triggerPressed"",
+                    ""path"": ""<XRController>{RightHand}/secondaryButton"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",

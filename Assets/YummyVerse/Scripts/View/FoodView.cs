@@ -39,7 +39,7 @@ namespace YummyVerse.Scripts.View
             // 食べ物破壊ボタンが押されたら、食べ物を破壊
             Observable.FromEvent(
                 h => _foodViewModel.OnFoodDestroy += h,
-                h =>  _foodViewModel.OnFoodDestroy += h
+                h =>  _foodViewModel.OnFoodDestroy -= h
                 ).Subscribe(_ => TryDestroyFood()).AddTo(this);
             
             
