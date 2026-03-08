@@ -32,6 +32,7 @@ namespace YummyVerse.Scripts.ViewModel
         public void SpawnLocalFood(LocalFoods food)
         {
             if(!_localFoodSO.TryGetGuid(food, out var localFoodGuid)) return;
+            // Transformは元の位置をそのまま使用し、Guidのみ更新する
             _qrDetectionService.NotifyDetectQR(localFoodGuid, _qrDetectionService.OnChangeTransform.Value);
         }
 

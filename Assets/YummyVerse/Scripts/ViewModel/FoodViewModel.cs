@@ -1,3 +1,4 @@
+using System;
 using GLTFast;
 using YummyVerse.Scripts.Model.Interface;
 using Zenject;
@@ -7,11 +8,13 @@ using YummyVerse.Scripts.ViewModel.Interface;
 
 namespace YummyVerse.Scripts.ViewModel
 {
-    public class FoodViewModel : IFoodViewModel , IInitializable
+    public class FoodViewModel : IFoodViewModel , IInitializable, IDisposable
     {
         private readonly IFoodContext _foodContext;
         private readonly IQRDetectionService _qrDetectionService;
         private readonly IFoodScaleManager _foodScaleManager;
+        
+        private CompositeDisposable _disposables = new CompositeDisposable();
 
         public ReactiveProperty<GltfImport> foodGltf { get; } = new(new());
         public ReactiveProperty<Transform> foodTransform { get; } = new();
@@ -31,7 +34,7 @@ namespace YummyVerse.Scripts.ViewModel
             _foodContext.downloadResult.Where(v => v.success).Subscribe(v =>
             {
                 foodGltf.Value = v.Food.GltfImport;
-            });
+            }).AddTo(_disposables);
             
             // QRの位置情報が更新されたらtransformを更新
             _qrDetectionService.OnChangeTransform.Subscribe(v =>
@@ -42,11 +45,18 @@ namespace YummyVerse.Scripts.ViewModel
                 {
                     foodTransform.OnNext(v);
                 }
-            });
+            }).AddTo(_disposables);
             
-            // FoodScaleの設定値が更新されたらscaleを変呼応
-            _foodScaleManager.FoodScale.Subscribe(v => foodScale.Value = v);
+            // FoodScaleの設定値が更新されたらscaleを変更
+            _foodScaleManager.FoodScale.Subscribe(v => foodScale.Value = v).AddTo(_disposables);
         }
-        
+
+        public void Dispose()
+        {
+            _disposables?.Dispose();
+            foodGltf?.Dispose();
+            foodTransform?.Dispose();
+            foodScale?.Dispose();
+        }
     }
 }
