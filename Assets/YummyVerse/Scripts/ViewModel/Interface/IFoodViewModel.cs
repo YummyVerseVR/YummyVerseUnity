@@ -1,3 +1,4 @@
+using System;
 using GLTFast;
 using R3;
 using UnityEngine;
@@ -13,5 +14,7 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         ReactiveProperty<Transform> foodTransform { get; }
         
         ReactiveProperty<float>  foodScale { get; }
+
+        event Action OnFoodDestroy;
     }
 }

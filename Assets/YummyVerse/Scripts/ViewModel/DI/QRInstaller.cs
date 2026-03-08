@@ -7,8 +7,8 @@ namespace YummyVerse.Scripts.ViewModel.DI
     {
         public override void InstallBindings()
         {
-            Container.BindInterfacesAndSelfTo<QRViewModel>().AsSingle().NonLazy();
-            Container.BindInterfacesAndSelfTo<QRValueValidator>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<QRViewModel>().AsSingle();
+            Container.BindInterfacesAndSelfTo<QRValueValidator>().AsSingle();
         }
     }
 }

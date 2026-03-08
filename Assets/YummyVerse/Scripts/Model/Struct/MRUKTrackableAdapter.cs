@@ -6,13 +6,20 @@ namespace YummyVerse.Scripts.Model.Struct
 {
     public class MRUKTrackableAdapter : IQRTrackable
     {
-        private readonly MRUKTrackable _inner;
+        public Transform transform { get; }
+        public string qrPayload { get; }
 
-        public MRUKTrackableAdapter(MRUKTrackable inner)
+        public MRUKTrackableAdapter(Transform transform, string payload)
         {
-            _inner = inner;
+            this.transform = transform;
+            qrPayload = payload;
         }
-        public Transform transform => _inner.transform;
-        public string qrPayload => _inner.MarkerPayloadString;
+        
+        public MRUKTrackableAdapter(MRUKTrackable trackable)
+        {
+            this.transform = trackable.transform;
+            qrPayload = trackable.MarkerPayloadString;
+        } 
+
     }
 }

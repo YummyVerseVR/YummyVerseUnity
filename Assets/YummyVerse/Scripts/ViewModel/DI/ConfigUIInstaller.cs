@@ -6,8 +6,8 @@ namespace YummyVerse.Scripts.ViewModel.DI
     {
         public override void InstallBindings()
         {
-            Container.BindInterfacesAndSelfTo<ConfigUIViewModel>().AsSingle().NonLazy();
-            Container.BindInterfacesAndSelfTo<StandaloneWindowViewModel>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<ConfigUIViewModel>().AsSingle();
+            Container.BindInterfacesAndSelfTo<StandaloneWindowViewModel>().AsSingle();
         }
     }
 }

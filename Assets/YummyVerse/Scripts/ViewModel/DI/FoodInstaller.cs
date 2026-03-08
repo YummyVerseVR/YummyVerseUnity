@@ -6,7 +6,7 @@ namespace YummyVerse.Scripts.ViewModel.DI
     {
         public override void InstallBindings()
         {
-            Container.BindInterfacesAndSelfTo<FoodViewModel>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<FoodViewModel>().AsSingle();
         }
     }
 }

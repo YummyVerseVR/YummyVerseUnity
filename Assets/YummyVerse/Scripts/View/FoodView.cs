@@ -30,10 +30,17 @@ namespace YummyVerse.Scripts.View
             _foodRoot = new GameObject("FoodRoot");
             _foodRoot.transform.SetParent(_foodAnchor, false);
             
+            // ViewModelの食べ物情報が更新されたら、食べ物を再生成
             _foodViewModel.foodGltf.SubscribeAwait(async (v, ct) =>
             {
                 await InstantiateFood(v, _foodViewModel.foodTransform.Value, ct);
             }).AddTo(this);
+            
+            // 食べ物破壊ボタンが押されたら、食べ物を破壊
+            Observable.FromEvent(
+                h => _foodViewModel.OnFoodDestroy += h,
+                h =>  _foodViewModel.OnFoodDestroy += h
+                ).Subscribe(_ => TryDestroyFood()).AddTo(this);
             
             
             _foodViewModel.foodTransform.Subscribe(SetFoodTransform).AddTo(this);
@@ -48,12 +55,8 @@ namespace YummyVerse.Scripts.View
         /// <param name="ct">CancellationToken</param>
         private async UniTask InstantiateFood(GltfImport gltfImport, Transform initialTransform, CancellationToken ct)
         {
-            if (_foodRoot != null)
-            {
-                Destroy(_foodRoot);
-                _foodRoot = new GameObject("FoodRoot");
-                _foodRoot.transform.SetParent(_foodAnchor, false);
-            }
+            TryDestroyFood();
+            
             var instantiator = new GameObjectInstantiator(gltfImport, _foodRoot.transform);
             await gltfImport.InstantiateMainSceneAsync(instantiator, ct);
             
@@ -71,6 +74,14 @@ namespace YummyVerse.Scripts.View
         {
             if (_currentQRTransform == null || _foodAnchor == null) return;
             _foodAnchor.SetPositionAndRotation(_currentQRTransform.position, _currentQRTransform.rotation);
+        }
+
+        private void TryDestroyFood()
+        {
+            if(_foodRoot  == null) return;
+            Destroy(_foodRoot);
+            _foodRoot = new GameObject("FoodRoot");
+            _foodRoot.transform.SetParent(_foodAnchor, false);
         }
 
         /// <summary>
