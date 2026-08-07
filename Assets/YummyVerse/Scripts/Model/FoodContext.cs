@@ -39,6 +39,11 @@ namespace YummyVerse.Scripts.Model
             }).AddTo(_disposables);
         }
         
+        public void Reset()
+        {
+            downloadResult.Value = default;
+        }
+
         public void Dispose()
         {
             downloadResult?.Dispose();

@@ -23,7 +23,9 @@ namespace YummyVerse.Scripts.ViewModel
         }
 
         public ReactiveProperty<bool> IsVisible { get; } = new();
-        
+
+        public event Action<LocalFoods> OnLocalFoodSpawned;
+
         public void Initialize()
         {
             _settingManager.isStandaloneMode.Subscribe(v => IsVisible.Value = v).AddTo(_disposables);
@@ -34,6 +36,7 @@ namespace YummyVerse.Scripts.ViewModel
             if(!_localFoodSO.TryGetGuid(food, out var localFoodGuid)) return;
             // Transformは元の位置をそのまま使用し、Guidのみ更新する
             _qrDetectionService.NotifyDetectQR(localFoodGuid, _qrDetectionService.OnChangeTransform.Value);
+            OnLocalFoodSpawned?.Invoke(food);
         }
 
         public void Dispose()

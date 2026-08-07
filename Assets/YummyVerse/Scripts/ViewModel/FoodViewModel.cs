@@ -61,6 +61,11 @@ namespace YummyVerse.Scripts.ViewModel
                 ).Subscribe(_ => OnFoodDestroy?.Invoke()).AddTo(_disposables);
         }
 
+        public void RequestDestroyFood()
+        {
+            OnFoodDestroy?.Invoke();
+        }
+
         public void Dispose()
         {
             _disposables?.Dispose();

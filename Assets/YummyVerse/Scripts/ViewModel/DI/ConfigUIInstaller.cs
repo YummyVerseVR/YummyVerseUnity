@@ -7,7 +7,8 @@ namespace YummyVerse.Scripts.ViewModel.DI
         public override void InstallBindings()
         {
             Container.BindInterfacesAndSelfTo<ConfigUIViewModel>().AsSingle();
-            Container.BindInterfacesAndSelfTo<StandaloneWindowViewModel>().AsSingle();
+            // StandaloneWindowViewModel はチュートリアル層からも参照するため
+            // SharedViewModelInstaller でシーンスコープにバインドしている。
         }
     }
 }

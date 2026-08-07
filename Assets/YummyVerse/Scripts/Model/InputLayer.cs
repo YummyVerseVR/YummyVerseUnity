@@ -10,6 +10,8 @@ namespace YummyVerse.Scripts.Model
     {
         public event Action OnConfigUIButtonClicked;
         public event Action OnFoodDestroyButtonClicked;
+        public event Action OnStartButtonPressed;
+        public event Action OnStaffResetPressed;
 
         private RestaurantInput restaurantInput = new();
         
@@ -30,6 +32,18 @@ namespace YummyVerse.Scripts.Model
                     h => restaurantInput.Eating.DestroyFood.performed += h,
                     h => restaurantInput.Eating.DestroyFood.performed -= h)
                 .Subscribe(_ => OnFoodDestroyButtonClicked?.Invoke()).AddTo(_disposables);
+
+            // 決定/スタートボタン
+            Observable.FromEvent<UnityEngine.InputSystem.InputAction.CallbackContext>(
+                    h => restaurantInput.Eating.Start.performed += h,
+                    h => restaurantInput.Eating.Start.performed -= h)
+                .Subscribe(_ => OnStartButtonPressed?.Invoke()).AddTo(_disposables);
+
+            // スタッフ用リセットボタン
+            Observable.FromEvent<UnityEngine.InputSystem.InputAction.CallbackContext>(
+                    h => restaurantInput.Eating.StaffReset.performed += h,
+                    h => restaurantInput.Eating.StaffReset.performed -= h)
+                .Subscribe(_ => OnStaffResetPressed?.Invoke()).AddTo(_disposables);
         }
 
         public void Dispose()

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2398758565436744136}
   - component: {fileID: 8633244974416493876}
   - component: {fileID: 5111403448032081262}
+  - component: {fileID: 870514901225019024}
   m_Layer: 0
   m_Name: SceneContext
   m_TagString: Untagged
@@ -49,6 +50,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 6aa420152c6cd48aebd4fbf523419145, type: 2}
   _monoInstallers:
   - {fileID: 5111403448032081262}
+  - {fileID: 870514901225019024}
   _installerPrefabs: []
   _findSiblingMonoInstallers: 0
   _autoRun: 1
@@ -79,3 +81,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9597eee6550ff427fb24b0a9aba1fa6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.Model.DI.RestaurantInstaller
+--- !u!114 &870514901225019024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5656373491961969622}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e882d6bda33704120949320840a91b1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.DI.TutorialInstaller
+  tutorialConfig: {fileID: 11400000, guid: 44397d1f39c704352a950ec519a73e4d, type: 2}

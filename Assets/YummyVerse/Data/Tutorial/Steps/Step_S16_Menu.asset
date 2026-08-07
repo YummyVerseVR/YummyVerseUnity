@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6986bd0a6cde749e4a0c05afcfcc47ed, type: 3}
+  m_Name: Step_S16_Menu
+  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps.ChoiceStep
+  stepId: S16
+  skippableOnRepeat: 0
+  prompt:
+    m_TableReference:
+      m_TableCollectionName: TutorialStrings
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: S16.Prompt
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  options:
+  - label:
+      m_TableReference:
+        m_TableCollectionName: TutorialStrings
+      m_TableEntryReference:
+        m_KeyId: 0
+        m_Key: S16.Shrimp
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
+    value: Shrimp
+    subSequence: {fileID: 0}
+    firstTimeUserEffect: 0
+  - label:
+      m_TableReference:
+        m_TableCollectionName: TutorialStrings
+      m_TableEntryReference:
+        m_KeyId: 0
+        m_Key: S16.Curry
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
+    value: Curry
+    subSequence: {fileID: 0}
+    firstTimeUserEffect: 0
+  - label:
+      m_TableReference:
+        m_TableCollectionName: TutorialStrings
+      m_TableEntryReference:
+        m_KeyId: 0
+        m_Key: S16.Hamburg
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
+    value: Hamburg
+    subSequence: {fileID: 0}
+    firstTimeUserEffect: 0
+  - label:
+      m_TableReference:
+        m_TableCollectionName: TutorialStrings
+      m_TableEntryReference:
+        m_KeyId: 0
+        m_Key: S16.DragonSteak
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
+    value: DragonSteak
+    subSequence: {fileID: 0}
+    firstTimeUserEffect: 0
+  timeoutSeconds: 30
+  defaultOptionIndex: 0
+  blackboardKey: menu
+  references:
+    version: 2
+    RefIds: []

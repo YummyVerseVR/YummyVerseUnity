@@ -28,5 +28,16 @@ namespace YummyVerse.Scripts.View
                 _qrViewModel.HandleTrackableAdded(new MRUKTrackableAdapter(trackable.transform, trackable.MarkerPayloadString));
             }
         }
+
+        /// <summary>
+        /// MRUK の TrackableRemoved から呼ばれる。プレハブ側の UnityEvent に接続すること。
+        /// </summary>
+        public void OnTrackableRemoved(MRUKTrackable trackable)
+        {
+            if (trackable.TrackableType == OVRAnchor.TrackableType.QRCode)
+            {
+                _qrViewModel.HandleTrackableRemoved(new MRUKTrackableAdapter(trackable.transform, trackable.MarkerPayloadString));
+            }
+        }
     }
 }

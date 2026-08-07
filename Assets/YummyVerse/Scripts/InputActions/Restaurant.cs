@@ -111,6 +111,24 @@ namespace YummyVerse.Scripts.InputActions
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Start"",
+                    ""type"": ""Button"",
+                    ""id"": ""5c1f0d0e-2c1a-4c6b-9a3e-6b7d1f2a8c40"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""StaffReset"",
+                    ""type"": ""Button"",
+                    ""id"": ""9d2b7a41-6e58-4f13-bb90-3a45c8e1d772"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -133,6 +151,39 @@ namespace YummyVerse.Scripts.InputActions
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""DestroyFood"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1f6c0b22-4d31-4a58-8f0c-52e9a7b6d011"",
+                    ""path"": ""<XRController>{RightHand}/triggerPressed"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Start"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""7a4e5d93-8c02-41bf-95d6-0b1e3f7c9a28"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Start"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c05b1e77-3f49-4d2a-a6b8-84c1d5e0f933"",
+                    ""path"": ""<Keyboard>/f5"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""StaffReset"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -173,6 +224,8 @@ namespace YummyVerse.Scripts.InputActions
             m_Eating = asset.FindActionMap("Eating", throwIfNotFound: true);
             m_Eating_TurnOnMenu = m_Eating.FindAction("TurnOnMenu", throwIfNotFound: true);
             m_Eating_DestroyFood = m_Eating.FindAction("DestroyFood", throwIfNotFound: true);
+            m_Eating_Start = m_Eating.FindAction("Start", throwIfNotFound: true);
+            m_Eating_StaffReset = m_Eating.FindAction("StaffReset", throwIfNotFound: true);
             // Menu
             m_Menu = asset.FindActionMap("Menu", throwIfNotFound: true);
             m_Menu_TurnOffMenu = m_Menu.FindAction("TurnOffMenu", throwIfNotFound: true);
@@ -259,6 +312,8 @@ namespace YummyVerse.Scripts.InputActions
         private List<IEatingActions> m_EatingActionsCallbackInterfaces = new List<IEatingActions>();
         private readonly InputAction m_Eating_TurnOnMenu;
         private readonly InputAction m_Eating_DestroyFood;
+        private readonly InputAction m_Eating_Start;
+        private readonly InputAction m_Eating_StaffReset;
         /// <summary>
         /// Provides access to input actions defined in input action map "Eating".
         /// </summary>
@@ -278,6 +333,14 @@ namespace YummyVerse.Scripts.InputActions
             /// Provides access to the underlying input action "Eating/DestroyFood".
             /// </summary>
             public InputAction @DestroyFood => m_Wrapper.m_Eating_DestroyFood;
+            /// <summary>
+            /// Provides access to the underlying input action "Eating/Start".
+            /// </summary>
+            public InputAction @Start => m_Wrapper.m_Eating_Start;
+            /// <summary>
+            /// Provides access to the underlying input action "Eating/StaffReset".
+            /// </summary>
+            public InputAction @StaffReset => m_Wrapper.m_Eating_StaffReset;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -310,6 +373,12 @@ namespace YummyVerse.Scripts.InputActions
                 @DestroyFood.started += instance.OnDestroyFood;
                 @DestroyFood.performed += instance.OnDestroyFood;
                 @DestroyFood.canceled += instance.OnDestroyFood;
+                @Start.started += instance.OnStart;
+                @Start.performed += instance.OnStart;
+                @Start.canceled += instance.OnStart;
+                @StaffReset.started += instance.OnStaffReset;
+                @StaffReset.performed += instance.OnStaffReset;
+                @StaffReset.canceled += instance.OnStaffReset;
             }
 
             /// <summary>
@@ -327,6 +396,12 @@ namespace YummyVerse.Scripts.InputActions
                 @DestroyFood.started -= instance.OnDestroyFood;
                 @DestroyFood.performed -= instance.OnDestroyFood;
                 @DestroyFood.canceled -= instance.OnDestroyFood;
+                @Start.started -= instance.OnStart;
+                @Start.performed -= instance.OnStart;
+                @Start.canceled -= instance.OnStart;
+                @StaffReset.started -= instance.OnStaffReset;
+                @StaffReset.performed -= instance.OnStaffReset;
+                @StaffReset.canceled -= instance.OnStaffReset;
             }
 
             /// <summary>
@@ -477,6 +552,20 @@ namespace YummyVerse.Scripts.InputActions
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnDestroyFood(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Start" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnStart(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "StaffReset" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnStaffReset(InputAction.CallbackContext context);
         }
         /// <summary>
         /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Menu" which allows adding and removing callbacks.

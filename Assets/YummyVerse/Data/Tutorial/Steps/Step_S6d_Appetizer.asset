@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eeffeedbc87334bfb92258ba638ac0e0, type: 3}
+  m_Name: Step_S6d_Appetizer
+  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps.NarrationStep
+  stepId: S6'
+  skippableOnRepeat: 1
+  message:
+    m_TableReference:
+      m_TableCollectionName: TutorialStrings
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: S6d
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  voiceClip: {fileID: 0}
+  completionCondition: {fileID: 11400000, guid: 689a19f2028ea4996aa3cfbbf716a753, type: 2}
+  onCompletedCommand: 1
+  keepMessageVisible: 0
+  references:
+    version: 2
+    RefIds: []
