@@ -90,13 +90,14 @@ namespace YummyVerse.Scripts.View.UI
 
         private void SetMenuPositionInFrontOfCamera()
         {
-            if (targetCamera == null || uiTransform == null)
+            var camera = targetCamera != null ? targetCamera : Camera.main;
+            if (camera == null || uiTransform == null)
             {
                 Debug.LogWarning("ConfigUIView: targetCamera or uiTransform is not assigned.");
                 return;
             }
 
-            var cameraTransform = targetCamera.transform;
+            var cameraTransform = camera.transform;
             uiTransform.position = cameraTransform.position + cameraTransform.forward * displayDistanceFromCamera;
             uiTransform.rotation = Quaternion.LookRotation(cameraTransform.forward, cameraTransform.up);
         }
