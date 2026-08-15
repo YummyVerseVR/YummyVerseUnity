@@ -219,8 +219,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Welcome to YummyVerse
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 6d34d264dcbda534b839bd11366bfce8, type: 2}
-  m_sharedMaterial: {fileID: 2119413175553802479, guid: 6d34d264dcbda534b839bd11366bfce8, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 7c78204fc89ac43d4ae6e24b943416a0, type: 2}
+  m_sharedMaterial: {fileID: -694772432730310455, guid: 7c78204fc89ac43d4ae6e24b943416a0, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -347,7 +347,7 @@ PrefabInstance:
     - target: {fileID: 2504795716125736505, guid: 6b196de96e7d16b4297c1980179ae439, type: 3}
       propertyPath: '_themes.Array.data[0]'
       value: 
-      objectReference: {fileID: 11400000, guid: 4b2fdc959511e154cb98df0433028c9b, type: 2}
+      objectReference: {fileID: 11400000, guid: 932a564d114914ca889f3aaf14d572e0, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
