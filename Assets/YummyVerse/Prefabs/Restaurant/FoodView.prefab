@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7315710835427032935}
   - component: {fileID: 6816351977732592424}
   - component: {fileID: 621372915076757676}
+  - component: {fileID: 6369817826643359387}
   m_Layer: 0
   m_Name: FoodView
   m_TagString: Untagged
@@ -78,3 +79,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc7d351459a9468790f22be4079f1dea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.DI.FoodInstaller
+--- !u!114 &6369817826643359387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7620114555719955210}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94b849f7ace65403483f4596bacf0eb9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.View.FoodPlacementCubeView

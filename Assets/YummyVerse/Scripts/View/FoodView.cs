@@ -16,7 +16,7 @@ namespace YummyVerse.Scripts.View
 
         private Transform _foodAnchor;
         private GameObject _foodRoot; // シーンに生成する食べ物の3Dモデルは、このGameObjectの子として生成される。
-        private Transform _currentQRTransform;
+        private Transform _currentPlacementTransform;
 
         [Inject]
         public void Construct(IFoodViewModel foodViewModel)
@@ -27,6 +27,7 @@ namespace YummyVerse.Scripts.View
         private void Start()
         {
             _foodAnchor = new GameObject("FoodWorldAnchor").transform;
+            _foodAnchor.gameObject.SetActive(false);
             _foodRoot = new GameObject("FoodRoot");
             _foodRoot.transform.SetParent(_foodAnchor, false);
             
@@ -68,12 +69,12 @@ namespace YummyVerse.Scripts.View
         }
         
         /// <summary>
-        /// QRコードのTransformへ毎フレーム追従させる
+        /// Spatial Anchor配下の表示位置へ毎フレーム追従させる
         /// </summary>
         private void LateUpdate()
         {
-            if (_currentQRTransform == null || _foodAnchor == null) return;
-            _foodAnchor.SetPositionAndRotation(_currentQRTransform.position, _currentQRTransform.rotation);
+            if (_currentPlacementTransform == null || _foodAnchor == null) return;
+            _foodAnchor.SetPositionAndRotation(_currentPlacementTransform.position, _currentPlacementTransform.rotation);
         }
 
         private void TryDestroyFood()
@@ -91,8 +92,15 @@ namespace YummyVerse.Scripts.View
         private void SetFoodTransform(Transform targetTransform)
         {
             if(_foodRoot == null || _foodAnchor == null) return; // 食べ物の3Dモデルが未設定の場合には位置を設定できない
-            if (targetTransform == null) return; // 初期値未設定時は座標を適用しない
-            _currentQRTransform = targetTransform;
+            if (targetTransform == null)
+            {
+                _currentPlacementTransform = null;
+                _foodAnchor.gameObject.SetActive(false); // Anchor未設定時にワールド原点へ誤表示しない
+                return;
+            }
+
+            _currentPlacementTransform = targetTransform;
+            _foodAnchor.gameObject.SetActive(true);
             _foodAnchor.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);
             _foodRoot.transform.localPosition = Vector3.zero;
             _foodRoot.transform.localRotation = Quaternion.identity;

@@ -30,7 +30,7 @@ GameCommandRouter ──> 既存の FoodViewModel / StandaloneWindowViewModel   
 | ステップ | `ViewModel/Tutorial/SO/Steps/` (Narration / Task / Choice の3種のみ) |
 | 完了条件 | `ViewModel/Tutorial/SO/Conditions/` (5種) |
 | 表示 | `ViewModel/Tutorial/*Presenter.cs` + `View/Tutorial/*View.cs` |
-| ゲーム機能 | 既存の `QRDetectionService` / `FoodViewModel` / `StandaloneWindowViewModel` など |
+| ゲーム機能 | 既存の `QRDetectionService` / `FoodPlacementService` / `FoodViewModel` / `StandaloneWindowViewModel` など |
 
 ---
 
@@ -94,6 +94,16 @@ TutorialConfig.asset
 
 4. `MRUK.prefab` の `TrackableRemoved` UnityEvent に **`QRView.OnTrackableRemoved`** を接続（現在空欄。QR ロストの検知に必要）
 5. すくい判定・完食判定が未実装の間は、Dummy 系オブジェクトに **`DummyGameEventView`** を追加
+
+### 1-5. Spatial Anchorと食べ物位置の設定
+
+1. Quest上で右コントローラーの `A` ボタンを押し、管理画面を開く。
+2. 水色の設定用CubeをGripで掴み、展示基準にする位置へ移動する。
+3. `Set / Update Spatial Anchor` を押す。保存完了の表示を確認する。
+4. Spatial Anchorは動かさず、Cubeだけを食べ物の表示位置へ移動する。
+5. `Lock Food Position` を押す。
+
+QRのTransformは表示位置に使わない。Anchor UUIDとCubeのanchor-relative poseは端末へ保存され、次回起動時にload/localizeして復元される。復元できない場合、食品はワールド原点へ表示されず、管理画面から再設定する。
 
 ---
 
@@ -263,6 +273,8 @@ TaskStep は詰まりを前提に3段階で扱う。
 - ダウンロード結果 → `IFoodContext.Reset()`
 - QR認識状態 → `IQRDetectionService.Reset()`
 - 無操作監視 → `IIdleWatcher.SetActive(false)`
+
+Spatial Anchorと固定済みの食べ物位置は来場者ごとの状態ではないため、このリセット対象へ追加しない。再設定は管理画面の `Set / Update Spatial Anchor` と `Lock Food Position` で明示的に行う。
 
 加えて `SessionController.ResetToAttractAsync()` が全 Presenter を隠し、
 `TutorialContext.ResetForNewSession()` が Blackboard と `IsFirstTimeUser` を、

@@ -25,6 +25,11 @@ namespace YummyVerse.Scripts.Model
             }
         }
 
+        public void NotifyFoodGuid(Guid guid)
+        {
+            OnChangeGUID.Value = guid;
+        }
+
         public void NotifyLostQR()
         {
             _onLost.OnNext(Unit.Default);

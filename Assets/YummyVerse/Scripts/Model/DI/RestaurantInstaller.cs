@@ -13,6 +13,9 @@ namespace YummyVerse.Scripts.Model.DI
             Container.BindInterfacesAndSelfTo<QRDetectionService>().AsSingle();
             Container.BindInterfacesAndSelfTo<SettingManager>().AsSingle();
             Container.BindInterfacesAndSelfTo<FoodScaleManager>().AsSingle();
+            Container.BindInterfacesAndSelfTo<PlayerPrefsFoodPlacementStore>().AsSingle();
+            Container.BindInterfacesAndSelfTo<MetaSpatialAnchorBackend>().AsSingle();
+            Container.BindInterfacesAndSelfTo<FoodPlacementService>().AsSingle();
             Container.BindInterfacesAndSelfTo<InputLayer>().AsSingle();
             Container.BindInterfacesAndSelfTo<NetworkConnectionTester>().AsSingle();
 

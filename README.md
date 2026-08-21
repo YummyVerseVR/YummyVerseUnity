@@ -4,7 +4,7 @@
 # インストール方法
 
 ## 1. Unity HubとUnity Editorのインストール
-Unity Hubをインストールし、Unity Editorのバージョン6000.2.0f1をインストールします
+Unity Hubをインストールし、Unity Editorのバージョン6000.2.6f2をインストールします。
 
 ## 2. リポジトリのクローン
 このリポジトリをクローンします。
@@ -40,8 +40,9 @@ adb shell setprop debug.oculus.experimentalEnabled 1
 
 # 使い方
 ## 食べる
-開いたシーンでQRコードを見つめていれば食べ物が出てきます。
-2026年2月の更新で、シーンを再読み込みしなくても読み込むQRを変えることで他の食べ物を体験できるようになりました。
+初回は運営向け管理画面で Spatial Anchor と食べ物の表示位置を設定します。
+設定後、QRコードを見つめると、そのGUIDに対応する食べ物が保存済みの位置へ表示されます。
+QRコードは食べ物の選択にだけ使用し、表示位置と回転には使用しません。
 
 ## 食べ物を破壊する
 右手コントローラーの `B` ボタンを押すことで、現在シーンに存在する食べ物を破壊することができます。
@@ -55,6 +56,10 @@ adb shell setprop debug.oculus.experimentalEnabled 1
 
 - `Food Scale`は食べ物の大きさを調整できます。食べ物が大きすぎる、小さすぎる場合に利用してください。
 
+- `Set / Update Spatial Anchor` は、水色の設定用Cubeの現在位置へ展示基準となるSpatial Anchorを作成して保存します。周囲が十分に見える明るい場所で実行してください。
+
+- `Lock Food Position` は、コントローラーのGripで移動した設定用Cubeの位置を食べ物の表示位置として固定します。先にSpatial Anchorを設定する必要があります。Anchor UUIDとAnchorからの相対位置は端末へ保存され、次回起動時に復元されます。
+
 - `QR Detection & Food 3D Model Download Status` では、Quest 3が認識したQRコードに書かれているGUIDと、直近の食べ物の3Dモデルのダウンロードリクエストの成否(表示内容はHTTP Status Code準拠)が表示されます。後述する `StandaloneMode` 時には、ファイル読み込み結果が表示されます。
 
 - `Standalone Mode` を有効にすると、Yummy Control Serverに依存せずに事前に用意した食べ物を表示することができます。また、画面右側に `Standalone Foods` ウィンドウが表示されます。
@@ -62,7 +67,7 @@ adb shell setprop debug.oculus.experimentalEnabled 1
   - `Standalone Foods` ウィンドウでは食べ物の名前が書かれたボタンを押すことで、食べ物を表示することができます。
 
 > [!NOTE]
-> `Standalone Mode` においても、食べ物の表示位置は **QRコードを認識した位置** になります。そのため、`Standalone Mode` 使用時は、食べ物を表示したい位置に **YummuVerse用の** 任意のQRコードを配置してください。
+> `Standalone Mode` でも通常モードと同じ保存済みSpatial Anchor位置を使用します。表示位置を決めるためのQRコードは不要です。
 
 > [!WARNING]
 > StandaloneModeでは、Quest 3上の `storage/emulated/0/Android/data/com.DefaultCompany.YummyTemplate/TestData` 内から以下の3つのファイルを参照しています。(余談ですが、このパスがUnityにおける `Application.PersistentDataPath` 内の`TestData` フォルダです。)
@@ -89,11 +94,15 @@ adb shell setprop debug.oculus.experimentalEnabled 1
 4. `Last Detected GUID` が読み込んだQRコードの値に更新されているか？
   - `Last Detected GUID` が更新されない場合には、Quest 3の実験的機能が有効化されていない可能性があります。 `4. Quest 3で実験的機能を有効にする` の章を参考に、ADBコマンドで実験的機能を有効化してください。
 
+5. 管理画面のSpatial Anchor状態が `Food position is fixed` または復元完了になっているか？
+  - 未設定の場合は、水色のCubeを希望位置へ置いて `Set / Update Spatial Anchor` を押し、必要に応じてCubeを移動してから `Lock Food Position` を押してください。
+  - 保存に失敗する場合は周囲を見回して空間情報を増やし、照明を確認して再実行してください。
+
 ## 確認項目( `StandaloneMode` が有効)
 1. `.glb` ファイルが所定のディレクトリに配置されているか？
   - `【運営向け】管理画面` の後半のStandaloneModeの説明を読んでください。
 
 ---
-最終更新 : 2026/3/8
+最終更新 : 2026/8/21
 
 更新者 : Inoyu

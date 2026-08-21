@@ -19,6 +19,9 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private Slider foodScaleSlider;
         [SerializeField] private Camera targetCamera;
         [SerializeField] private Transform uiTransform;
+        [SerializeField] private Button spatialAnchorButton;
+        [SerializeField] private Button fixFoodPositionButton;
+        [SerializeField] private TextMeshProUGUI spatialPlacementStatus;
         
         private IConfigUIViewModel _configUIViewModel;
 
@@ -76,10 +79,42 @@ namespace YummyVerse.Scripts.View.UI
             // ViewModel側で値が設定された場合(スライダーで設定された値が有効である場合や、初期値が設定された場合)、その値をスライダーの見た目に反映する。
             // (SetValueWithoutNotifyを用いて値を設定しているため、onValueChangedは発火しない。)
             _configUIViewModel.FoodScale.Subscribe(v => foodScaleSlider.SetValueWithoutNotify(v)).AddTo(this);
+
+            _configUIViewModel.SpatialPlacementStatus.Subscribe(v =>
+            {
+                if (spatialPlacementStatus != null) spatialPlacementStatus.text = v;
+            }).AddTo(this);
+
+            Observable.CombineLatest(
+                    _configUIViewModel.IsSpatialPlacementBusy,
+                    _configUIViewModel.IsSpatialAnchorReady,
+                    (isBusy, isAnchorReady) => (isBusy, isAnchorReady))
+                .Subscribe(state =>
+                {
+                    if (spatialAnchorButton != null) spatialAnchorButton.interactable = !state.isBusy;
+                    if (fixFoodPositionButton != null)
+                    {
+                        fixFoodPositionButton.interactable = !state.isBusy && state.isAnchorReady;
+                    }
+                }).AddTo(this);
             
             testConnectionButton.OnClickAsObservable()
                 .SubscribeAwait(async (_, ct) => await _configUIViewModel.ConnectionTest(ct))
                 .AddTo(this);
+
+            if (spatialAnchorButton != null)
+            {
+                spatialAnchorButton.OnClickAsObservable()
+                    .SubscribeAwait(async (_, ct) => await _configUIViewModel.SetSpatialAnchor(ct))
+                    .AddTo(this);
+            }
+
+            if (fixFoodPositionButton != null)
+            {
+                fixFoodPositionButton.OnClickAsObservable()
+                    .SubscribeAwait(async (_, ct) => await _configUIViewModel.FixFoodPosition(ct))
+                    .AddTo(this);
+            }
             
         }
 

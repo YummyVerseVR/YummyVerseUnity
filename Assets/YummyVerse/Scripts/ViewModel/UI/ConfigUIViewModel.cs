@@ -18,6 +18,7 @@ namespace YummyVerse.Scripts.ViewModel
         private readonly IFoodScaleManager _foodScaleManager;
         private readonly IInputLayer _inputLayer;
         private readonly IQRDetectionService _qrDetectionService;
+        private readonly IFoodPlacementService _foodPlacementService;
         private readonly INetworkConnectionTester _networkConnectionTester;
         
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
@@ -28,6 +29,10 @@ namespace YummyVerse.Scripts.ViewModel
         public ReactiveProperty<string> LastDetectedGuid { get; }  = new();
         public ReactiveProperty<bool> IsStandaloneMode { get; }  = new();
         public ReactiveProperty<float> FoodScale { get; } = new();
+        public ReactiveProperty<string> SpatialPlacementStatus { get; } = new();
+        public ReactiveProperty<bool> IsSpatialAnchorReady { get; } = new();
+        public ReactiveProperty<bool> IsFoodPositionFixed { get; } = new();
+        public ReactiveProperty<bool> IsSpatialPlacementBusy { get; } = new();
         
         public event Action OnAPIEndPointValidationError = delegate { };
         
@@ -44,6 +49,7 @@ namespace YummyVerse.Scripts.ViewModel
             IFoodScaleManager foodScaleManager,
             IInputLayer inputLayer,
             IQRDetectionService qrDetectionService,
+            IFoodPlacementService foodPlacementService,
             INetworkConnectionTester networkConnectionTester
             )
         {
@@ -53,6 +59,7 @@ namespace YummyVerse.Scripts.ViewModel
             _foodScaleManager = foodScaleManager;
             _inputLayer = inputLayer;
             _qrDetectionService = qrDetectionService;
+            _foodPlacementService = foodPlacementService;
             _networkConnectionTester = networkConnectionTester;
         }
 
@@ -70,12 +77,29 @@ namespace YummyVerse.Scripts.ViewModel
             {
                 LastDetectedGuid.Value = v.ToString();
             }).AddTo(_disposables);
+
+            _foodPlacementService.StatusMessage
+                .Subscribe(v => SpatialPlacementStatus.Value = v)
+                .AddTo(_disposables);
+            _foodPlacementService.IsAnchorReady
+                .Subscribe(v => IsSpatialAnchorReady.Value = v)
+                .AddTo(_disposables);
+            _foodPlacementService.IsFoodPositionFixed
+                .Subscribe(v => IsFoodPositionFixed.Value = v)
+                .AddTo(_disposables);
+            _foodPlacementService.IsBusy
+                .Subscribe(v => IsSpatialPlacementBusy.Value = v)
+                .AddTo(_disposables);
             
             // コントローラーのボタンが押されたら表示状態を反転
             Observable.FromEvent(
                     h => _inputLayer.OnConfigUIButtonClicked += h,
                     h => _inputLayer.OnConfigUIButtonClicked -= h)
-                .Subscribe(_ => IsVisible.Value = !IsVisible.Value).AddTo(_disposables);
+                .Subscribe(_ =>
+                {
+                    IsVisible.Value = !IsVisible.Value;
+                    _foodPlacementService.SetConfigurationVisible(IsVisible.Value);
+                }).AddTo(_disposables);
 
             FoodScale.Value = _foodScaleManager.FoodScale.Value;
             APIEndPointUrl.Value = _endPointManager.baseEndPointUrl;
@@ -83,12 +107,17 @@ namespace YummyVerse.Scripts.ViewModel
         
         public void Dispose()
         {
+            _foodPlacementService.SetConfigurationVisible(false);
             _disposables?.Dispose();
             IsVisible?.Dispose();
             APIEndPointUrl?.Dispose();
             LastRequestHTTPStatus?.Dispose();
             LastDetectedGuid?.Dispose();
             IsStandaloneMode?.Dispose();
+            SpatialPlacementStatus?.Dispose();
+            IsSpatialAnchorReady?.Dispose();
+            IsFoodPositionFixed?.Dispose();
+            IsSpatialPlacementBusy?.Dispose();
             ConnectionTestResult?.Dispose();
         }
         
@@ -114,6 +143,16 @@ namespace YummyVerse.Scripts.ViewModel
             var success = _foodScaleManager.UpdateFoodScale(scale);
             if(!success) return;
             FoodScale.Value = scale;
+        }
+
+        public async UniTask SetSpatialAnchor(CancellationToken ct)
+        {
+            await _foodPlacementService.SetAnchorAtDraftAsync(ct);
+        }
+
+        public async UniTask FixFoodPosition(CancellationToken ct)
+        {
+            await _foodPlacementService.FixFoodPositionAtDraftAsync(ct);
         }
 
         public async UniTask ConnectionTest(CancellationToken ct)

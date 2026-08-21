@@ -35,7 +35,8 @@ namespace YummyVerse.Scripts.ViewModel
         {
             if(!_localFoodSO.TryGetGuid(food, out var localFoodGuid)) return;
             // Transformは元の位置をそのまま使用し、Guidのみ更新する
-            _qrDetectionService.NotifyDetectQR(localFoodGuid, _qrDetectionService.OnChangeTransform.Value);
+            // Standaloneで変更するのは料理IDだけ。表示位置と皿検出イベントはSpatial Anchor/物理QRから独立させる。
+            _qrDetectionService.NotifyFoodGuid(localFoodGuid);
             OnLocalFoodSpawned?.Invoke(food);
         }
 

@@ -15,6 +15,10 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         ReactiveProperty<string> LastDetectedGuid { get; }
         ReactiveProperty<bool> IsStandaloneMode { get; }
         ReactiveProperty<float> FoodScale { get; }
+        ReactiveProperty<string> SpatialPlacementStatus { get; }
+        ReactiveProperty<bool> IsSpatialAnchorReady { get; }
+        ReactiveProperty<bool> IsFoodPositionFixed { get; }
+        ReactiveProperty<bool> IsSpatialPlacementBusy { get; }
 
         event Action OnAPIEndPointValidationError;
         ReactiveProperty<TestConnectionResult> ConnectionTestResult { get; }
@@ -24,6 +28,10 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         void SetStandaloneMode(bool isStandalone);
         
         void SetFoodScale(float scale);
+
+        UniTask SetSpatialAnchor(CancellationToken ct);
+
+        UniTask FixFoodPosition(CancellationToken ct);
         
         UniTask ConnectionTest(CancellationToken ct);
     }

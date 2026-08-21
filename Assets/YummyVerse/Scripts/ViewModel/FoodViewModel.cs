@@ -11,7 +11,7 @@ namespace YummyVerse.Scripts.ViewModel
     public class FoodViewModel : IFoodViewModel , IInitializable, IDisposable
     {
         private readonly IFoodContext _foodContext;
-        private readonly IQRDetectionService _qrDetectionService;
+        private readonly IFoodPlacementService _foodPlacementService;
         private readonly IFoodScaleManager _foodScaleManager;
         private readonly IInputLayer _inputLayer;
         
@@ -24,10 +24,10 @@ namespace YummyVerse.Scripts.ViewModel
         
         private CompositeDisposable _disposables = new CompositeDisposable();
 
-        public FoodViewModel(IFoodContext foodContext, IQRDetectionService qrDetectionService,  IFoodScaleManager foodScaleManager, IInputLayer inputLayer)
+        public FoodViewModel(IFoodContext foodContext, IFoodPlacementService foodPlacementService, IFoodScaleManager foodScaleManager, IInputLayer inputLayer)
         {
             _foodContext = foodContext;
-            _qrDetectionService = qrDetectionService;
+            _foodPlacementService = foodPlacementService;
             _foodScaleManager = foodScaleManager;
             _inputLayer = inputLayer;
         }
@@ -40,8 +40,8 @@ namespace YummyVerse.Scripts.ViewModel
                 foodGltf.Value = v.Food.GltfImport;
             }).AddTo(_disposables);
             
-            // QRの位置情報が更新されたらtransformを更新
-            _qrDetectionService.OnChangeTransform.Subscribe(v =>
+            // 保存済みSpatial Anchorに対する食べ物表示位置が更新されたらtransformを更新
+            _foodPlacementService.FoodTransform.Subscribe(v =>
             {
                 var previous = foodTransform.Value;
                 foodTransform.Value = v;

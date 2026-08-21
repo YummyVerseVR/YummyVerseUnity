@@ -1,0 +1,27 @@
+{
+  "intent": "260821-spatial-anchor-food-placement",
+  "decisions": [
+    {
+      "id": "ADR-001",
+      "requirements": ["FR4", "FR5", "NFR5"],
+      "components": ["Existing Food Selection", "Food Placement Consumer"]
+    },
+    {
+      "id": "ADR-002",
+      "requirements": ["FR2", "FR3", "FR6", "FR7", "FR8", "NFR2", "NFR3"],
+      "components": ["Spatial Anchor Placement Model", "Placement Persistence Store"]
+    },
+    {
+      "id": "ADR-003",
+      "requirements": ["FR1", "FR3", "FR4", "FR8", "FR10", "NFR4"],
+      "components": ["Placement Configuration ViewModel", "Placement Configuration View"]
+    },
+    {
+      "id": "ADR-004",
+      "requirements": ["FR7", "FR9", "FR10", "NFR1", "NFR2"],
+      "components": ["Spatial Anchor Placement Model", "Placement Configuration ViewModel", "Food Placement Consumer"]
+    }
+  ],
+  "requirementsWithoutDecision": []
+}
+

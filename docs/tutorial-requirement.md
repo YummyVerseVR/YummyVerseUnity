@@ -27,7 +27,9 @@
 | AppState | アプリ全体の粗いモード管理 | 有限状態機械（4状態） |
 | TutorialSequence | チュートリアルの進行順序 | ScriptableObject のステップ列 |
 | Presenter | 画面表示・音声・演出 | インターフェース経由 |
-| Game | QR認識、すくい判定、完食判定など | 既存実装（イベント発火のみ担当） |
+| Game | QR認識、Spatial Anchor配置、すくい判定、完食判定など | 既存実装（イベント発火のみ担当） |
+
+QRコードは食べ物GUIDの選択と `QrPlateDetected` イベントにのみ用いる。食べ物の表示位置は、運営設定で保存したSpatial AnchorとそのAnchorからの相対poseで決定し、QRのTransformを流用してはならない。
 
 ### 1.3 依存方向
 
@@ -286,6 +288,7 @@ public class SessionController : MonoBehaviour
 - 中断トリガー：`OnUserAbsent`、グローバル無操作タイムアウト、スタッフ用リセット入力（キーボードショートカット等を必ず用意）。
 - **ステップごとに Attract への戻り線を書かない。** キャンセルの一括伝播で処理する。
 - `ResetToAttractAsync()` はゲーム側の状態（皿上の食品、注文内容、認識状態）も初期化する。ここに漏れがあると2人目の来場者で破綻する。
+- Spatial Anchorと食べ物の固定位置は展示環境の設定であり、来場者単位のセッション状態ではない。通常の `ResetToAttractAsync()` では削除しない。
 
 ### 救済ポリシー
 
