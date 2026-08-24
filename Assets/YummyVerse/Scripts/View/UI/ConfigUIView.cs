@@ -16,6 +16,7 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private TextMeshProUGUI lastRequestGuid;
         [SerializeField] private Toggle standaloneModeToggle;
         [SerializeField] private CanvasGroup canvasGroup;
+        [SerializeField] private OVROverlayCanvas overlayCanvas;
         [SerializeField] private Slider foodScaleSlider;
         [SerializeField] private Camera targetCamera;
         [SerializeField] private Transform uiTransform;
@@ -24,8 +25,20 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private TextMeshProUGUI spatialPlacementStatus;
         
         private IConfigUIViewModel _configUIViewModel;
+        private Tween _visibilityTween;
 
+        private const float FadeDuration = 0.1f;
         private float displayDistanceFromCamera = 0.6f;
+
+        private void Awake()
+        {
+            // The settings menu starts hidden. Applying this before Start prevents the
+            // compositor canvas from affecting the first rendered frame.
+            canvasGroup.alpha = 0f;
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
+            DisableOverlayCanvas();
+        }
         
         [Inject]
         public void Construct(IConfigUIViewModel configUIViewModel)
@@ -37,18 +50,22 @@ namespace YummyVerse.Scripts.View.UI
         {
             _configUIViewModel.IsVisible.Subscribe(isVisible =>
             {
+                _visibilityTween?.Kill();
+
                 if (isVisible)
                 {
                     SetMenuPositionInFrontOfCamera();
-                    canvasGroup.DOFade(1, 0.1f);
+                    EnableOverlayCanvas();
+                    _visibilityTween = canvasGroup.DOFade(1f, FadeDuration);
                     canvasGroup.interactable = true;
                     canvasGroup.blocksRaycasts = true;
                 }
                 else
                 {
-                    canvasGroup.DOFade(0, 0.1f);
                     canvasGroup.interactable = false;
                     canvasGroup.blocksRaycasts = false;
+                    _visibilityTween = canvasGroup.DOFade(0f, FadeDuration)
+                        .OnComplete(DisableOverlayCanvas);
                 }
             }).AddTo(this);
             
@@ -121,6 +138,30 @@ namespace YummyVerse.Scripts.View.UI
         private void SetAPIEndPointUrl(string url)
         {
             apiEndPointUrl.text = url;
+        }
+
+        private void EnableOverlayCanvas()
+        {
+            if (overlayCanvas == null) return;
+
+            // An underlay requires a black imposter in the eye buffer. It masks the
+            // passthrough layer even after CanvasGroup alpha reaches zero.
+            overlayCanvas.overlayType = OVROverlay.OverlayType.Overlay;
+            overlayCanvas.overlayEnabled = true;
+            overlayCanvas.enabled = true;
+        }
+
+        private void DisableOverlayCanvas()
+        {
+            if (overlayCanvas == null) return;
+            overlayCanvas.overlayEnabled = false;
+            overlayCanvas.enabled = false;
+        }
+
+        private void OnDestroy()
+        {
+            _visibilityTween?.Kill();
+            DisableOverlayCanvas();
         }
 
         private void SetMenuPositionInFrontOfCamera()

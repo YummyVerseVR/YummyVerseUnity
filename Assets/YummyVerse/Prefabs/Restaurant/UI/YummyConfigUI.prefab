@@ -3819,6 +3819,7 @@ MonoBehaviour:
   lastRequestGuid: {fileID: 2559903444914387001}
   standaloneModeToggle: {fileID: 6080511290999071888}
   canvasGroup: {fileID: 2764984737716230343}
+  overlayCanvas: {fileID: 6224303875646766380}
   foodScaleSlider: {fileID: 1789025749620040766}
   targetCamera: {fileID: 0}
   uiTransform: {fileID: 500786508898637685}
@@ -4203,9 +4204,9 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8033503934802399060}
   m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
+  m_Alpha: 0
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
 --- !u!114 &6224303875646766380
 MonoBehaviour:
@@ -4214,7 +4215,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8033503934802399060}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ee10491ef6d5d1d49a270cf6b09bdc19, type: 3}
   m_Name: 
@@ -4233,8 +4234,8 @@ MonoBehaviour:
   shape: 0
   curveRadius: 1
   overlapMask: 0
-  overlayType: 1
-  _overlayEnabled: 1
+  overlayType: 2
+  _overlayEnabled: 0
 --- !u!224 &8185545177054501358 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8871935754367020192, guid: 6b196de96e7d16b4297c1980179ae439, type: 3}
