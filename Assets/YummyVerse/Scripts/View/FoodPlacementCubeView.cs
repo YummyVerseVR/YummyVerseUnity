@@ -1,6 +1,11 @@
+using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using GLTFast;
 using Oculus.Interaction;
 using R3;
 using UnityEngine;
+using YummyVerse.Scripts.Model;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 using Zenject;
@@ -8,29 +13,42 @@ using Zenject;
 namespace YummyVerse.Scripts.View
 {
     /// <summary>
-    /// 設定画面の表示中だけ有効になる、コントローラーで掴める配置用マーカー。
-    /// Spatial Anchor 本体とは別オブジェクトにして、ランタイムの姿勢更新と競合させない。
+    /// 設定画面で食べ物の位置・回転・スケールを確認するための配置プレビュー。
+    /// 以前の水色Cubeの代わりに、S5で表示するものと同じローカル食品モデルを使う。
     /// </summary>
     public sealed class FoodPlacementCubeView : MonoBehaviour
     {
         private const float DefaultDistance = 0.7f;
         private const float DefaultVerticalOffset = -0.15f;
+        private const float MinimumColliderSize = 0.05f;
 
         private IFoodPlacementService _foodPlacementService;
-        private GameObject _cube;
-        private Material _cubeMaterial;
+        private IFoodScaleManager _foodScaleManager;
+        private ILocalFoodSelectionProvider _localFoodSelectionProvider;
+        private GameObject _placementMarker;
+        private Transform _modelRoot;
+        private BoxCollider _interactionCollider;
+        private GltfImport _previewGltf;
         private bool _configurationVisible;
         private bool _isEditing;
 
         [Inject]
-        public void Construct(IFoodPlacementService foodPlacementService)
+        public void Construct(
+            IFoodPlacementService foodPlacementService,
+            IFoodScaleManager foodScaleManager,
+            ILocalFoodSelectionProvider localFoodSelectionProvider)
         {
             _foodPlacementService = foodPlacementService;
+            _foodScaleManager = foodScaleManager;
+            _localFoodSelectionProvider = localFoodSelectionProvider;
         }
 
         private void Start()
         {
-            CreateCube();
+            CreatePlacementMarker();
+            _foodScaleManager.FoodScale
+                .Subscribe(SetPreviewScale)
+                .AddTo(this);
             _foodPlacementService.IsConfigurationVisible
                 .Subscribe(isVisible =>
                 {
@@ -46,103 +64,192 @@ namespace YummyVerse.Scripts.View
                     UpdateVisibility();
                 })
                 .AddTo(this);
+
+            LoadPreviewModelAsync(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         private void LateUpdate()
         {
-            if (_cube == null || !_cube.activeSelf) return;
-            _foodPlacementService.UpdateDraftPose(new Pose(_cube.transform.position, _cube.transform.rotation));
+            if (_placementMarker == null || !_placementMarker.activeSelf) return;
+            _foodPlacementService.UpdateDraftPose(
+                new Pose(_placementMarker.transform.position, _placementMarker.transform.rotation));
         }
 
         private void OnDestroy()
         {
-            if (_cube != null)
+            if (_placementMarker != null)
             {
-                Destroy(_cube);
+                if (Application.isPlaying) Destroy(_placementMarker);
+                else DestroyImmediate(_placementMarker);
             }
-            if (_cubeMaterial != null)
-            {
-                Destroy(_cubeMaterial);
-            }
+            _previewGltf?.Dispose();
+            _previewGltf = null;
         }
 
-        private void CreateCube()
+        private void CreatePlacementMarker()
         {
-            _cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            _cube.name = "Food Placement Cube (Grip to move)";
-            _cube.transform.localScale = Vector3.one * 0.1f;
-            _cube.SetActive(false);
+            _placementMarker = new GameObject("Food Placement Model (Grip to move)");
+            _modelRoot = new GameObject("Food Placement Model Content").transform;
+            _modelRoot.SetParent(_placementMarker.transform, false);
+            _modelRoot.localPosition = Vector3.zero;
+            _modelRoot.localRotation = Quaternion.Euler(90f, 0f, 0f);
 
-            var collider = _cube.GetComponent<BoxCollider>();
-            collider.isTrigger = true;
+            _interactionCollider = _placementMarker.AddComponent<BoxCollider>();
+            _interactionCollider.isTrigger = true;
+            _interactionCollider.size = Vector3.one * 0.12f;
 
-            var rigidbody = _cube.AddComponent<Rigidbody>();
+            var rigidbody = _placementMarker.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
             rigidbody.isKinematic = true;
 
-            var grabbable = _cube.AddComponent<Grabbable>();
+            var grabbable = _placementMarker.AddComponent<Grabbable>();
             grabbable.InjectOptionalRigidbody(rigidbody);
             grabbable.InjectOptionalThrowWhenUnselected(false);
 
-            var grabInteractable = _cube.AddComponent<GrabInteractable>();
+            var grabInteractable = _placementMarker.AddComponent<GrabInteractable>();
             grabInteractable.InjectRigidbody(rigidbody);
             grabInteractable.InjectOptionalPointableElement(grabbable);
             grabInteractable.UseClosestPointAsGrabSource = true;
 
-            // The marker starts outside reliable direct-grab range. Register it with
-            // the controller's grip-based distance interactor as well, so aiming at
-            // the cube and holding Grip consistently picks it up.
-            var distanceGrabInteractable = _cube.AddComponent<DistanceGrabInteractable>();
+            var distanceGrabInteractable = _placementMarker.AddComponent<DistanceGrabInteractable>();
             distanceGrabInteractable.InjectRigidbody(rigidbody);
-            distanceGrabInteractable.InjectOptionalGrabSource(_cube.transform);
+            distanceGrabInteractable.InjectOptionalGrabSource(_placementMarker.transform);
             distanceGrabInteractable.InjectOptionalPointableElement(grabbable);
 
-            var renderer = _cube.GetComponent<MeshRenderer>();
-            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (shader != null)
+            _placementMarker.SetActive(false);
+        }
+
+        private async UniTaskVoid LoadPreviewModelAsync(CancellationToken ct)
+        {
+            if (!_localFoodSelectionProvider.TryGetSelected(out var selected))
             {
-                _cubeMaterial = new Material(shader)
+                Debug.LogWarning(
+                    $"[FoodPlacement] プレビューに使えるローカル食品がありません: " +
+                    $"{Application.persistentDataPath}/Foods/*/model.glb");
+                return;
+            }
+
+            GltfImport gltf = null;
+            try
+            {
+                gltf = GltfImportFactory.Create();
+                if (!await gltf.Load(selected.ModelLocation, cancellationToken: ct))
                 {
-                    color = new Color(0.1f, 0.85f, 1f, 0.85f)
-                };
-                renderer.sharedMaterial = _cubeMaterial;
+                    Debug.LogWarning($"[FoodPlacement] 配置プレビューモデルを読み込めませんでした: {selected.DisplayName}");
+                    gltf.Dispose();
+                    return;
+                }
+
+                ct.ThrowIfCancellationRequested();
+                _previewGltf = gltf;
+                var instantiator = new GameObjectInstantiator(gltf, _modelRoot);
+                await gltf.InstantiateMainSceneAsync(instantiator, ct);
+                FoodModelVisualCompatibility.Apply(_placementMarker);
+                RefreshInteractionCollider();
+                Debug.Log($"[FoodPlacement] 配置プレビューを読み込みました: {selected.DisplayName}");
+            }
+            catch (OperationCanceledException)
+            {
+                // GameObject破棄時のキャンセルは正常終了。
+                if (!ReferenceEquals(gltf, _previewGltf)) gltf?.Dispose();
+            }
+            catch (Exception exception)
+            {
+                if (!ReferenceEquals(gltf, _previewGltf)) gltf?.Dispose();
+                Debug.LogWarning($"[FoodPlacement] 配置プレビューの生成に失敗しました: {exception.Message}");
+            }
+        }
+
+        private void SetPreviewScale(float scale)
+        {
+            if (_modelRoot == null) return;
+            _modelRoot.localScale = Vector3.one * scale;
+            RefreshInteractionCollider();
+        }
+
+        private void RefreshInteractionCollider()
+        {
+            if (_interactionCollider == null || _placementMarker == null) return;
+
+            var renderers = _placementMarker.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0) return;
+
+            var markerTransform = _placementMarker.transform;
+            var localBounds = new Bounds(
+                markerTransform.InverseTransformPoint(renderers[0].bounds.center),
+                Vector3.zero);
+            foreach (var renderer in renderers)
+            {
+                EncapsulateWorldBounds(ref localBounds, markerTransform, renderer.bounds);
+            }
+
+            _interactionCollider.center = localBounds.center;
+            _interactionCollider.size = new Vector3(
+                Mathf.Max(localBounds.size.x, MinimumColliderSize),
+                Mathf.Max(localBounds.size.y, MinimumColliderSize),
+                Mathf.Max(localBounds.size.z, MinimumColliderSize));
+        }
+
+        private static void EncapsulateWorldBounds(
+            ref Bounds target,
+            Transform localSpace,
+            Bounds worldBounds)
+        {
+            var min = worldBounds.min;
+            var max = worldBounds.max;
+            for (var x = 0; x < 2; x++)
+            {
+                for (var y = 0; y < 2; y++)
+                {
+                    for (var z = 0; z < 2; z++)
+                    {
+                        target.Encapsulate(localSpace.InverseTransformPoint(new Vector3(
+                            x == 0 ? min.x : max.x,
+                            y == 0 ? min.y : max.y,
+                            z == 0 ? min.z : max.z)));
+                    }
+                }
             }
         }
 
         private void UpdateVisibility()
         {
-            if (_cube == null) return;
+            if (_placementMarker == null) return;
             var isVisible = _configurationVisible && _isEditing;
-            if (_cube.activeSelf == isVisible) return;
+            if (_placementMarker.activeSelf == isVisible) return;
 
             if (isVisible)
             {
                 if (_foodPlacementService.TryGetSuggestedDraftPose(out var pose))
                 {
-                    _cube.transform.SetPositionAndRotation(pose.position, pose.rotation);
+                    _placementMarker.transform.SetPositionAndRotation(pose.position, pose.rotation);
                 }
                 else
                 {
-                    var camera = Camera.main;
-                    if (camera != null)
-                    {
-                        var cameraTransform = camera.transform;
-                        var position = cameraTransform.position
-                                       + cameraTransform.forward * DefaultDistance
-                                       + cameraTransform.up * DefaultVerticalOffset;
-                        var forwardOnFloor = Vector3.ProjectOnPlane(cameraTransform.forward, Vector3.up);
-                        var rotation = forwardOnFloor.sqrMagnitude > 0.001f
-                            ? Quaternion.LookRotation(forwardOnFloor.normalized, Vector3.up)
-                            : Quaternion.identity;
-                        _cube.transform.SetPositionAndRotation(position, rotation);
-                    }
+                    PositionInFrontOfCamera();
                 }
 
                 _foodPlacementService.UpdateDraftPose(
-                    new Pose(_cube.transform.position, _cube.transform.rotation));
+                    new Pose(_placementMarker.transform.position, _placementMarker.transform.rotation));
             }
 
-            _cube.SetActive(isVisible);
+            _placementMarker.SetActive(isVisible);
+        }
+
+        private void PositionInFrontOfCamera()
+        {
+            var camera = Camera.main;
+            if (camera == null) return;
+
+            var cameraTransform = camera.transform;
+            var position = cameraTransform.position
+                           + cameraTransform.forward * DefaultDistance
+                           + cameraTransform.up * DefaultVerticalOffset;
+            var forwardOnFloor = Vector3.ProjectOnPlane(cameraTransform.forward, Vector3.up);
+            var rotation = forwardOnFloor.sqrMagnitude > 0.001f
+                ? Quaternion.LookRotation(forwardOnFloor.normalized, Vector3.up)
+                : Quaternion.identity;
+            _placementMarker.transform.SetPositionAndRotation(position, rotation);
         }
     }
 }

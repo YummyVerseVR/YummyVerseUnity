@@ -10,7 +10,7 @@ namespace YummyVerse.Scripts.Model
 {
     /// <summary>
     /// Meta XR SDK の Spatial Anchor API をアプリケーション層から隔離する境界。
-    /// アンカーの Transform はランタイムが更新するため、配置用 Cube とは必ず別 GameObject にする。
+    /// アンカーの Transform はランタイムが更新するため、配置プレビューモデルとは必ず別 GameObject にする。
     /// </summary>
     public sealed class MetaSpatialAnchorBackend : ISpatialAnchorBackend, IDisposable
     {

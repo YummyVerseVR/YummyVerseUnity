@@ -19,6 +19,7 @@ namespace YummyVerse.Scripts.Model.DI
             Container.BindInterfacesAndSelfTo<InputLayer>().AsSingle();
             Container.BindInterfacesAndSelfTo<NetworkConnectionTester>().AsSingle();
             Container.BindInterfacesAndSelfTo<FoodCatalogService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<RandomLocalFoodSelectionProvider>().AsSingle();
 
             // チュートリアル基盤 (ゲーム機能側と共有するため Model 層に置く)
             Container.BindInterfacesAndSelfTo<GameEventBus>().AsSingle();

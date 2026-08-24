@@ -18,6 +18,7 @@ namespace YummyVerse.Scripts.Model.Interface
 
         void SetConfigurationVisible(bool isVisible);
         void UpdateDraftPose(Pose pose);
+        bool TryActivateDraftPoseForFood();
         bool TryGetSuggestedDraftPose(out Pose pose);
         UniTask<bool> SetAnchorAtDraftAsync(CancellationToken cancellationToken);
         UniTask<bool> FixFoodPositionAtDraftAsync(CancellationToken cancellationToken);

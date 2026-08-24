@@ -49,8 +49,8 @@ namespace YummyVerse.Scripts.Model
             {
                 State.Value = FoodPlacementState.Editing;
                 StatusMessage.Value = IsAnchorReady.Value
-                    ? "Move the cube, then lock the food position."
-                    : "Move the cube, then set the Spatial Anchor.";
+                    ? "Move or rotate the food model, then lock its position."
+                    : "Move or rotate the food model, then set the Spatial Anchor.";
             }
             else if (!isVisible && !IsBusy.Value && IsFoodPositionFixed.Value)
             {
@@ -63,6 +63,34 @@ namespace YummyVerse.Scripts.Model
         {
             _draftPose = pose;
             _hasDraftPose = true;
+        }
+
+        /// <summary>
+        /// 設定用モデルの最新world poseを、次に表示する食品の基準Transformへ反映する。
+        /// 永続化前でもチュートリアル食品をプレビューと同じ場所・回転に出せる。
+        /// </summary>
+        public bool TryActivateDraftPoseForFood()
+        {
+            if (!_hasDraftPose) return FoodTransform.Value != null;
+
+            if (_foodPlacementRoot == null)
+            {
+                _foodPlacementRoot = new GameObject("Food Placement Root").transform;
+            }
+
+            var anchor = _spatialAnchorBackend.CurrentAnchorTransform;
+            _foodPlacementRoot.SetParent(anchor, true);
+            _foodPlacementRoot.SetPositionAndRotation(
+                _draftPose.position,
+                NormalizeRotation(_draftPose.rotation));
+
+            var previous = FoodTransform.Value;
+            FoodTransform.Value = _foodPlacementRoot;
+            if (ReferenceEquals(previous, _foodPlacementRoot))
+            {
+                FoodTransform.OnNext(_foodPlacementRoot);
+            }
+            return true;
         }
 
         public bool TryGetSuggestedDraftPose(out Pose pose)
@@ -115,7 +143,7 @@ namespace YummyVerse.Scripts.Model
                 IsAnchorReady.Value = true;
                 IsFoodPositionFixed.Value = false;
                 State.Value = FoodPlacementState.Editing;
-                StatusMessage.Value = "Anchor saved. Move the cube, then lock the food position.";
+                StatusMessage.Value = "Anchor saved. Move or rotate the food model, then lock its position.";
                 return true;
             }
             catch (OperationCanceledException)
@@ -238,7 +266,7 @@ namespace YummyVerse.Scripts.Model
                 if (!_data.HasFoodPose)
                 {
                     State.Value = FoodPlacementState.Editing;
-                    StatusMessage.Value = "Move the cube, then lock the food position.";
+                    StatusMessage.Value = "Move or rotate the food model, then lock its position.";
                     return;
                 }
 
@@ -247,7 +275,7 @@ namespace YummyVerse.Scripts.Model
                 if (IsConfigurationVisible.Value)
                 {
                     State.Value = FoodPlacementState.Editing;
-                    StatusMessage.Value = "Move the cube, then lock the food position.";
+                    StatusMessage.Value = "Move or rotate the food model, then lock its position.";
                 }
                 else
                 {
@@ -289,7 +317,14 @@ namespace YummyVerse.Scripts.Model
             FoodTransform.Value = null;
             if (_foodPlacementRoot != null)
             {
-                UnityEngine.Object.Destroy(_foodPlacementRoot.gameObject);
+                if (Application.isPlaying)
+                {
+                    UnityEngine.Object.Destroy(_foodPlacementRoot.gameObject);
+                }
+                else
+                {
+                    UnityEngine.Object.DestroyImmediate(_foodPlacementRoot.gameObject);
+                }
                 _foodPlacementRoot = null;
             }
         }
