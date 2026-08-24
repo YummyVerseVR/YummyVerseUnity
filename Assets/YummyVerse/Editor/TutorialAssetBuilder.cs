@@ -135,7 +135,6 @@ namespace YummyVerse.Editor
             public TimeElapsedCondition Time3;
             public TimeElapsedCondition Time5;
             public AnyOfCondition ButtonOr8;
-            public GameEventCondition QrDetected;
             public GameEventCondition FoodScooped;
             public GameEventCondition DishCleared;
         }
@@ -148,7 +147,6 @@ namespace YummyVerse.Editor
                 Time3 = Create<TimeElapsedCondition>("Conditions/Cond_Time3s"),
                 Time5 = Create<TimeElapsedCondition>("Conditions/Cond_Time5s"),
                 ButtonOr8 = Create<AnyOfCondition>("Conditions/Cond_ButtonOr8s"),
-                QrDetected = Create<GameEventCondition>("Conditions/Cond_QrPlateDetected"),
                 FoodScooped = Create<GameEventCondition>("Conditions/Cond_FoodScooped"),
                 DishCleared = Create<GameEventCondition>("Conditions/Cond_DishCleared")
             };
@@ -156,7 +154,6 @@ namespace YummyVerse.Editor
             SetField(c.Time3, "seconds", 3f);
             SetField(c.Time5, "seconds", 5f);
 
-            SetEnum(c.QrDetected, "eventId", GameEventId.QrPlateDetected);
             SetEnum(c.FoodScooped, "eventId", GameEventId.FoodScooped);
             SetEnum(c.DishCleared, "eventId", GameEventId.DishCleared);
 
@@ -186,17 +183,6 @@ namespace YummyVerse.Editor
                 "Steps/Step_S2_Welcome", "S2",
                 Str(table, "S2", "YummyVerse へようこそ。\nAIが生み出した食感を体験していただきます。"),
                 conditions.ButtonOr8);
-
-            // --- S3: 紙皿を見つめよう (Task / QR認識) ---
-            var s3 = Create<TaskStep>("Steps/Step_S3_LookAtPlate");
-            SetField(s3, "stepId", "S3");
-            SetField(s3, "instruction", Str(table, "S3", "目の前の紙皿を見つめてください。"));
-            SetField(s3, "successCondition", conditions.QrDetected);
-            SetField(s3, "hintDelaySeconds", 5f);
-            SetField(s3, "rescueTimeoutSeconds", 30f);
-            SetEnum(s3, "rescuePolicy", RescuePolicy.AutoAdvance);
-            SetField(s3, "successFeedback", feedback);
-            steps["S3"] = s3;
 
             // --- S5: AIシェフの準備 (時間) ---
             steps["S5"] = Narration(
@@ -297,14 +283,16 @@ namespace YummyVerse.Editor
             var main = Create<TutorialSequence>("Sequences/TutorialSequence_Main");
             SetList(main, "steps", new[]
             {
-                steps["S2"], steps["S3"], steps["S5"], steps["S6"],
+                // S3 の「紙皿を見つめる」案内は現行フローから削除済み。
+                steps["S2"], steps["S5"], steps["S6"],
                 steps["S6'"], steps["S8"], steps["S11"], steps["S14"]
             });
 
             var freePlay = Create<TutorialSequence>("Sequences/TutorialSequence_FreePlay");
             SetList(freePlay, "steps", new[]
             {
-                steps["S15"], steps["S16"], steps["S18"], steps["S19"]
+                // S15/S16 の固定4択は FoodSelectionFlow の API v2 + PersistentData gridへ置換済み。
+                steps["S18"], steps["S19"]
             });
 
             var config = Create<TutorialConfig>("TutorialConfig");

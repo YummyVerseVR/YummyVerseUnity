@@ -32,6 +32,14 @@ namespace YummyVerse.Scripts.View.UI
 
         private void Awake()
         {
+            // OVROverlayCanvas is composited in front of scene geometry, so the
+            // controller ray's world-space cursor cannot appear over this menu.
+            // Draw the interaction point as part of the canvas as well.
+            if (!TryGetComponent<PointableCanvasPointerVisual>(out _))
+            {
+                gameObject.AddComponent<PointableCanvasPointerVisual>();
+            }
+
             // The settings menu starts hidden. Applying this before Start prevents the
             // compositor canvas from affecting the first rendered frame.
             canvasGroup.alpha = 0f;

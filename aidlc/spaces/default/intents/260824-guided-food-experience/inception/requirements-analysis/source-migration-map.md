@@ -29,7 +29,7 @@
 
 ### QR-related normalization
 
-移管元の初期版は QR を食品 GUID 選択にも用いていた。2026-08-24 の追加要求を優先し、現在の S3/event は「モデルの出現 anchor designation」の成立として扱う。食品 identity は Virtual Menu の item ID から得る。移管後の規範は `FR13`, `FR16`, `ADR-003` である。
+移管元の初期版は QR を食品 GUID 選択にも用いていた。食品 identity は Virtual Menu の item ID から得る。S3/event は一度「モデルの出現 anchor designation」として移管したが、2026-08-24 の追加指示により S3 の案内・待機自体を現行 TutorialSequence から削除した。Anchor designation の製品責務は `FR16`, `FR17`, `ADR-003` に残る。
 
 ## `tutorial-usage.md` Migration
 

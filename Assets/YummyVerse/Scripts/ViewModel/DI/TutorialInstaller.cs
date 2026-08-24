@@ -1,5 +1,6 @@
 using UnityEngine;
 using YummyVerse.Scripts.View.Tutorial;
+using YummyVerse.Scripts.View.UI;
 using YummyVerse.Scripts.ViewModel.Tutorial;
 using YummyVerse.Scripts.ViewModel.Tutorial.SO;
 using Zenject;
@@ -36,7 +37,14 @@ namespace YummyVerse.Scripts.ViewModel.DI
             // 進行
             Container.BindInterfacesAndSelfTo<TutorialContext>().AsSingle();
             Container.BindInterfacesAndSelfTo<TutorialRunner>().AsSingle();
+            Container.BindInterfacesAndSelfTo<FoodSelectionFlow>().AsSingle();
             Container.BindInterfacesAndSelfTo<FreePlayFlow>().AsSingle();
+
+            // 4列のworld-space menuをシーンスコープで生成し、Meta rayと右スティック入力へ接続する。
+            Container.BindInterfacesAndSelfTo<FoodSelectionMenuView>()
+                .FromNewComponentOnNewGameObject()
+                .AsSingle()
+                .NonLazy();
 
             // 既存機能との接着
             Container.BindInterfacesAndSelfTo<MenuSelectionBridge>().AsSingle().NonLazy();

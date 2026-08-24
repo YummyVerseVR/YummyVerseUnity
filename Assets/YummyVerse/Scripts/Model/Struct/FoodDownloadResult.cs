@@ -8,6 +8,7 @@ namespace YummyVerse.Scripts.Model.Struct
         public HttpStatusCode StatusCode;
         public bool success => StatusCode == HttpStatusCode.OK;
         public Guid RequestedGuid;
+        public string RequestedItemId;
         public Food Food;
     }
 }

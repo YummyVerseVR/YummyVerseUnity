@@ -20,7 +20,7 @@
 - **FR2: 説明と実操作を交互に進めるガイド付き体験であること** (`MUST`)
   - 各操作課題では説明またはデモを提示したまま、実際のゲーム機能を動かして達成できる。
   - チュートリアル中もゲーム機能を稼働させ、終了時にゲームの再起動、シーン再読込、別ゲームモードの初期化を必要としない。
-  - 検証条件: 来場者が提示された説明に従い、アンカー指定、すくい、完食を実ゲームイベントで達成できる。
+  - 検証条件: 来場者が提示された説明に従い、すくい、完食を実ゲームイベントで達成できる。Anchor designation はチュートリアルの案内・待機ステップに含めない。
   - 出典: 2026-08-24 利用者要求、移管元チュートリアル仕様。
 
 - **FR3: チュートリアルをデータ駆動のステップ列として定義すること** (`MUST`)
@@ -92,7 +92,7 @@
   - 前菜で少なくとも「すくう」と「完食する」を体験した後、利用者へ生成済み食品の選択を促す。
   - Tutorial の境界は前菜操作の説明完了時とし、生成食品の選択・提供・完食・Outro は同じ session の FreePlay で扱う。
   - 繰り返し利用者には設定されたチュートリアル step をスキップできるが、食品選択と FreePlay は利用できる。
-  - 検証条件: 初回フローが `Start → 説明 → anchor 指定 → 前菜 → すくい → 完食 → 生成食品選択 → 提供` の順に進む。
+  - 検証条件: 初回フローが `Start → 説明 → 前菜 → すくい → 完食 → 生成食品選択 → 提供` の順に進み、「目の前の紙皿を見つめてください」という案内・QR 検出待ちを挟まない。
   - 出典: 2026-08-24 利用者要求、移管元チュートリアル仕様 §6。
 
 ### Model Selection, Loading, and Menus
@@ -366,7 +366,6 @@
 |---|---|---|---|---|
 | Attract | S1 | AppState/Config | スタートボタンを案内 | Start input |
 | Tutorial | S2 | Narration | YummyVerse と AI 生成食感体験を紹介 | Button or time |
-| Tutorial | S3 | Task | QR を用いて出現 anchor を指定するよう案内 | Anchor designation ready |
 | Tutorial | S5 | Narration | AI シェフ/前菜の準備を案内 | Time |
 | Tutorial | S6 | Choice | 初回/繰り返し利用を判定 | Choice or timeout |
 | Tutorial | S6' | Narration | リンゴ等の前菜を食べるよう案内 | Button |
@@ -382,15 +381,15 @@
 
 - S15 以降は TutorialSequence に含めず、FreePlay/Outro が担当する。
 - S7/S17 は Narration の副作用として Game の具象を直接呼ばず、command boundary か各 state owner の責務として実行する。
-- 旧文書の S3 にあった QR 食品 GUID 選択は廃止し、現行 S3 は anchor designation として解釈する。
+- S3 の「目の前の紙皿を見つめてください」という案内と QR 検出待ちは、2026-08-24 の利用者指示により現行 TutorialSequence から削除する。Anchor designation 自体の製品責務は `FR16`/`FR17` に残すが、チュートリアル進行条件にはしない。
 
 ## Acceptance Scenarios
 
-- **AC1 Normal first visit**: Attract で Start → QR による anchor designation → リンゴ等の前菜 → scoop feedback → 段階縮小/crumb → 消滅 → 仮想メニュー → 生成食品選択 → 同じ anchor へ提供、が同一 scene/session で完了する。
+- **AC1 Normal first visit**: Attract で Start → リンゴ等の前菜 → scoop feedback → 段階縮小/crumb → 消滅 → 仮想メニュー → 生成食品選択 → 利用可能な指定済み anchor へ提供、が同一 scene/session で完了し、紙皿注視の案内・待機を挟まない。
 - **AC2 Menu load isolation**: 20件以上を含む代表的な履歴一覧を開いても、未選択19件の 3D payload は load/instantiate されず、画像または placeholder が表示される。件数は負荷観測用で、製品の保持上限を決定するものではない。
 - **AC3 QR responsibility**: QR designation 後に別の履歴 item を選択しても anchor は再利用できる。QR payload の違いだけでは食品 identity が変わらない。
 - **AC4 Eating interaction**: 生成モデルへ透明 AABB が付き、有効な scoop ごとに event は一度、サイズは単調減少、crumb が発生し、最終 action で model/collider が消え DishCleared が一度だけ発生する。
-- **AC5 Rescue**: S3/S8/S11 で操作しないと hint delay 後にヒント、rescue timeout 後に設定 policy が実行され、無限待機しない。
+- **AC5 Rescue**: S8/S11 で操作しないと hint delay 後にヒント、rescue timeout 後に設定 policy が実行され、無限待機しない。
 - **AC6 Abort and reuse**: 任意 step/food portion で staff reset または UserAbsent を発生させると3秒以内に Attract へ戻る。次 session に食べかけや UI は残らず、生成履歴と有効な anchor 設定は残る。
 - **AC7 Repeated sessions**: 無操作/途中離脱/正常完走を混ぜた10セッションで subscriber、食品 instance、collider、crumb effect、loading task のリークや状態汚染がない。
 - **AC8 Physical viewer**: VR メニューで利用可能な代表 item が iPad 等で同じ item ID/名称/preview/状態として閲覧できる。3D 表示の必須性は `Q2` 解決後に追加判定する。

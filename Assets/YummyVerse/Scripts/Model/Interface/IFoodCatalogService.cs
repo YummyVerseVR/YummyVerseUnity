@@ -4,8 +4,8 @@ using YummyVerse.Scripts.Model.Struct;
 
 namespace YummyVerse.Scripts.Model.Interface
 {
-    public interface IFoodFetchable
+    public interface IFoodCatalogService
     {
-        UniTask<FoodDownloadResult> Download(MenuItem item, CancellationToken ct);
+        UniTask<FoodCatalogLoadResult> LoadAsync(CancellationToken ct);
     }
 }

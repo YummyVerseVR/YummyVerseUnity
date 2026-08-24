@@ -20,32 +20,45 @@ namespace YummyVerse.Scripts.Model
             _localFoodSO = localFoodSO;
         }
         
-        public async UniTask<FoodDownloadResult> Download(Guid guid, CancellationToken ct)
+        public async UniTask<FoodDownloadResult> Download(MenuItem item, CancellationToken ct)
         {
-            var result = new FoodDownloadResult() { RequestedGuid =  guid };
-            
-            if (!_localFoodSO.TryGetLocalFood(guid, out var localFood))
+            var result = new FoodDownloadResult
             {
-                result.StatusCode = HttpStatusCode.NotFound;
-                return result;
-            }
-
-            var foodNameStr = localFood switch
-            {
-                LocalFoods.Curry => "curry.glb",
-                LocalFoods.Shrimp => "shrimp.glb",
-                LocalFoods.Hamburg => "hamburg.glb",
-                LocalFoods.DragonSteak => "dragonsteak.glb",
-                _ => null,
+                RequestedGuid = item.Guid,
+                RequestedItemId = item.Id
             };
 
-            if (string.IsNullOrWhiteSpace(foodNameStr))
+            string gltfPath;
+            if (item.Source == MenuItemSource.PersistentData)
             {
-                result.StatusCode = HttpStatusCode.NotFound;
-                return result;
+                gltfPath = item.ModelLocation;
             }
+            else
+            {
+                if (item.Source != MenuItemSource.BuiltIn ||
+                    !_localFoodSO.TryGetLocalFood(item.Guid, out var localFood))
+                {
+                    result.StatusCode = HttpStatusCode.NotFound;
+                    return result;
+                }
 
-            var gltfPath = Path.Combine(Application.persistentDataPath, "TestData", foodNameStr);
+                var foodNameStr = localFood switch
+                {
+                    LocalFoods.Curry => "curry.glb",
+                    LocalFoods.Shrimp => "shrimp.glb",
+                    LocalFoods.Hamburg => "hamburg.glb",
+                    LocalFoods.DragonSteak => "dragonsteak.glb",
+                    _ => null,
+                };
+
+                if (string.IsNullOrWhiteSpace(foodNameStr))
+                {
+                    result.StatusCode = HttpStatusCode.NotFound;
+                    return result;
+                }
+
+                gltfPath = Path.Combine(Application.persistentDataPath, "TestData", foodNameStr);
+            }
 
             if (string.IsNullOrWhiteSpace(gltfPath) || !File.Exists(gltfPath))
             {

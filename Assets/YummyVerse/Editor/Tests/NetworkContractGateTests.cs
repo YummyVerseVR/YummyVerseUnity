@@ -18,14 +18,26 @@ namespace YummyVerse.Editor.Tests
         }
 
         [Test]
-        public void ConnectionTest_FailsClosedWithoutSendingARequest()
+        public void ConnectionTest_RequiresAConfiguredV2Endpoint()
         {
-            var tester = new NetworkConnectionTester();
+            var endpoint = new EndPointManager();
+            var tester = new NetworkConnectionTester(endpoint);
 
             var result = tester.TestConnection(CancellationToken.None).GetAwaiter().GetResult();
 
             Assert.That(result.success, Is.False);
-            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.ServiceUnavailable));
+            Assert.That(result.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        }
+
+        [TestCase("https://api.example.test", true)]
+        [TestCase("http://127.0.0.1:8010", true)]
+        [TestCase("http://localhost:8010", true)]
+        [TestCase("http://api.example.test", false)]
+        public void EndpointValidationAllowsHttpsAndLoopbackDevelopmentHttp(string url, bool expected)
+        {
+            var endpoint = new EndPointManager();
+
+            Assert.That(endpoint.UpdateEndPointUrl(url), Is.EqualTo(expected));
         }
     }
 }

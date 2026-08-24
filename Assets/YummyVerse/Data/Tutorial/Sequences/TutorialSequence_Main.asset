@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.Tutorial.SO.TutorialSequence
   steps:
   - {fileID: 11400000, guid: 37228c94f0e644461b14d15a2250d412, type: 2}
-  - {fileID: 11400000, guid: b36434de8b3bf4a2b99d088eddac8e5c, type: 2}
   - {fileID: 11400000, guid: fd4121a43b34f49b38774a8ae0145dc3, type: 2}
   - {fileID: 11400000, guid: da8b0c754c9a945f7a39caddbdae091a, type: 2}
   - {fileID: 11400000, guid: 68bd37283f6ac48e7831b260bf3b4c48, type: 2}

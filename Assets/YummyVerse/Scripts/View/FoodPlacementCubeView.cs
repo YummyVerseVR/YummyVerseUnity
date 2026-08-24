@@ -89,6 +89,14 @@ namespace YummyVerse.Scripts.View
             grabInteractable.InjectOptionalPointableElement(grabbable);
             grabInteractable.UseClosestPointAsGrabSource = true;
 
+            // The marker starts outside reliable direct-grab range. Register it with
+            // the controller's grip-based distance interactor as well, so aiming at
+            // the cube and holding Grip consistently picks it up.
+            var distanceGrabInteractable = _cube.AddComponent<DistanceGrabInteractable>();
+            distanceGrabInteractable.InjectRigidbody(rigidbody);
+            distanceGrabInteractable.InjectOptionalGrabSource(_cube.transform);
+            distanceGrabInteractable.InjectOptionalPointableElement(grabbable);
+
             var renderer = _cube.GetComponent<MeshRenderer>();
             var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             if (shader != null)

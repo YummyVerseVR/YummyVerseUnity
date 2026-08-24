@@ -17,9 +17,13 @@ namespace YummyVerse.Scripts.Model.Dummies
     {
         
         
-        public async UniTask<FoodDownloadResult> Download(Guid guid, CancellationToken ct)
+        public async UniTask<FoodDownloadResult> Download(MenuItem item, CancellationToken ct)
         {
-            var result = new FoodDownloadResult() { RequestedGuid =  guid };
+            var result = new FoodDownloadResult
+            {
+                RequestedGuid = item.Guid,
+                RequestedItemId = item.Id
+            };
             var gltfPath = Application.persistentDataPath + "/TestData/test.glb";
 
             if (string.IsNullOrWhiteSpace(gltfPath) || !File.Exists(gltfPath))

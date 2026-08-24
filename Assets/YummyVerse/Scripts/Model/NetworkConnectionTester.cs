@@ -1,24 +1,59 @@
+using System;
 using System.Net;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using UnityEngine.Networking;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
+using YummyVerse.Scripts.Model.YummyServiceV2;
 
 namespace YummyVerse.Scripts.Model
 {
     public class NetworkConnectionTester : INetworkConnectionTester
     {
-        public UniTask<TestConnectionResult> TestConnection(CancellationToken ct)
+        private readonly IEndPointManager _endPointManager;
+
+        public NetworkConnectionTester(IEndPointManager endPointManager)
+        {
+            _endPointManager = endPointManager;
+        }
+
+        public async UniTask<TestConnectionResult> TestConnection(CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
 
-            // 現行 v2 OpenAPI には path/auth/compatibility operation が存在しない。
-            // 任意 URL や旧 server へ probing request を送らず、契約未公開として fail closed にする。
-            return UniTask.FromResult(new TestConnectionResult
+            if (!YummyServiceV2Url.TryBuildMenuUrl(_endPointManager.baseEndPointUrl, out var menuUrl))
             {
-                success = false,
-                StatusCode = HttpStatusCode.ServiceUnavailable
-            });
+                return new TestConnectionResult
+                {
+                    success = false,
+                    StatusCode = HttpStatusCode.BadRequest
+                };
+            }
+
+            using var request = UnityWebRequest.Get(menuUrl);
+            request.timeout = 10;
+            request.SetRequestHeader("Accept", "application/json");
+            request.SetRequestHeader("Authorization", $"Bearer {YummyServiceV2Url.DevelopmentAdminToken}");
+
+            try
+            {
+                await request.SendWebRequest().WithCancellation(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (UnityWebRequestException)
+            {
+                // responseCode=0 は DNS/TLS/transport failure。
+            }
+
+            return new TestConnectionResult
+            {
+                success = request.result == UnityWebRequest.Result.Success,
+                StatusCode = request.responseCode > 0 ? (HttpStatusCode)request.responseCode : 0
+            };
         }
     }
 }

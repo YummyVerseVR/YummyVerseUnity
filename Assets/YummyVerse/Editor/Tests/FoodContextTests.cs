@@ -26,7 +26,7 @@ namespace YummyVerse.Editor.Tests
                 events.RaiseMenuItemSelected(new MenuItem(LocalFoods.Curry, selectedGuid));
 
                 Assert.That(fetcher.DownloadCount, Is.EqualTo(1));
-                Assert.That(fetcher.LastRequestedGuid, Is.EqualTo(selectedGuid));
+                Assert.That(fetcher.LastRequestedItem.Guid, Is.EqualTo(selectedGuid));
             }
             finally
             {
@@ -89,14 +89,18 @@ namespace YummyVerse.Editor.Tests
         private sealed class RecordingFoodFetcher : IFoodFetchable
         {
             public int DownloadCount { get; private set; }
-            public Guid LastRequestedGuid { get; private set; }
+            public MenuItem LastRequestedItem { get; private set; }
 
-            public UniTask<FoodDownloadResult> Download(Guid guid, CancellationToken ct)
+            public UniTask<FoodDownloadResult> Download(MenuItem item, CancellationToken ct)
             {
                 ct.ThrowIfCancellationRequested();
                 DownloadCount++;
-                LastRequestedGuid = guid;
-                return UniTask.FromResult(new FoodDownloadResult { RequestedGuid = guid });
+                LastRequestedItem = item;
+                return UniTask.FromResult(new FoodDownloadResult
+                {
+                    RequestedGuid = item.Guid,
+                    RequestedItemId = item.Id
+                });
             }
         }
 

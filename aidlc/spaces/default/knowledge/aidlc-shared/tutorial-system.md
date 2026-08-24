@@ -31,8 +31,8 @@ Presenter interfaces <── TutorialStep (ScriptableObject) <── TutorialSeq
 
 `Assets/YummyVerse/Data/Tutorial/` には次が存在する。
 
-- Conditions: button、time、button-or-time、QR、FoodScooped、DishCleared。
-- Steps: S2、S3、S5、S6、S6'、S8、S11、S14、S15、S16、S18、S19。
+- Conditions: button、time、button-or-time、FoodScooped、DishCleared。旧 QR condition asset は履歴として残るが現行 sequence から参照しない。
+- Active Steps: S2、S5、S6、S6'、S8、S11、S14、S15、S16、S18、S19。旧 S3 asset は履歴として残るが現行 sequence から参照しない。
 - Sequences: `TutorialSequence_Main`、`TutorialSequence_FreePlay`。
 - Feedback: `SuccessFeedback_OK`。
 - Localization: `TutorialStrings` と日本語 table。
@@ -49,7 +49,7 @@ Presenter interfaces <── TutorialStep (ScriptableObject) <── TutorialSeq
 3. `Assets/YummyVerse/Scripts/InputActions/Restaurant.inputactions` の generated wrapper を更新し、Start と StaffReset action を利用可能にする。
 4. Restaurant scene の scene-level DI scope へ `TutorialInstaller` と共有 ViewModel binding を置く。Presenter View を child `GameObjectContext` に隔離しない。
 5. Message、Hint、Feedback、Choice、Voice、Debug HUD、GameCommandRouter を同じ scene/session に配置する。Tutorial 専用 scene は作らない。
-6. QR lost/designation lost を runtime event へ接続する。新要件への migration では旧 `QrPlateDetected`/food GUID semantics を AnchorDesignated semantics へ置き換える。
+6. QR/anchor designation は game/placement boundary で扱い、TutorialSequence の案内・完了条件へ接続しない。
 7. FoodScooped/DishCleared の本実装が未接続な環境だけ dummy event を用い、本番 flow では破棄操作を完食の代替にしない。
 
 ## Editing Rules
@@ -100,13 +100,13 @@ Reset 対象:
 
 - Debug HUD: AppState、step ID、elapsed seconds。Editor/Development Build で有効化し、本番は設定で制御する。
 - Logs: Tutorial enter/exit/rescue、GameEvent、GameCommand、AppState、anchor、item selection、preview/model load、scoop/remaining portion、reset を相関可能にする。
-- Test injection: Start、AnchorDesignated、FoodScooped、DishCleared、UserAbsent を手動発火できる test adapter を用意できる。
+- Test injection: Start、FoodScooped、DishCleared、UserAbsent を手動発火できる test adapter を用意できる。Anchor designation の代替入力は placement integration test 側で扱う。
 
 代表 smoke flow:
 
 1. Start で Attract→Tutorial。
-2. AnchorDesignated で S3 相当を通過。
-3. 無操作時に hint→rescue が発生することを確認。
+2. 紙皿注視の案内・QR 検出待ちを挟まず、S2 から S5 へ進む。
+3. S8/S11 の無操作時に hint→rescue が発生することを確認。
 4. 前菜で scoop と clear を実 event から通過。
 5. S14 後に scene reload/blackout なしで FreePlay。
 6. Virtual Menu は一つの UI に v2 API item と Standalone local item を同時表示し、Network item は image/metadata だけを先行取得する。
@@ -128,7 +128,7 @@ Reset 対象:
 - QR GUID → food selection/download trigger を Catalog/Menu item selection へ置き換える。
 - Network mode を YummyService v2 order/artifact client へ置き換え、廃止済み v1 API と旧 `/{guid}/model` を全 runtime/fallback から除去する。
 - History/status/selected artifact metadata/preview/GLB/auth/problem/compatibility の v2 transport contract 公開を待ち、未定義 path を推測しない。
-- S3 文言、condition/event ID を anchor designation semantics へ変更する。
+- S3 の紙皿注視案内・QR 検出待ちは現行 TutorialSequence から削除済み。旧 step/condition asset を再接続しない。
 - Generated Food Catalog、Preview Repository、Virtual Menu、Physical Viewer contract を追加する。
 - 実 model geometry から AABB を作り、Scoop Detector、Consumption State、crumb/disappear を Game event へ接続する。
 - Dummy FoodScooped/DishCleared の本番依存を除去する。

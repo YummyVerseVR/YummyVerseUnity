@@ -15,7 +15,7 @@ Tutorial は `Present → Await → Succeed` の ScriptableObject step sequence 
 - Positive: 文言、秒数、順序、救済を code change なしで調整できる。
 - Positive: Tutorial と FreePlay が同じ game feature/event を共有できる。
 - Negative: asset/DI/event wiring の整合性検証が必要になる。
-- Follow-up: 新しい AnchorDesignated event と既存 QrPlateDetected asset の migration を計画する。
+- Follow-up: Anchor designation は placement integration として計画する。S3 の案内・待機は現行 TutorialSequence から削除済みで、既存 QrPlateDetected condition asset を Tutorial へ再接続しない。
 
 ### Traceability
 

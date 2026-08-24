@@ -14,3 +14,4 @@
 - `security: []` は v2 README の auth deferred と併読し、production anonymous access の決定ではないと判断した。
 - Canonical Experience Flow は既に S15〜S17 で Tutorial 後の食品選択 UI を持っていたが、Network/Standalone を一つの UI に同時表示することは独立した acceptance として弱かったため `FR34`/`FR35` を追加した。
 - Standalone Mode は offline/local source として恒久維持し、Network availability や v2 contract readiness から独立させた。
+- 2026-08-24 の利用者指示により、S3 の「目の前の紙皿を見つめてください」という案内と QR 検出待ちは TutorialSequence から削除する。Anchor designation の製品責務は残るが、guided tutorial の step/completion condition にはしない。

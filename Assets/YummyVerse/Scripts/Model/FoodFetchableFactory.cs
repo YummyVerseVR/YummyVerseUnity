@@ -13,9 +13,9 @@ namespace YummyVerse.Scripts.Model
         
         public IFoodFetchable Create()
         {
-            // 現在選択可能な MenuItem は Standalone catalog 由来だけ。
-            // YummyService v2 の path/auth/download 契約が公開されるまで Network loader は生成しない。
-            return new LocalFoodLoader(_localFoodSO);
+            return new FoodLoaderRouter(
+                new LocalFoodLoader(_localFoodSO),
+                new NetworkFoodLoader());
         }
     }
 }

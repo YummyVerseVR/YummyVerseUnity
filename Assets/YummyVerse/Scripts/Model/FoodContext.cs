@@ -31,11 +31,11 @@ namespace YummyVerse.Scripts.Model
             Observable.FromEvent<MenuItem>(
                     h => _gameEventBus.OnMenuItemSelected += h,
                     h => _gameEventBus.OnMenuItemSelected -= h)
-                .Where(item => item.Guid != Guid.Empty)
+                .Where(item => item.IsValid)
                 .SubscribeAwait(async (item, ct) =>
                 {
                     _foodFetchable = _foodFetchableFactory.Create();
-                    downloadResult.Value = await _foodFetchable.Download(item.Guid, ct);
+                    downloadResult.Value = await _foodFetchable.Download(item, ct);
                 }).AddTo(_disposables);
         }
         

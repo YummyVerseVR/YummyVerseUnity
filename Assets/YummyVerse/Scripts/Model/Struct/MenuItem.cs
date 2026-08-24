@@ -3,22 +3,54 @@ using YummyVerse.Scripts.Model.Struct.SO;
 
 namespace YummyVerse.Scripts.Model.Struct
 {
+    public enum MenuItemSource
+    {
+        BuiltIn = 0,
+        PersistentData = 1,
+        ApiV2 = 2
+    }
+
     /// <summary>
-    /// 既存 Standalone catalog から来場者が選んだローカル食品。
-    /// Guid は端末内 catalog の内部 ID であり、QR payload や YummyService の order identity ではない。
-    /// Network item は v2 transport と unified catalog が確定するまでこの型へ詰め替えない。
+    /// 来場者がメニューから選んだ食品。API v2 の opaque ID、端末保存食品、既存の
+    /// built-in food を同じイベント境界へ載せる。QR identity とは独立している。
     /// </summary>
     public readonly struct MenuItem
     {
         public LocalFoods Food { get; }
         public Guid Guid { get; }
+        public string Id { get; }
+        public string DisplayName { get; }
+        public string ModelLocation { get; }
+        public MenuItemSource Source { get; }
+
+        public bool IsValid => Source switch
+        {
+            MenuItemSource.BuiltIn => Guid != Guid.Empty,
+            MenuItemSource.PersistentData or MenuItemSource.ApiV2 =>
+                !string.IsNullOrWhiteSpace(Id) && !string.IsNullOrWhiteSpace(ModelLocation),
+            _ => false
+        };
 
         public MenuItem(LocalFoods food, Guid guid)
         {
             Food = food;
             Guid = guid;
+            Id = guid == Guid.Empty ? string.Empty : $"built-in:{guid:D}";
+            DisplayName = food.ToString();
+            ModelLocation = string.Empty;
+            Source = MenuItemSource.BuiltIn;
         }
 
-        public override string ToString() => $"{Food}({Guid})";
+        public MenuItem(FoodCatalogItem item)
+        {
+            Food = default;
+            Guid = Guid.Empty;
+            Id = item?.Id ?? string.Empty;
+            DisplayName = item?.DisplayName ?? string.Empty;
+            ModelLocation = item?.ModelLocation ?? string.Empty;
+            Source = item?.Source ?? MenuItemSource.PersistentData;
+        }
+
+        public override string ToString() => $"{DisplayName}({Id}, {Source})";
     }
 }
