@@ -55,6 +55,7 @@ aidlc/spaces/default/intents/<YYMMDD>-<short-kebab-label>/
 
 - Tutorial、仮想/物理メニュー、QR/anchor、画像 preview、食事 action の統合要件は `spaces/default/intents/260824-guided-food-experience/` を参照する。
 - Tutorial の共有実装・運用知識は `spaces/default/knowledge/aidlc-shared/tutorial-system.md` を参照する。
+- YummyService v2 の契約 snapshot と API policy は `spaces/default/knowledge/aidlc-shared/yummy-service-v2-api.md` を参照する。v1 API は廃止済みで、YummyVerseUnity から今後一切利用しない。
 - `spaces/default/intents/260821-spatial-anchor-food-placement/` は Spatial Anchor 実装時の履歴である。その中の QR GUID による食品選択方針は 2026-08-24 intent により superseded されている。
 
 ## 公式ランタイムとの境界

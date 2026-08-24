@@ -14,7 +14,8 @@
 - Presentation: Message/Hint/Feedback/Choice/Voice Presenter と対応 View、`TutorialDebugHudView`。
 - Reset: `GameResetter` と session cancellation。
 - Placement: `FoodPlacementService`、`PlayerPrefsFoodPlacementStore`、Meta Spatial Anchor backend、設定用 Cube。
-- 現行差分: QR GUID を食品選択へ使う経路、生成履歴/画像 preview/外部 viewer、実 AABB scoop detector、縮小/crumb/消滅は本 intent の Construction 前に適合確認が必要である。
+- Current API: `FoodDownloader` が旧 `/{guid}/model` を GET し、`FoodContext` が QR GUID 変更で download を開始する。`IFoodFetchable`/`FoodDownloadResult` も Guid identity に固定されている。
+- 現行差分: QR GUID を食品選択へ使う経路、YummyService v2 order/artifact adapter、生成履歴/画像 preview/外部 viewer、実 AABB scoop detector、縮小/crumb/消滅は本 intent の Construction 前に適合確認が必要である。
 
 ## Target Component Responsibilities
 
@@ -51,6 +52,8 @@
 - session より長い履歴の列挙、lookup、利用可能性、削除/無効化を提供する。
 - preview image reference と model data reference を別フィールド/資源として扱う。
 - VR menu と Physical Menu Viewer が同じ item contract を読む。
+- Network adapter は YummyService v2 order identity/state を catalog item へ変換し、Standalone adapter は local item を同じ application model へ変換する。
+- Network/Standalone の両 source を一つの snapshot/list へ集約するが、source-specific identity と availability を保持する。
 
 ```text
 GeneratedFoodItem
@@ -67,18 +70,59 @@ GeneratedFoodItem
 - menu 一覧用 image/metadata の取得、cache、placeholder、retry を担当する。
 - model data の download/parse/instantiate を行わない。
 - item ごとの失敗を隔離し、一覧全体を止めない。
+- Network mode は customer-visible selected `SOURCE_IMAGE_NORMALIZED` artifact revision を候補とし、SHA-256 検証後に cache publish する。正確な API response/visibility は contract publication を待つ。
 
 ### Virtual Menu
 
 - Catalog の Ready item を VR 内に一覧表示し、controller selection を item ID として発行する。
 - menu/list、selected、loading、ready、error/retry を表現する。
 - 食品 model の load や anchor pose 計算を直接行わない。
+- Tutorial 完了後の FreePlay で一つだけ表示し、YummyService v2 item と Standalone local item を同時に並べる。
+- Item ごとに source を識別可能にし、Network failure/offline でも Standalone item と local selection を維持する。
+
+### Standalone Catalog and Loader Adapter
+
+- 端末内に保存された local 3D model/catalog を列挙し、Network item と同じ `GeneratedFoodItem` application model へ変換する。
+- Source namespace を `Standalone` として保持し、Network order/artifact ID と衝突させない。
+- Local file の存在、形式、読込可否を item 単位で検証し、破損 item だけを unavailable にする。
+- Selection 後は API request を行わず local loader で model を開き、共通の anchor/interaction/consumption flow へ渡す。
+- API connection/auth/contract state と独立して利用可能であり、session reset で local asset/catalog を削除しない。
 
 ### Physical Menu Viewer
 
 - iPad 等へ catalog item と preview/状態を read-only で提示する。
 - VR menu と item identity/status semantics を共有する。
 - transport、認証、3D 表示の有無は `Q2` 解決後に adapter として確定する。
+
+### YummyService v2 Contract Guard
+
+- Adopted repository commit、OpenAPI version/checksum、deployed API compatibility を照合する。
+- v1 response、未知 enum、missing required field、wrong artifact type を application success へ変換せず fail closed にする。
+- `security: []` を anonymous production permission と解釈せず、published auth contract がない環境を production-ready にしない。
+- Contract mismatch を secret を含まない診断 event として公開する。
+
+### YummyService v2 Client
+
+- History、order detail/status、selected artifact metadata、preview/GLB download、ProblemDetails を専用 transport boundary に隔離する。
+- HTTP DTO を `GeneratedFoodItem`、Order/Stage status、`ArtifactRef` へ mapping し、UI/loader が raw JSON/route を知らないようにする。
+- Cancellation、timeout、retry/backoff、stale response suppression を request ごとに適用する。
+- v2 normative OpenAPI に path/security/response が追加されるまで production implementation を placeholder URL や v1 route へ接続しない。
+
+```text
+ArtifactRef
+├── artifactId: opaque string
+├── artifactType: SOURCE_IMAGE_NORMALIZED | GLB | WAV | ...
+├── revision: opaque non-empty string
+├── sha256: 64 hex characters
+└── verified: bool
+```
+
+### YummyService v2 Artifact Store Adapter
+
+- Selected immutable artifact metadata と binary transfer を分離する。
+- Artifact ID/revision/SHA-256 を cache identity にし、一意 temp path へ stream download/incremental hash 後、atomic に cache publish する。
+- Preview と GLB の queue/cache/budget を分離し、menu open が GLB fetch を開始しないことを保証する。
+- SHA mismatch、truncation、cancel、wrong media/type を隔離して retry 可能にする。
 
 ### Anchor Designation and Placement
 
@@ -92,6 +136,7 @@ GeneratedFoodItem
 - Menu selection の item ID を Catalog で解決し、その item の model data だけを cache または source から取得する。
 - download、parse、instantiate の状態と cancellation/error/retry を公開する。
 - model ready と anchor ready の両方が揃ったときだけ Food Instance を表示する。
+- Network mode は order readiness、selected verified GLB metadata、downloaded byte SHA-256 の gate を通過してから glTF load する。
 
 ### Food Interaction Bounds
 
@@ -134,11 +179,23 @@ GeneratedFoodItem
 
 ### Menu and Model Loading
 
-1. Virtual Menu は Catalog metadata と Preview Repository の image だけで一覧を構築する。
-2. 選択された item ID を Selected Model Loader へ渡す。
-3. Loader は選択 item の cache を確認し、必要な場合だけ model data を取得・parse する。
-4. Anchor ready と model ready を gate し、両方が揃ったときに Food Instance を作る。
-5. error 時は item/context を保った retry または menu return を提示する。
+1. Contract Guard が接続先の v2 compatibility を確認する。
+2. v2 Client が history/order state を Network catalog item へ変換し、Standalone Adapter が端末内 catalog を local item へ変換する。
+3. Catalog は source namespace を保持したまま両 item set を集約する。一方の source failure で他方を捨てない。
+4. Virtual Menu は一つの UI で両 source の metadata/preview/placeholder を一覧表示する。
+5. Network preview は Preview Repository が selected/visible artifact を取得し、SHA-256 検証後に image cache へ publish する。Standalone preview は local reference/placeholder を用いる。
+6. 選択された item の source に応じて、Network item は Selected Model Loader、Standalone item は local loader へ dispatch する。
+7. Network loader は selected verified GLB revision の cache を確認し、必要な場合だけ Artifact Adapter から download/verify して parse する。Standalone loader は API request を行わず local model を parse する。
+8. Anchor ready と model ready の両方が揃ったときに Food Instance を作る。
+9. Source-specific error 時は他 source の選択を維持しつつ、item/context を保った retry または menu return を提示する。
+
+### API State Refresh
+
+1. History query で stable order/item identity と pagination cursor を取得する。
+2. Processing/review item は order detail/status から order state と全 stage state を更新する。
+3. Response version/revision が古い場合は newer local state を巻き戻さない。
+4. `COMPLETED` かつ selected verified GLB が利用可能な item だけを model-ready candidate にする。GLB 早期公開は `Q11` 解決後に変更できる。
+5. API/session cancel 後の late response は破棄する。
 
 ### Eating
 
@@ -167,10 +224,21 @@ GeneratedFoodItem
 | Effect 生成失敗 | Consumption/DishCleared を停止させず warning を記録する |
 | Viewer unreachable | VR session を停止させず、viewer 側で stale/offline/error を示す |
 | Session abort during load/effect | 非同期処理を cancel し、遅延 callback が次 session に反映されないようにする |
+| v1/unknown API contract | v2 として解析せず compatibility error。旧 route へ fallback しない |
+| Unknown order/stage/artifact enum | Ready/Completed に推測せず item を non-selectable にして contract mismatch を記録する |
+| Artifact SHA mismatch/truncation | Decode/load/cache publish せず隔離し、policy に従って再取得する |
+| 401/403 | Credential/scope error として扱い、secret を log せず sign-in/reconfigure を案内する |
+| 429/5xx/network timeout | Published retry guidance に従う。未定義の場合は bounded backoff と manual retry、session cancel を優先する |
+| API unavailable/auth/contract mismatch | Network section/item を offline/error とし、Standalone item の一覧・選択・load を継続する |
+| Standalone file missing/corrupt | 該当 local item だけ unavailable/error。他 local/network item と menu 全体は継続する |
+| Network/Standalone identity collision | Source namespace を含む key で別 item として保持し、上書きしない |
 
 ## Verification Boundaries
 
 - EditMode: step/condition、catalog item validation、selection/QR responsibility separation、portion state、event one-shot、reset policy。
 - PlayMode: Tutorial→FreePlay、menu image-only loading、selected model gate、AABB/collider tracking、scoop debounce、shrink/crumb/disappear、abort cleanup。
+- PlayMode/Offline: Tutorial 完了後の unified menu、Network/Standalone 同時表示、source dispatch、API failure 中の local selection/load、local file error isolation。
+- Contract test: reviewed v2 schema fixture、全 enum、ProblemDetails、unknown enum、immutable artifact selection、SHA-256、v1 rejection。
+- API integration: normative v2 OpenAPI に path/security/response が追加された後、mock/server と history/status/metadata/download/auth/compatibility contract test。
 - Quest 3: Start/controller/QR designation、Spatial Anchor、spoon interaction、haptic、performance、連続 session。
 - iPad 等: catalog/preview/status consistency、対象表示形式、同期、offline/error。対象方式は `Q2` 解決後に確定する。

@@ -70,4 +70,26 @@
 
 - Unmapped normative requirement: None.
 - Pure editor操作の細目は shared `tutorial-system.md` に現行 baseline として保存し、製品 requirement ID を水増ししていない。
-- 解釈を必要とする項目は `Q1`〜`Q5` に残し、確定済み要件として補完していない。
+- 解釈を必要とする項目は `Q1`〜`Q11` に残し、確定済み要件として補完していない。
+
+## YummyService v2 Contract Mapping
+
+| Contract topic | Self-contained contract fact | Destination |
+|---|---|---|
+| Version/authority | OpenAPI 3.1、`2.0.0-draft`、YummyService `main@546b455...` | `FR25`, `NFR10`, contract summary |
+| HTTP readiness | `paths: {}`、`.invalid` server、auth/artifact lookup/download deferred | `FR25`, `AC15`, `Q6`〜`Q10` |
+| Workflow DAG | Moderation→Retrieval→Analysis→Audio と moderation→I23D。I23D は analysis/audio branch から独立 | `FR26`, contract summary |
+| Order/Stage states | 8 OrderState、7 StageState、review/warning semantics | `FR26`, `FR28`, `AC11` |
+| Completion | Approved moderation/analysis、retrieval success/warning、verified JSON/GLB/WAV が必要 | `FR28`, `FR29`, `Q11` |
+| Artifact immutability | Artifact ID/type/revision/SHA-256/verified。current selection は別 pointer | `FR29`, `FR31`, `ADR-007` |
+| Preview/model types | `SOURCE_IMAGE_NORMALIZED` と `GLB` は別 immutable artifact type | `FR29`, `FR30` |
+| ProblemDetails | `type/title/status` required、extension allowed | `FR33` |
+| Security | OpenAPI は `security: []` だが v2 README は auth/device token を deferred | `FR32`, `NFR13`, `Q7` |
+| Food Analysis | Food properties only、confidence は制御 threshold に使用不可 | Constraints、shared API knowledge |
+| Current Unity gap | QR GUID→`/{guid}/model`、Guid-only interface、固定 temp file/base64 roundtrip | `FR25`, `FR31`, `NFR14`, `ADR-006`/`ADR-007` |
+| V1 retirement | YummyVerseUnity では v1 API を廃止し、全 runtime/environment/fallback から恒久的に利用禁止 | `FR25`, project memory, shared API knowledge |
+| Standalone continuity | Standalone Mode は API 非依存の端末内食品 source として継続する | `FR35`, `ADR-008`, project memory |
+| Unified post-tutorial menu | S14 後の一つの UI に v2 API 食品と Standalone 食品を同時表示し、source に応じて load する | `FR34`, S16/S17, `AC16`, `ADR-008` |
+
+- YummyService v2 の unmapped normative domain rule: None for the current read-only catalog/model-consumer scope.
+- Unity から order intake/upload/submit、Admin/worker operation を行う要求は現 scope にないため Out of Scope とした。

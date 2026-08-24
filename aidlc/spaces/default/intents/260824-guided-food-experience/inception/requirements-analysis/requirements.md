@@ -4,7 +4,7 @@
 
 - 目的: 来場者が説明に沿って基本的な食品で操作を学び、生成済み食品をメニューから選び、安定したアンカー位置ですくって食べられる展示体験を定義する。
 - 対象ユーザー: 来場者、展示運営者、iPad 等を使う外部閲覧者、開発者。
-- 成功指標: `docs` 非依存の要件追跡、シームレスな Tutorial→FreePlay、QR 待ちのない食品選択、軽量なメニュー表示、簡易で理解しやすい食事リアクション、中断後の確実なリセット。
+- 成功指標: `docs` 非依存の要件追跡、シームレスな Tutorial→FreePlay、QR 待ちのない食品選択、軽量なメニュー表示、簡易で理解しやすい食事リアクション、中断後の確実なリセット、YummyService v2 の order/artifact 契約に準拠した安全な API 利用。
 - 優先規則: 本 intent の QR/食品選択要件は `260821-spatial-anchor-food-placement` の QR GUID 選択要件を supersede する。
 
 ## Functional Requirements
@@ -99,6 +99,7 @@
 
 - **FR12: 生成済み食品を再選択可能な履歴として扱うこと** (`MUST`)
   - 生成済み食品ごとに、少なくとも安定した item ID、表示名、preview image reference、3D model data reference、生成/利用可能状態を履歴項目として保持する。
+  - Network mode の item ID は YummyService v2 の order identity に対応できる opaque value とし、QR GUID または mutable filename を server identity として扱わない。
   - 履歴は来場者セッション reset では失わず、利用可能な項目だけをメニューへ提示する。
   - 破損・未完了・取得失敗の項目を選択可能な正常項目として表示しない。
   - 検証条件: 一度生成済みとして登録された食品が次のメニュー表示でも識別可能で、同じ item を再度選択できる。
@@ -109,6 +110,7 @@
   - 選択結果を食品 identity source とし、選択された model data を指定済み anchor へ提供する。
   - QR payload/GUID、QR 検出の成否、QR の pose を食品 item の選択に使わない。
   - 選択、loading、ready、error、retry の状態を利用者へ表示する。
+  - Network mode の履歴・状態・artifact reference は YummyService v2 consumer API から取得し、Standalone local item は同じ application domain へ adapter で変換する。
   - 検証条件: QR を新たに読み込まず、履歴の任意項目を選んで対応する食品の提供を開始できる。
   - 出典: 2026-08-24 利用者要求。
 
@@ -194,6 +196,103 @@
   - 検証条件: 2人目の来場者は前セッションの食べかけ食品を引き継がず、生成履歴と有効な展示配置は再利用できる。
   - 出典: 移管元チュートリアル仕様 §5、移管元利用ガイド §4、2026-08-24 利用者要求。
 
+### YummyService v2 API Integration
+
+- **FR25: YummyService v2 契約だけを新しい Network mode の API 境界として使用すること** (`MUST`)
+  - Target contract は YummyService `contracts/v2/openapi.yaml` の `2.0.0-draft` と `contracts/v2/README.md` とする。
+  - **YummyVerseUnity における v1 API は廃止済みであり、今後一切使用しない。** Production、development、test、demo、障害時 fallback、migration compatibility、Standalone の代替を含む全 runtime から `/v1/...` への outbound request を禁止する。
+  - 旧 Yummy Control Server の `/{guid}/model` と QR GUID download trigger も v2 integration の fallback として使用しない。
+  - v1 client/DTO/configuration/mock を新しい runtime dependency として追加・維持しない。例外は「v1 response/URL を確実に拒否する」negative compatibility fixture だけで、v1 server へ実 request を送らない。
+  - Client は接続先の v2 compatibility/version を検証でき、非互換 server を成功扱いにしない。
+  - v2 endpoint が未定義の間は URL/path を推測して production request を実装しない。
+  - 検証条件: Source/config/build/request trace に runtime v1 route/旧 GUID model route がなく、v1 URL/response fixture と v2 compatibility が確認できない接続先で明示 error になる。全 test 環境でも v1 server への outbound request は0件である。
+  - 出典: 2026-08-24 利用者指定、YummyService v2 OpenAPI/README、`ADR-006`。
+
+- **FR26: v2 の order/stage workflow state を欠落なく解釈すること** (`MUST`)
+  - OrderState `DRAFT`, `QUEUED`, `PROCESSING`, `AWAITING_ADMIN_REVIEW`, `COMPLETED`, `REJECTED`, `FAILED`, `CANCELED` を区別する。
+  - StageState `PENDING`, `QUEUED`, `PROCESSING`, `COMPLETED`, `COMPLETED_WITH_WARNING`, `FAILED`, `CANCELED` と5 stage の状態を order state と別に保持する。
+  - `AWAITING_ADMIN_REVIEW` を全 branch 停止と表示せず、`IMAGE_TO_3D` が独立して進行し得ることを表現する。
+  - `COMPLETED_WITH_WARNING` は許可された Example Retrieval/Zero Shot outcome として扱い、任意 failure を warning success に変換しない。
+  - 未知 enum 値を `COMPLETED` または menu-ready に推測変換しない。
+  - 検証条件: 全既知 state と未知 state fixture に対して menu/status UI と selectable 判定が期待どおりである。
+  - 出典: YummyService v2 workflow contract。
+
+- **FR27: 生成履歴を取得する v2 API capability を要求すること** (`MUST`)
+  - Quest/Physical Viewer は customer-visible な generated order/item を列挙できる必要がある。
+  - Response は stable order/item identity、表示 metadata、OrderState、preview/model readiness、cursor pagination、安定した sort/filter semantics を持つ。
+  - Terminal failure/rejection/cancel と processing/review を Ready item から区別できる。
+  - Contract に history operation が追加されるまで、v1 admin/customer list endpoint を代用しない。
+  - 検証条件: 複数 page、同時追加、重複 page、空履歴、各 terminal/non-terminal state で重複のない履歴を構成できる。
+  - 出典: `FR12`〜`FR15` から導出した必要 capability `API-CAP-01`。現行 v2 OpenAPI に path/response schema は未定義。
+
+- **FR28: 一つの order と全 stage の状態・選択 revision を取得できること** (`MUST`)
+  - API は order detail/status として OrderState、全5 stage の StageState、warning/review/failure 情報、selected revision pointer を返せる必要がある。
+  - Client は order-level review と Food Analysis approval/status を混同しない。
+  - polling/event の更新順が前後しても、古い response で terminal/newer state を巻き戻さない識別子または version が必要である。
+  - 検証条件: moderation review、Food Analysis review、I23D 独立進行、warning retrieval、terminal outcome を UI/log で区別できる。
+  - 出典: YummyService v2 workflow contract、必要 capability `API-CAP-02`。
+
+- **FR29: 選択された immutable artifact revision の metadata を取得できること** (`MUST`)
+  - Preview 候補の `SOURCE_IMAGE_NORMALIZED`、model の `GLB`、将来利用する場合の `WAV` について、`artifact_id`, `artifact_type`, `revision`, `sha256`, `verified` を取得する。
+  - selected/current pointer と immutable revision を分離し、new revision が存在するだけで自動的に current とみなさない。
+  - GLB は `verified=true` かつ正しい `artifact_type` の selected revision だけを model load candidate にする。
+  - customer-visible artifact の範囲は API auth/visibility contract に従い、admin-only artifact を client から取得しない。
+  - 検証条件: wrong type、unverified、missing selection、older/newer unselected revision を拒否できる。
+  - 出典: YummyService v2 `ArtifactRevision`、必要 capability `API-CAP-03`。
+
+- **FR30: Preview image と選択 GLB を別 operation/lifecycle で download できること** (`MUST`)
+  - History/menu は customer-visible preview image のみを先行 download し、GLB download を開始しない。
+  - Food selection 後、selected verified GLB revision だけを authorized binary response として取得する。
+  - Download contract は media type、content length/size limit、redirect、range/resume、cache validation の有無を定義する必要がある。
+  - Preview failure は item placeholder/retry に留め、選択 GLB failure は item-level error/retry/menu return とする。
+  - 検証条件: menu open 時の request trace に未選択 GLB がなく、selection 後は一つの selected GLB だけが取得される。
+  - 出典: `FR14`、YummyService v2 ArtifactType、必要 capability `API-CAP-04`/`API-CAP-05`。
+
+- **FR31: Artifact の identity と SHA-256 integrity を検証してから利用すること** (`MUST`)
+  - Download bytes の SHA-256 を metadata と比較し、一致前に preview decode、glTF load、共有 cache publish を完了扱いにしない。
+  - Cache key は少なくとも artifact ID、revision、SHA-256 を含み、固定 filename や order ID だけで immutable revision を上書きしない。
+  - Mismatch、途中 download、破損 cache は削除/隔離して再取得可能にし、verified flag だけを client-side byte verification の代替にしない。
+  - 検証条件: byte 改変、truncated response、同一 artifact の revision change、並行 download で誤った model を load しない。
+  - 出典: YummyService v2 immutable artifact/SHA-256 contract、`ADR-007`。
+
+- **FR32: Quest と Physical Viewer が同じ認可された v2 catalog を参照すること** (`MUST`)
+  - Quest と iPad 等の viewer は同じ order/item/artifact identity と state semantics を使用する。
+  - Client へ admin/worker credential を埋め込まず、customer/device 向け scope、token lifetime、refresh/revocation、history visibility を API contract で定義する。
+  - v2 OpenAPI の `security: []` を production anonymous access の承認と解釈しない。
+  - Viewer が unauthorized/offline の場合は private artifact を表示せず、VR session の進行とは独立した error を示す。
+  - 検証条件: 異なる role/order scope の token で403/visibility isolation が働き、Quest と viewer の同一 item が同じ artifact revision を指す。
+  - 出典: `FR15`、YummyService v2 で deferred の authentication/device token、必要 capability `API-CAP-06`。
+
+- **FR33: v2 ProblemDetails と operation-specific error/retry contract を扱うこと** (`MUST`)
+  - `application/problem+json` の `type`, `title`, `status` と任意の `detail`, `instance`, extension fields を解析できる。
+  - Client は401/403、not found、conflict、rate limit、validation、server/unavailable、timeout/cancellation を同一の generic failure に潰さない。
+  - Retryable operation だけを cancellation-aware backoff で再試行し、session reset 後の response を次 session へ反映しない。
+  - ProblemDetails の未知 extension field を理由に response 全体を拒否しない。
+  - 検証条件: operation ごとの problem fixture、malformed response、timeout、cancel、late response で UI/state/cache が汚染されない。
+  - 出典: YummyService v2 `ProblemDetails`、必要 capability `API-CAP-07`〜`API-CAP-09`。
+
+### Unified Food Selection UI and Standalone Continuity
+
+- **FR34: チュートリアル完了後に API/Standalone 共通の食品選択 UI を表示すること** (`MUST`)
+  - 前菜による Tutorial が S14 で完了した後、同じ session/scene の FreePlay で食品一覧 UI を表示する。
+  - 一つの食品選択 UI に、YummyService v2 API から取得した選択可能な生成食品と、Standalone catalog に保存されているローカル食品の両方を同時に表示する。
+  - 各 item は少なくとも表示名、preview/placeholder、利用可能状態、`Network (YummyService v2)` または `Standalone (Local)` の source を識別できる。
+  - Network と Standalone の ID namespace を分離し、同じ名前/GUID/内部値でも別 item を誤って上書きしない。
+  - Network item の選択は v2 selected verified GLB flow、Standalone item の選択は local loader flow へ dispatch し、どちらも同じ anchor placement と eating interaction へ合流する。
+  - API が未接続・offline・error の場合も Standalone item を UI から消さず、Network 部分の状態だけを error/offline として示す。
+  - 検証条件: Tutorial 完了後の一つの UI に Network/Standalone item が同時表示され、それぞれを選択すると対応する loader だけが動き、同じ food presentation flow へ到達する。
+  - 出典: 2026-08-24 利用者確認、既存 Canonical Experience Flow S15〜S17。
+
+- **FR35: Standalone Mode を API 非依存の恒久機能として維持すること** (`MUST`)
+  - Standalone Mode は端末に保存された local 3D model/catalog を表示する機能として今後もサポートする。
+  - Standalone item の一覧、選択、model load、表示に YummyService v2 または廃止済み v1 API への request を必要としない。
+  - API endpoint 未設定、network unavailable、authentication failure、v2 contract mismatch の場合でも、有効な Standalone item は選択・表示できる。
+  - Local file の欠落・破損・未対応形式は item 単位で unavailable/error とし、他の Standalone item と UI 全体を停止させない。
+  - Standalone item も anchor designation/placement、AABB、scoop、縮小、crumb、DishCleared、session reset の共通要件に従う。
+  - Session reset は表示中の local food instance を消去するが、端末に保存された Standalone model/catalog 自体は削除しない。
+  - 検証条件: Network を無効化した状態でアプリを開始し、Tutorial 完了後の食品選択 UI から Standalone item を選び、指定 anchor への表示と食事 flow を完了できる。
+  - 出典: 2026-08-24 利用者確認、既存 Standalone implementation boundary。
+
 ## Non-Functional Requirements
 
 - **NFR1: Unity の既存 architecture と非同期方式を維持すること**
@@ -236,6 +335,31 @@
   - 複雑な断面 mesh、連続破壊 simulation、毎 frame の bounds 再計算を必須にしない。
   - 検証方法: Quest 実機の profiler と、複数回の scoop 後の collider/visual 整合性確認。
 
+- **NFR10: v2 draft contract の revision を固定・監査すること**
+  - Build/release ごとに採用する YummyService repository commit と OpenAPI version/checksum を記録する。
+  - `2.0.0-draft` の更新を自動採用せず、schema/path/state/security diff と client impact review を行う。
+  - 検証方法: CI/verification report に contract revision を出力し、fixture/generated client が同じ revision に由来することを確認する。
+
+- **NFR11: v2 非互換・未知状態・未検証 artifact では fail closed すること**
+  - Version/state/schema/artifact type/integrity を推測で成功へ変換しない。
+  - Compatibility error は diagnostic に server URL、contract revision、operation、state/type を含めるが token/secret を含めない。
+  - 検証方法: v1 response、未知 enum、missing fields、wrong artifact type、SHA mismatch の contract test。
+
+- **NFR12: API request/download を cancellation-aware かつ session-safe にすること**
+  - History、status、preview、GLB の request は timeout と CancellationToken を持ち、retry/backoff も同 token で停止する。
+  - 遅延 response は session/item generation token または request identity で stale と判定し、new session/selection を上書きしない。
+  - 検証方法: network delay、out-of-order response、cancel during download、rapid item reselection の PlayMode/integration test。
+
+- **NFR13: Client credential と artifact transport を production-safe にすること**
+  - Production endpoint は TLS と v2 で確定した customer/device authentication を使用し、admin/worker/static development token を build に含めない。
+  - Token、authorization header、signed download URL、個人情報を通常 log に出さない。
+  - 検証方法: build secret scan、proxy/log review、expired/revoked/wrong-scope token test。v2 auth/TLS contract 公開前は production-ready と判定しない。
+
+- **NFR14: Large artifact を余分な全量コピーなしに保存・検証すること**
+  - GLB download は可能な限り streaming/file download と incremental SHA-256 を用い、bytes→base64→bytes の変換を行わない。
+  - Temp/cache filename は artifact revision ごとに一意かつ atomic publish 可能にし、並行 request で共有固定名を使わない。
+  - 検証方法: representative large GLB の peak memory、temporary files、concurrent selection、cache hit/miss を profiler/file inspection で確認する。
+
 ## Canonical Experience Flow
 
 | Phase | Canonical ID | Type/owner | Content | Completion |
@@ -251,8 +375,8 @@
 | Tutorial | S11 | Task | そのまま完食する。催促を内包 | DishCleared |
 | Tutorial | S14 | Narration | 食事操作の理解を確認 | Time |
 | FreePlay | S15 | Narration | 食べたい生成食品の選択を促す | Button |
-| FreePlay | S16 | Choice/Menu | 生成履歴の仮想メニューを表示 | Menu selection |
-| FreePlay | S17 | Game command | 選択食品を指定 anchor へ提供 | Food ready |
+| FreePlay | S16 | Choice/Menu | 一つの食品選択 UI に YummyService v2 由来の生成食品と Standalone local 食品を統合表示 | Menu selection |
+| FreePlay | S17 | Game command | 選択された verified GLB/Standalone 食品を指定 anchor へ提供 | Food ready |
 | FreePlay | S18 | Narration/Event | 完食への謝辞 | DishCleared |
 | Outro | S19 | Narration | 再来を案内 | Time, then Attract |
 
@@ -271,6 +395,14 @@
 - **AC7 Repeated sessions**: 無操作/途中離脱/正常完走を混ぜた10セッションで subscriber、食品 instance、collider、crumb effect、loading task のリークや状態汚染がない。
 - **AC8 Physical viewer**: VR メニューで利用可能な代表 item が iPad 等で同じ item ID/名称/preview/状態として閲覧できる。3D 表示の必須性は `Q2` 解決後に追加判定する。
 - **AC9 Documentation independence**: `docs/` が存在しない前提で、本ファイル、domain design、source migration map、space-level knowledge から全 FR/NFR、体験フロー、旧要件の supersession、未解決事項を追跡できる。
+- **AC10 v2-only adapter**: Network mode の request trace/source review に `/v1/`、`/{guid}/model`、QR GUID download trigger がなく、v2 compatibility を確認できない server では明示 error になる。
+- **AC11 Workflow mapping**: 全 OrderState/StageState fixture を入力し、review/warning/failure/cancel と I23D 独立進行を誤って Ready/全停止として表示しない。
+- **AC12 Artifact integrity**: `COMPLETED` order の selected verified GLB を download し、SHA-256 一致後だけ glTF load/cache publish する。改変・truncated・wrong type・unselected revision は拒否する。
+- **AC13 API-driven menu**: History response から複数 page の item を重複なく一覧化し、preview だけを先行取得する。選択前の GLB download は0件である。
+- **AC14 Cross-device identity**: Quest と iPad viewer が同じ認可 scope で同一 order/item と selected artifact revision を表示し、wrong-scope client は private item/artifact を取得できない。
+- **AC15 Contract gate**: v2 normative OpenAPI に `API-CAP-01`〜`API-CAP-09` の implementable paths/security/responses がない現状では、domain mapping を `READY`、production HTTP integration を `NOT-READY` と判定する。
+- **AC16 Unified post-tutorial menu**: S14 完了後、scene transition なしで一つの食品選択 UI が開き、Network item と Standalone item が source を識別可能な状態で同時表示される。各 source から一件ずつ選択し、正しい loader/food data が同じ anchor/eating flow へ渡る。
+- **AC17 Offline Standalone continuity**: API endpoint を未設定または network unavailable にしても、食品選択 UI は Standalone item を表示し、local model の選択・表示・完食を完了できる。Network error が local flow を block しない。
 
 ## Constraints and Prohibited Patterns
 
@@ -282,6 +414,14 @@
 - session reset で永続 anchor/placement や生成履歴を暗黙に削除しない。
 - QR を food identity、model generation、history selection の入力へ戻さない。
 - メニュー一覧のために全 3D model を先行 download/parse/instantiate しない。
+- v1 API は廃止済みであり、production/development/test/demo/fallback/migration/Standalone を問わず runtime から一切呼ばない。v1 rejection 用の local negative fixture だけを許容する。
+- v2 OpenAPI にない path/method/header/response/auth を推測して production contract として固定しない。
+- `verified=false`、SHA-256 mismatch、wrong ArtifactType、unselected revision を表示/load しない。
+- Food Analysis `confidence` から gameplay、haptic、muscle/electrical control threshold を自動導出しない。
+- GLB bytes を base64 へ往復変換したり、全 artifact で同じ temp filename を使ったりしない。
+- Client build に admin/worker credential や development static token を埋め込まない。
+- API error/offline を理由に Standalone item を一覧から消したり、Standalone Mode 全体を利用不能にしたりしない。
+- Standalone local model/catalog の利用を v1 API fallback とみなさない。Standalone は API request を行わない独立 source である。
 - 食事表現に複雑な断面生成を必須化しない。
 - `docs/` を現行要件の必須参照先にしない。
 
@@ -292,6 +432,8 @@
 - 生成 AI/model pipeline 自体の変更。ただし生成結果を履歴へ登録する contract は対象。
 - Viewer の配布・認証・network architecture の最終選定。
 - 数値化されていない性能目標をこの文書だけで確定すること。
+- 現在の Unity app から order intake、source image upload、submit、Admin review、worker lease/retry を実行すること。将来必要になった場合は YummyService v2 の `OrderInput`/moderation/auth contract を別途要件化する。
+- v2 contract に transport operation がない状態で v1 endpoint を呼んで暫定互換とみなすこと。
 
 ## Sources
 
@@ -299,7 +441,11 @@
 - **SRC-2 — 移管元チュートリアル利用ガイド**: 現行 event/command bus、DI scope、asset editing、reset responsibilities、debug/test flow、既存実装との差分、anti-pattern を説明していた。移管元パスは `docs/tutorial-usage.md` だが、本 intent の requirements/domain design と shared knowledge に必要内容を再記載済み。
 - **SRC-3 — 2026-08-24 利用者追加要求**: VR 内 start、基本食品→注文食品、QR を anchor 指定のみに変更、生成履歴メニュー、画像 preview、iPad 等の物理 menu、AABB、scoop reaction/任意 haptic、段階縮小、crumb、最終消滅。
 - **SRC-4 — 2026-08-24 文書統合要求**: 将来 `docs` を削除しても `aidlc` 単体で要件が分かること。
+- **SRC-5 — YummyService v2 contract**: `https://github.com/YummyVerseVR/YummyService` の `main@546b455fedd205fb686ca7b93d6af596bced7879`、`contracts/v2/openapi.yaml` (`2.0.0-draft`) と `contracts/v2/README.md`。Workflow DAG、state、completion、immutable artifact、schema は規範的だが、HTTP paths、deployment URL、authentication、artifact lookup/download は未定義/deferred。
+- **SRC-6 — Current Unity integration evidence**: `FoodDownloader.cs` は旧 `/{guid}/model`、`FoodContext.cs` は QR GUID trigger、`IFoodFetchable.Download(Guid)` は GUID identity、`EndPointManager.cs` は旧 endpoint を使用しており、v2 order/artifact contract への migration が必要。
+- **SRC-7 — 2026-08-24 Standalone/UI clarification**: Standalone Mode は今後も使用する。Tutorial 完了後に食品一覧 UI が存在し、その UI は YummyService v2 API 由来の食品と端末保存済み Standalone 食品を同時に表示する。
 - 詳細なセクション単位の移管対応は `source-migration-map.md` を参照する。そこにも source requirement の要約を持たせ、`docs` の存在を前提にしない。
+- v2 API の自己完結した snapshot と required capability は `knowledge/aidlc-shared/yummy-service-v2-api.md`、consumer mapping は `inception/contract-design/contract-summary.md` を参照する。
 
 ## Assumptions & Open Questions
 
@@ -308,12 +454,20 @@
 - **Q3 (Blocking for eating-collider Unit)**: 「最も離れている2点を基準とした AABB」の二点をどの座標空間/頂点集合から求め、二点だけで各軸 extent をどう決めるか。通常の renderer/mesh bounds AABB と同義か。
 - **Q4 (Non-blocking)**: Haptic を展示版の必須受け入れに昇格するか。現時点は `SHOULD`。
 - **Q5 (Blocking for anchor Unit)**: QR designation を既存の運営者設定済み Meta Spatial Anchor の選択に使うのか、QR pose から新規/一時 anchor を作るのか。既存 Cube/UUID/relative pose flow との優先関係は何か。
+- **Q6 (Blocking for API Unit)**: `API-CAP-01`〜`API-CAP-09` の v2 path、method、request/response schema、status code は何か。現行 OpenAPI の `paths` は空である。
+- **Q7 (Blocking for API/Viewer Unit)**: Quest と iPad viewer の authentication/token issue/refresh/revoke/order scope は何か。v2 contract では auth/device token が deferred である。
+- **Q8 (Blocking for Preview Unit)**: Customer-visible preview は selected `SOURCE_IMAGE_NORMALIZED` で確定か。Preview selection、media type、download visibility はどう表現するか。
+- **Q9 (Blocking for Catalog Unit)**: History の pagination/sort/filter、change detection、rate limit、cache validation contract は何か。
+- **Q10 (Blocking for Model Delivery Unit)**: GLB/image download の media type、max bytes、redirect、range/resume、signed URL、timeout/retry guidance は何か。
+- **Q11 (Blocking product/API decision)**: Verified GLB が `IMAGE_TO_3D` 完了時点で存在しても、order 全体が WAV/Analysis を含め `COMPLETED` になる前に customer menu へ公開してよいか。現 baseline は安全側に `COMPLETED` 後だけ Ready とする。
 - 仮定: リンゴは例であり、同程度に認知しやすい固定の前菜へ差し替え可能である。
 - 仮定: 生成履歴は来場者セッションより長く保持されるが、永続期間と削除 policy は別途決定する。
 
 ## Review
 
 - Requirements capture status: `READY`
+- v2 domain contract mapping: `READY`
+- v2 production HTTP contract: `NOT-READY`
 - Construction readiness: `NOT-READY`
-- Approval basis: 2026-08-24 の明示要求および移管元2文書。
+- Approval basis: 2026-08-24 の明示要求、移管元2文書、YummyService v2 normative contract snapshot。
 - Reviewed at: 2026-08-24

@@ -9,6 +9,8 @@
 ## Observability
 
 - Spatial Anchor の作成・保存・読み込み・localization、QR による anchor designation、表示 pose の確定・復元、catalog/menu selection、preview/model 取得、scoop/consumption、physical viewer、セッション中断、リセットの診断情報を確認可能にする。
+- API operation では v2 contract revision、order/item ID、OrderState/StageState、artifact ID/revision/type/verified、integrity result、problem type/status、retry/cancel を相関可能にする。Token、authorization header、signed URL は記録しない。
+- Deployment 前に v1 outbound route が0件であることと、v2 compatibility/auth/TLS/artifact download contract が満たされることを確認する。
 - ログに秘密情報や不要な個人情報を含めない。
 
 ## Incident Response

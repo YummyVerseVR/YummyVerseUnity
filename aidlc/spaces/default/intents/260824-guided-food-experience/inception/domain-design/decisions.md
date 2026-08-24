@@ -105,7 +105,99 @@ Session reset は selected item、Food Instance/portion/collider/effect、UI/loa
 
 - Requirements: `FR8`, `FR12`, `FR17`, `FR24`, `NFR3`, `NFR4`, `NFR7`, `NFR8`
 
+## ADR-006: YummyService v2 を専用 client boundary で利用し、transport 未定義時は fail closed にする
+
+### Context
+
+利用 API version は v2 と指定された。YummyService の normative v2 OpenAPI/README は workflow/state/schema を定義する一方、OpenAPI `paths` は空、server URL は placeholder、authentication と artifact lookup/download は deferred である。Current Unity client は QR GUID から旧 `/{guid}/model` を呼び、v2 order/artifact vocabulary と互換性がない。
+
+### Decision
+
+YummyService v2 の HTTP/DTO は専用 `YummyService v2 Client` と Contract Guard に隔離する。New Network mode は v2 compatibility を確認し、v1 route/response や旧 GUID endpoint へ fallback しない。v2 domain mapping/fixture は先行できるが、production transport adapter は normative OpenAPI に required capabilities の paths/security/responses が追加されるまで `NOT-READY` とする。
+
+### Consequences
+
+- Positive: v2 と v1/legacy の identity/state/transport が混在しない。
+- Positive: Draft contract の変更を一つの adapter と compatibility test に閉じ込められる。
+- Negative: YummyService v2 の transport contract 公開までは end-to-end Network mode を実装完了できない。
+- Follow-up: `API-CAP-01`〜`API-CAP-09` を YummyService 側の normative OpenAPI と mock/server へ追加し、`Q6`〜`Q10` を解決する。
+
+### Alternatives Rejected
+
+- v1 order/artifact endpoints を名前だけ v2 として流用する:
+  - v2 の workflow/state/completion と契約が異なり、利用者指定の version を満たさない。
+- 旧 `/{guid}/model` を暫定 fallback にする:
+  - QR/GUID identity を復活させ、`FR16` と v2 immutable artifact model に反する。
+- Empty `paths` から endpoint を推測する:
+  - Method、auth、status、visibility、download semantics を捏造することになる。
+
+### Traceability
+
+- Requirements: `FR25`〜`FR30`, `FR32`, `FR33`, `NFR10`〜`NFR13`
+
+## ADR-007: Model/preview cache は selected immutable artifact revision と SHA-256 を基準にする
+
+### Context
+
+YummyService v2 の artifact revision は immutable で、artifact ID/type/revision/SHA-256/verified を持ち、current selection は別 pointer である。Current Unity downloader は response bytes を base64 往復し、全 request で固定名 `test.glb` を使うため、revision identity、integrity、並行 download safety を満たさない。
+
+### Decision
+
+Preview/GLB は selected `ArtifactRef` を解決した後、artifact ID + revision + SHA-256 を cache identity とする。一意 temp file へ streaming download/incremental SHA-256 を行い、一致した bytes だけを atomic に cache publish/decode/load する。Preview と model の download/cache queue は分離する。
+
+### Consequences
+
+- Positive: Stale/mismatched/partial artifact を表示・実行しない。
+- Positive: Immutable revision の再利用、並行 request、cross-device identity を正しく扱える。
+- Positive: Base64 往復による余分な memory copy を除去できる。
+- Negative: Artifact metadata lookup、file lifecycle、cache eviction、hash cost の実装が必要になる。
+- Follow-up: `Q8`/`Q10` と cache/SLA の `Q1` を解決する。
+
+### Alternatives Rejected
+
+- Order ID または mutable filename だけで cache する:
+  - Selected revision change と integrity identity を表現できない。
+- Server の `verified=true` だけを信頼して client hash を省略する:
+  - Transport/cache corruption を検出できない。
+- Response 全体を memory 上で base64 encode/decode する:
+  - 大きい GLB で peak memory とコピー回数が増える。
+
+### Traceability
+
+- Requirements: `FR29`〜`FR31`, `FR33`, `NFR11`, `NFR12`, `NFR14`
+
+## ADR-008: Tutorial 後の一つの選択 UI へ Network と Standalone を独立 source として統合する
+
+### Context
+
+Game flow は Tutorial 後に食品メニューを表示する。利用者は YummyService v2 由来の生成食品に加え、端末へ保存した Standalone 食品も今後継続利用する。Standalone を Network fallback として実装すると、API error が local flow を停止させたり、廃止済み v1 policy と混同されたりする。
+
+### Decision
+
+Network Catalog Adapter と Standalone Catalog/Loader Adapter を独立 source とし、source namespace を保持した共通 `GeneratedFoodItem` model へ変換する。S14 後のFreePlayでは一つの Virtual Menu が両 source を同時表示し、selection source に応じて Network loader または local loader へ dispatch する。Network failure は Standalone の列挙・選択・表示を block しない。
+
+### Consequences
+
+- Positive: 来場者は Tutorial 後に一箇所から online generated food と端末内 food を選べる。
+- Positive: v2 API が未準備/offline でも展示体験を Standalone で継続できる。
+- Positive: Standalone は v1 fallback ではなく API 非依存の第一級 source として維持される。
+- Negative: Identity namespace、source label、preview差、error state、selection dispatch を UI/domain で扱う必要がある。
+- Follow-up: 同名 item の表示規則、source filter/sort、Standalone preview asset の生成/placeholder policy を UI design で確定する。
+
+### Alternatives Rejected
+
+- Network/Standalone で別々の post-tutorial menu を表示する:
+  - 来場者が source mode を先に理解・切替する必要があり、一つの食品一覧という要求を満たさない。
+- API failure 時だけ Standalone menu へ切り替える:
+  - 平常時に local food を選べず、両方を同時表示する要求を満たさない。
+- Standalone を v1 API fallback として残す:
+  - Standalone は API request を行わない local feature であり、v1恒久廃止方針と責務が異なる。
+
+### Traceability
+
+- Requirements: `FR12`〜`FR14`, `FR24`, `FR34`, `FR35`, `NFR2`, `NFR3`, `NFR7`
+
 ## Review
 
 - Status: `NOT-READY`
-- Basis: 要件を支える主要な責務と判断は定義済み。`Q1`〜`Q5` の該当項目を Unit ごとに解決するまで Construction 全体の設計確定とは扱わない。
+- Basis: 要件を支える主要な責務と判断は定義済み。`Q1`〜`Q11` の該当項目を Unit ごとに解決し、YummyService v2 の transport contract が公開されるまで Construction 全体の設計確定とは扱わない。

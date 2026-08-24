@@ -25,6 +25,21 @@
       "id": "ADR-005",
       "requirements": ["FR8", "FR12", "FR17", "FR24", "NFR3", "NFR4", "NFR7", "NFR8"],
       "components": ["Session Orchestrator", "Generated Food Catalog", "Anchor Designation and Placement", "Session Reset Coordinator"]
+    },
+    {
+      "id": "ADR-006",
+      "requirements": ["FR25", "FR26", "FR27", "FR28", "FR29", "FR30", "FR32", "FR33", "NFR10", "NFR11", "NFR12", "NFR13"],
+      "components": ["YummyService v2 Contract Guard", "YummyService v2 Client", "Generated Food Catalog", "Virtual Menu", "Physical Menu Viewer"]
+    },
+    {
+      "id": "ADR-007",
+      "requirements": ["FR29", "FR30", "FR31", "FR33", "NFR11", "NFR12", "NFR14"],
+      "components": ["YummyService v2 Artifact Store Adapter", "Preview Repository", "Selected Model Loader"]
+    },
+    {
+      "id": "ADR-008",
+      "requirements": ["FR12", "FR13", "FR14", "FR24", "FR34", "FR35", "NFR2", "NFR3", "NFR7"],
+      "components": ["Generated Food Catalog", "Virtual Menu", "Standalone Catalog and Loader Adapter", "Selected Model Loader"]
     }
   ],
   "requirementsWithoutDecision": []

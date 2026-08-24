@@ -109,8 +109,10 @@ Reset 対象:
 3. 無操作時に hint→rescue が発生することを確認。
 4. 前菜で scoop と clear を実 event から通過。
 5. S14 後に scene reload/blackout なしで FreePlay。
-6. Virtual Menu は image/metadata だけを一覧表示し、選択 item だけを model load。
-7. 途中で StaffReset を発火し、3秒以内に Attract、一時 food/UI が消え、catalog/placement が残ることを確認。
+6. Virtual Menu は一つの UI に v2 API item と Standalone local item を同時表示し、Network item は image/metadata だけを先行取得する。
+7. Network/Standalone から各1 item を選び、対応 loader だけが動いて共通 anchor/eating flow へ到達することを確認する。
+8. API を無効化しても Standalone item の選択・表示が継続することを確認する。
+9. 途中で StaffReset を発火し、3秒以内に Attract、一時 food/UI が消え、catalog/placement が残ることを確認。
 
 ## Existing Adaptations That May Be Preserved
 
@@ -124,6 +126,8 @@ Reset 対象:
 ## Known Migration Work
 
 - QR GUID → food selection/download trigger を Catalog/Menu item selection へ置き換える。
+- Network mode を YummyService v2 order/artifact client へ置き換え、廃止済み v1 API と旧 `/{guid}/model` を全 runtime/fallback から除去する。
+- History/status/selected artifact metadata/preview/GLB/auth/problem/compatibility の v2 transport contract 公開を待ち、未定義 path を推測しない。
 - S3 文言、condition/event ID を anchor designation semantics へ変更する。
 - Generated Food Catalog、Preview Repository、Virtual Menu、Physical Viewer contract を追加する。
 - 実 model geometry から AABB を作り、Scoop Detector、Consumption State、crumb/disappear を Game event へ接続する。

@@ -6,6 +6,7 @@
 - 実装言語は C#。非同期処理は UniTask、リアクティブ処理は R3、依存性注入は Extenject を既存選択として尊重する。
 - 対象は Meta Quest 3 を中心とする Android/OpenXR と PCVR、および iPad 等の外部 viewer。MR/Spatial Anchor、コントローラー操作、QR による anchor designation、生成食品 catalog、preview/model 取得、展示運用を主要境界として扱う。
 - Unity Package の版は `Packages/manifest.json` と `Packages/packages-lock.json` を根拠にする。
+- Network API は YummyService repository の normative v2 contract を根拠にし、採用 commit、OpenAPI version、checksum を intent/verification に記録する。
 
 ## Architecture
 
@@ -17,6 +18,10 @@
 - 食べ物の表示 pose は、永続化した Spatial Anchor UUID と設定用 Cube の anchor-relative pose を単一の設定として扱う。
 - メニュー一覧は preview image/metadata を先行取得し、全 3D model を一覧表示のために先行 load しない。
 - Food interaction は game event の発火責任を持ち、Tutorial は FoodScooped/DishCleared を購読するだけにする。
+- YummyService transport DTO は専用 v2 client boundary に隔離し、application domain は order/item identity と immutable artifact reference を使用する。
+- Preview/GLB は artifact ID、revision、SHA-256、verified、selected pointer を検証し、固定 filename や QR GUID を cache identity にしない。
+- Tutorial 完了後の一つの Virtual Menu は YummyService v2 item と Standalone local item を同時表示し、source-specific adapter から共通 food presentation flow へ接続する。
+- Standalone Mode は API 非依存の第一級 source として維持し、Network/API failure から独立して local catalog/model を利用可能にする。
 
 ## Testing Posture
 
@@ -26,6 +31,8 @@
 - QR の payload/認識を food identity source として再導入していないこと、designation 後の一時的ロストで食品が誤配置されないことを回帰確認する。
 - Menu 表示時に未選択 3D model が load されないこと、scoop event の one-shot、visual/collider の段階縮小、crumb/disappear、DishCleared one-shot を回帰確認する。
 - VR menu と physical viewer の item identity/状態整合性を、対象 device/transport が確定した後に確認する。
+- YummyService v2 の全 OrderState/StageState/ArtifactType/ProblemDetails mapping、unknown enum、v1 rejection、SHA mismatch、stale response を contract test する。
+- Contract test と production API integration を分け、v2 OpenAPI に paths/security/responses がない状態を integration 合格にしない。
 
 ## Documentation
 
@@ -49,6 +56,8 @@
 - DECIDED: 食品 identity は生成履歴の仮想メニュー item から得て、QR はモデル出現 anchor の designation のみに使う (2026-08-24)。
 - DECIDED: メニュー preview は image/metadata のみを先行取得し、3D model data は選択 item に限定して cache/retrieve/load する (2026-08-24)。
 - DECIDED: 現行要件は `aidlc` 内で自己完結させ、`docs/` の存在を要件理解の前提にしない (2026-08-24)。
+- DECIDED: YummyVerseUnity が利用する API は YummyService v2 のみとする。v1 API は廃止済みであり、production/development/test/demo/fallback/migration/Standalone を含む全 runtime から金輪際呼び出さない。v1 rejection 用 local negative fixture だけを例外とする (2026-08-24)。
+- DECIDED: Standalone Mode は今後も維持する。これは v1 fallback ではなく、API request を行わない端末内食品 source である。Tutorial 完了後の一つの食品選択 UI に YummyService v2 item と Standalone item を同時表示する (2026-08-24)。
 
 ## Forbidden
 
@@ -63,6 +72,10 @@
 - ALWAYS Anchor を置き換える場合は UUID と anchor-relative pose を一貫して更新し、旧 Anchor の扱いを明示する。
 - ALWAYS QR、menu item、preview、model data、anchor placement の各 identity/lifecycle を混同せず、変換境界を明示する。
 - ALWAYS session reset 対象と session をまたいで保持する catalog/cache/placement を区別する。
+- NEVER v1 API route/client/DTO/configuration/mock を runtime dependency として追加・維持する。`/v1/...` への outbound request と、v1/legacy への fallback を全面禁止する。Local negative fixture は v1 rejection test だけに限定する。
+- ALWAYS v2 draft contract を更新するときは source commit/version/checksum と schema/path/security diff を review する。
+- ALWAYS downloaded artifact bytes の SHA-256 を確認してから decode/load/shared cache publish する。
+- ALWAYS Network と Standalone の identity namespace、loading、error、availability を分離し、一方の失敗で他方を利用不能にしない。
 
 ## Corrections
 
