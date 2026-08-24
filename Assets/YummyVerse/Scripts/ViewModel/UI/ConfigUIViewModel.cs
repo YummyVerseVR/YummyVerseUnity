@@ -22,6 +22,7 @@ namespace YummyVerse.Scripts.ViewModel
         private readonly INetworkConnectionTester _networkConnectionTester;
         
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
+        private bool _isDisposed;
         
         public ReactiveProperty<bool> IsVisible { get; } = new(false);
         public ReactiveProperty<string> APIEndPointUrl { get; }  = new();
@@ -90,6 +91,13 @@ namespace YummyVerse.Scripts.ViewModel
             _foodPlacementService.IsBusy
                 .Subscribe(v => IsSpatialPlacementBusy.Value = v)
                 .AddTo(_disposables);
+
+            // 設定画面の表示状態を唯一の入口にして、配置プレビューの表示状態と同期する。
+            // UIの開閉処理以外から IsVisible が変更された場合や、UIが無効化された場合でも
+            // 配置サービス側に閉じる通知が届くようにする。
+            IsVisible
+                .Subscribe(_foodPlacementService.SetConfigurationVisible)
+                .AddTo(_disposables);
             
             // コントローラーのボタンが押されたら表示状態を反転
             Observable.FromEvent(
@@ -97,8 +105,7 @@ namespace YummyVerse.Scripts.ViewModel
                     h => _inputLayer.OnConfigUIButtonClicked -= h)
                 .Subscribe(_ =>
                 {
-                    IsVisible.Value = !IsVisible.Value;
-                    _foodPlacementService.SetConfigurationVisible(IsVisible.Value);
+                    SetVisible(!IsVisible.Value);
                 }).AddTo(_disposables);
 
             FoodScale.Value = _foodScaleManager.FoodScale.Value;
@@ -107,6 +114,8 @@ namespace YummyVerse.Scripts.ViewModel
         
         public void Dispose()
         {
+            if (_isDisposed) return;
+            _isDisposed = true;
             _foodPlacementService.SetConfigurationVisible(false);
             _disposables?.Dispose();
             IsVisible?.Dispose();
@@ -119,6 +128,21 @@ namespace YummyVerse.Scripts.ViewModel
             IsFoodPositionFixed?.Dispose();
             IsSpatialPlacementBusy?.Dispose();
             ConnectionTestResult?.Dispose();
+        }
+
+        public void SetVisible(bool isVisible)
+        {
+            if (_isDisposed) return;
+
+            // 同じ値の場合はReactivePropertyが通知しないため、状態が一時的に
+            // ずれていても閉じる操作で配置サービスを確実に同期させる。
+            if (IsVisible.Value == isVisible)
+            {
+                _foodPlacementService.SetConfigurationVisible(isVisible);
+                return;
+            }
+
+            IsVisible.Value = isVisible;
         }
         
         public void UpdateEndPointUrl(string url)

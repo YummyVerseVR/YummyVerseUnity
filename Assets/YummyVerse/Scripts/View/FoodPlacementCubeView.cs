@@ -68,6 +68,20 @@ namespace YummyVerse.Scripts.View
             LoadPreviewModelAsync(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
+        private void OnEnable()
+        {
+            // 親の無効化などで一度非表示にした後に再び有効化された場合も、
+            // 現在の設定画面状態から表示を再計算する。
+            if (_foodPlacementService != null) UpdateVisibility();
+        }
+
+        private void OnDisable()
+        {
+            // 配置用モデルはこのViewのGameObject外に生成しているため、Viewだけが
+            // 無効化された場合にも明示的に隠す。
+            if (_placementMarker != null) _placementMarker.SetActive(false);
+        }
+
         private void LateUpdate()
         {
             if (_placementMarker == null || !_placementMarker.activeSelf) return;
@@ -216,9 +230,9 @@ namespace YummyVerse.Scripts.View
         {
             if (_placementMarker == null) return;
             var isVisible = _configurationVisible && _isEditing;
-            if (_placementMarker.activeSelf == isVisible) return;
+            var wasVisible = _placementMarker.activeSelf;
 
-            if (isVisible)
+            if (isVisible && !wasVisible)
             {
                 if (_foodPlacementService.TryGetSuggestedDraftPose(out var pose))
                 {

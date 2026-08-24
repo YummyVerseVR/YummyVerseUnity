@@ -23,6 +23,8 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         event Action OnAPIEndPointValidationError;
         ReactiveProperty<TestConnectionResult> ConnectionTestResult { get; }
 
+        void SetVisible(bool isVisible);
+
         void UpdateEndPointUrl(string url);
         
         void SetStandaloneMode(bool isStandalone);

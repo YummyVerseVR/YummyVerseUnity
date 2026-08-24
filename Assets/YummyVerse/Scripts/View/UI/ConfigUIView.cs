@@ -172,6 +172,16 @@ namespace YummyVerse.Scripts.View.UI
             DisableOverlayCanvas();
         }
 
+        private void OnDisable()
+        {
+            // CanvasGroupで隠す通常経路以外に、UIのGameObject自体が無効化される
+            // 経路でも配置プレビューを残さない。
+            if (_configUIViewModel != null)
+            {
+                _configUIViewModel.SetVisible(false);
+            }
+        }
+
         private void SetMenuPositionInFrontOfCamera()
         {
             var camera = targetCamera != null ? targetCamera : Camera.main;
