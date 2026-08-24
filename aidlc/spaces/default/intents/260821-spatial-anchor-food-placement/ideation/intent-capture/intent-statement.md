@@ -1,5 +1,9 @@
 # Intent Statement
 
+## Historical Scope Notice
+
+この文書は 2026-08-21 の intent を記録する。QR payload/GUID を食品選択に残す記述は、`260824-guided-food-experience` の `FR13`/`FR16` と `ADR-003` により superseded された。現行要件では食品 identity は生成履歴メニューから得て、QR は anchor designation のみに使用する。Spatial Anchor placement の非競合部分は履歴・実装基準として維持する。
+
 ## Problem
 
 現行の食べ物 3D モデルは QR trackable の Transform へ追従するため、QR の検出状態・置き方・追跡揺れが食べ物の表示位置へ直接影響する。展示運営者が表示位置を明示的に調整し、端末再起動後も同じ物理空間へ復元できる配置基準が必要である。

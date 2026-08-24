@@ -49,6 +49,13 @@ aidlc/spaces/default/intents/<YYMMDD>-<short-kebab-label>/
 - 要件 ID（`FR1`, `NFR1`）、ストーリー ID、ADR ID、Unit ID は一度付与したら変更しない。
 - 判断、承認、却下、例外は audit に残す。推測は事実として扱わず、仮定または未解決事項として明示する。
 - `aidlc-state.md`、audit、成果物、検証結果は Git 管理する。`.gitignore` に定義した個人カーソルと実行時ファイルはコミットしない。
+- 現行の製品要件と実装判断は `aidlc` 内で自己完結させる。外部または削除予定の文書へのリンクだけで要件を表現しない。
+
+## 現行の製品要件
+
+- Tutorial、仮想/物理メニュー、QR/anchor、画像 preview、食事 action の統合要件は `spaces/default/intents/260824-guided-food-experience/` を参照する。
+- Tutorial の共有実装・運用知識は `spaces/default/knowledge/aidlc-shared/tutorial-system.md` を参照する。
+- `spaces/default/intents/260821-spatial-anchor-food-placement/` は Spatial Anchor 実装時の履歴である。その中の QR GUID による食品選択方針は 2026-08-24 intent により superseded されている。
 
 ## 公式ランタイムとの境界
 

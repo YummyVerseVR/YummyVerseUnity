@@ -1,5 +1,9 @@
 # Requirements
 
+## Historical Scope and Supersession
+
+この requirements は 2026-08-21 の Spatial Anchor 変更を記録する。`FR5` のうち QR payload/GUID を食品取得トリガーとして継続する要件、`NFR5` の QR GUID→GLB 契約維持、QR による food GUID 選択を Out of Scope とした判断は、`260824-guided-food-experience` の `FR13`、`FR16`、`ADR-003` により superseded された。現行要件では食品 identity は生成履歴メニュー item から得て、QR は anchor designation のみに使用する。Anchor UUID、relative pose、復元、安全な失敗、session reset で配置を保持する要件は継続する。
+
 ## Intent Analysis
 
 - 目的: QR の検出 Transform に依存せず、展示運営者が設定・保存した Spatial Anchor 相対位置へ食べ物を安定して表示する。

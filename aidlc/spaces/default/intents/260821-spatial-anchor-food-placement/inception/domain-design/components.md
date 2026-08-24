@@ -1,5 +1,9 @@
 # Domain Components
 
+## Historical Scope Notice
+
+この設計は 2026-08-21 の実装境界を記録する。`Existing Food Selection` にある QR GUID identity source は `260824-guided-food-experience` の Generated Food Catalog/Virtual Menu により superseded された。Spatial Anchor Placement Model、Persistence Store、Configuration、Food Placement Consumer の非競合責務は継続する。
+
 ## Design Goal
 
 食べ物の identity source と placement source を分離する。QR/Standalone selection は `FoodContext` へ食べ物を供給し、Spatial Anchor placement は `FoodViewModel`/`FoodView` へ pose を供給する。両者が揃った場合だけ食べ物を確定位置へ表示する。

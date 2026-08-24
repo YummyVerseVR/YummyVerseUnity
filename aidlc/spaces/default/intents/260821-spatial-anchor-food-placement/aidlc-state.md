@@ -8,6 +8,12 @@
 - Status: `awaiting-device-verification`
 - Current phase: Verification
 
+## Supersession Notice
+
+- この intent は 2026-08-21 時点の Spatial Anchor 実装履歴である。
+- `FR5`、`NFR5`、`ADR-001` および関連する「QR payload/GUID を食品選択に継続利用する」判断は、2026-08-24 の `260824-guided-food-experience` により superseded された。
+- Anchor UUID、anchor-relative pose、復元、失敗時の安全性に関する非競合要件は引き続き有効。現行の食品 identity は生成履歴メニュー item から得て、QR は anchor designation のみに使用する。
+
 ## Executed Stages
 
 - Ideation / intent-capture: intent と対象範囲を記録済み。

@@ -1,5 +1,9 @@
 # Architecture Decisions
 
+## Supersession Notice
+
+`ADR-001` のうち「QR payload/GUID を Food identity source として維持する」判断は、`260824-guided-food-experience` の `ADR-003` により superseded された。現行 target は Generated Food Catalog/Virtual Menu を identity source、QR を anchor designation source とする。QR Transform から food pose を分離する判断と `ADR-002`〜`ADR-004` の非競合部分は継続する。
+
 ## ADR-001: 食べ物の identity と placement を分離する
 
 ### Context

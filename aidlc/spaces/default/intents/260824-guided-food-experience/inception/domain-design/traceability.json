@@ -1,0 +1,31 @@
+{
+  "intent": "260824-guided-food-experience",
+  "decisions": [
+    {
+      "id": "ADR-001",
+      "requirements": ["FR1", "FR2", "FR3", "FR4", "FR5", "FR6", "FR7", "FR8", "FR9", "FR10", "FR11", "FR23", "FR24", "NFR1", "NFR2", "NFR3", "NFR4", "NFR7", "NFR8"],
+      "components": ["Session Orchestrator", "Tutorial Definition and Runner", "Tutorial Presenters", "Game Event and Command Boundary", "Session Reset Coordinator"]
+    },
+    {
+      "id": "ADR-002",
+      "requirements": ["FR12", "FR13", "FR14", "FR15", "FR24", "NFR5", "NFR6", "NFR7", "NFR8"],
+      "components": ["Generated Food Catalog", "Preview Repository", "Virtual Menu", "Physical Menu Viewer", "Selected Model Loader"]
+    },
+    {
+      "id": "ADR-003",
+      "requirements": ["FR13", "FR16", "FR17", "FR24", "NFR6", "NFR7", "NFR8"],
+      "components": ["Generated Food Catalog", "Virtual Menu", "Anchor Designation and Placement", "Selected Model Loader"]
+    },
+    {
+      "id": "ADR-004",
+      "requirements": ["FR18", "FR19", "FR20", "FR21", "FR22", "FR23", "FR24", "NFR4", "NFR6", "NFR7", "NFR8", "NFR9"],
+      "components": ["Food Interaction Bounds", "Scoop Detector and Feedback", "Food Consumption State and Effects"]
+    },
+    {
+      "id": "ADR-005",
+      "requirements": ["FR8", "FR12", "FR17", "FR24", "NFR3", "NFR4", "NFR7", "NFR8"],
+      "components": ["Session Orchestrator", "Generated Food Catalog", "Anchor Designation and Placement", "Session Reset Coordinator"]
+    }
+  ],
+  "requirementsWithoutDecision": []
+}

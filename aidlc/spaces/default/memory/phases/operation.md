@@ -8,7 +8,7 @@
 
 ## Observability
 
-- Spatial Anchor の作成・保存・読み込み・localization、表示 pose の確定・復元、QR による GUID 取得、モデル取得、ローカル読込、セッション中断、リセットの診断情報を確認可能にする。
+- Spatial Anchor の作成・保存・読み込み・localization、QR による anchor designation、表示 pose の確定・復元、catalog/menu selection、preview/model 取得、scoop/consumption、physical viewer、セッション中断、リセットの診断情報を確認可能にする。
 - ログに秘密情報や不要な個人情報を含めない。
 
 ## Incident Response
