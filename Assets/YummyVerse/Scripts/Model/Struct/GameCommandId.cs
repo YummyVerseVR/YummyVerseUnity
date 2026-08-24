@@ -9,7 +9,7 @@ namespace YummyVerse.Scripts.Model.Struct
     public enum GameCommandId
     {
         None = 0,
-        ServeAppetizer,   // S7: 前菜を皿に出す
+        ServeRandomPersistentFood, // S5完了時: PersistentDataPath/Foods からランダムに1品出す
         DestroyAllFood,   // 救済(ForceComplete) / セッションリセット
         ShowMenu,         // S16: メニューUIを出す
         HideMenu

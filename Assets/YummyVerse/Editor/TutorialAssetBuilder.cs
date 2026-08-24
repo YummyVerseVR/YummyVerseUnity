@@ -185,10 +185,12 @@ namespace YummyVerse.Editor
                 conditions.ButtonOr8);
 
             // --- S5: AIシェフの準備 (時間) ---
-            steps["S5"] = Narration(
+            var s5 = Narration(
                 "Steps/Step_S5_ChefReady", "S5",
                 Str(table, "S5", "AIシェフの準備ができたようです。"),
                 conditions.Time3);
+            SetEnum(s5, "onCompletedCommand", GameCommandId.ServeRandomPersistentFood);
+            steps["S5"] = s5;
 
             // --- S6: 初回かどうかの判定 (Choice) ---
             var s6 = Create<ChoiceStep>("Steps/Step_S6_FirstTimeCheck");
@@ -204,12 +206,12 @@ namespace YummyVerse.Editor
             });
             steps["S6"] = s6;
 
-            // --- S6': 前菜のリンゴ (ボタン) + 完了時に S7 の提供を依頼 ---
+            // --- S6': 前菜の案内 (食品は S5 完了時に提供済み) ---
             var s6d = Narration(
                 "Steps/Step_S6d_Appetizer", "S6'",
                 Str(table, "S6d", "まずは前菜からいきましょう。\n決定ボタンを押してください。"),
                 conditions.Button);
-            SetEnum(s6d, "onCompletedCommand", GameCommandId.ServeAppetizer);
+            SetEnum(s6d, "onCompletedCommand", GameCommandId.None);
             SetField(s6d, "skippableOnRepeat", true);
             steps["S6'"] = s6d;
 

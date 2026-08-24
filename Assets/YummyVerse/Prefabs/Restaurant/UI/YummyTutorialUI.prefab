@@ -50,7 +50,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a095dab62575143a7935e9f575cb03a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.View.Tutorial.GameCommandRouter
-  appetizer: 1
 --- !u!1001 &359665791917447971
 PrefabInstance:
   m_ObjectHideFlags: 0

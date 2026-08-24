@@ -1,8 +1,9 @@
+using System.IO;
 using R3;
 using UnityEngine;
+using YummyVerse.Scripts.Model;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
-using YummyVerse.Scripts.Model.Struct.SO;
 using YummyVerse.Scripts.ViewModel.Interface;
 using Zenject;
 
@@ -16,22 +17,23 @@ namespace YummyVerse.Scripts.View.Tutorial
     /// </summary>
     public class GameCommandRouter : MonoBehaviour
     {
-        [Tooltip("S7 で前菜として皿に出す品目")]
-        [SerializeField] private LocalFoods appetizer = LocalFoods.Curry;
-
         private IGameCommandBus _commandBus;
         private IFoodViewModel _foodViewModel;
         private IStandaloneWindowViewModel _standaloneWindowViewModel;
+        private IGameEventPublisher _eventPublisher;
+        private readonly System.Random _random = new();
 
         [Inject]
         public void Construct(
             IGameCommandBus commandBus,
             IFoodViewModel foodViewModel,
-            IStandaloneWindowViewModel standaloneWindowViewModel)
+            IStandaloneWindowViewModel standaloneWindowViewModel,
+            IGameEventPublisher eventPublisher)
         {
             _commandBus = commandBus;
             _foodViewModel = foodViewModel;
             _standaloneWindowViewModel = standaloneWindowViewModel;
+            _eventPublisher = eventPublisher;
         }
 
         private void Start()
@@ -43,8 +45,8 @@ namespace YummyVerse.Scripts.View.Tutorial
         {
             switch (command)
             {
-                case GameCommandId.ServeAppetizer:
-                    _standaloneWindowViewModel.SpawnLocalFood(appetizer);
+                case GameCommandId.ServeRandomPersistentFood:
+                    ServeRandomPersistentFood();
                     break;
 
                 case GameCommandId.DestroyAllFood:
@@ -59,6 +61,20 @@ namespace YummyVerse.Scripts.View.Tutorial
                     _standaloneWindowViewModel.IsVisible.Value = false;
                     break;
             }
+        }
+
+        private void ServeRandomPersistentFood()
+        {
+            var foodsDirectory = Path.Combine(Application.persistentDataPath, "Foods");
+            if (!PersistentFoodCatalogScanner.TrySelectRandom(foodsDirectory, _random, out var selected))
+            {
+                Debug.LogWarning(
+                    $"[Tutorial] 表示できるローカル食品がありません: {foodsDirectory}/*/model.glb");
+                return;
+            }
+
+            Debug.Log($"[Tutorial] ランダムなローカル食品を表示します: {selected.DisplayName}");
+            _eventPublisher.PublishMenuItemSelected(new MenuItem(selected));
         }
     }
 }

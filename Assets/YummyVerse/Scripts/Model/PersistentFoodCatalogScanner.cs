@@ -61,6 +61,21 @@ namespace YummyVerse.Scripts.Model
             return items;
         }
 
+        public static bool TrySelectRandom(
+            string foodsDirectory,
+            Random random,
+            out FoodCatalogItem selected)
+        {
+            selected = null;
+            if (random == null) throw new ArgumentNullException(nameof(random));
+
+            var items = Scan(foodsDirectory);
+            if (items.Count == 0) return false;
+
+            selected = items[random.Next(items.Count)];
+            return true;
+        }
+
         private static string FindPreview(string directory)
         {
             foreach (var fileName in PreviewFileNames)

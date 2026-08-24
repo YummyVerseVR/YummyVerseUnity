@@ -1,12 +1,14 @@
 using System;
 using System.IO;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using YummyVerse.Scripts.Model;
 using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.Model.YummyServiceV2;
 using YummyVerse.Scripts.View.UI;
+using YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps;
 
 namespace YummyVerse.Editor.Tests
 {
@@ -59,6 +61,58 @@ namespace YummyVerse.Editor.Tests
             File.WriteAllBytes(Path.Combine(folder, "preview.png"), new byte[] { 1 });
 
             Assert.That(PersistentFoodCatalogScanner.Scan(_temporaryRoot), Is.Empty);
+        }
+
+        [Test]
+        public void RandomSelectionOnlyReturnsPersistentFoodWithAModel()
+        {
+            var first = Path.Combine(_temporaryRoot, "カレー");
+            var second = Path.Combine(_temporaryRoot, "寿司");
+            var invalid = Path.Combine(_temporaryRoot, "モデルなし");
+            Directory.CreateDirectory(first);
+            Directory.CreateDirectory(second);
+            Directory.CreateDirectory(invalid);
+            File.WriteAllBytes(Path.Combine(first, "model.glb"), new byte[] { 1 });
+            File.WriteAllBytes(Path.Combine(second, "model.glb"), new byte[] { 1 });
+
+            var selected = PersistentFoodCatalogScanner.TrySelectRandom(
+                _temporaryRoot,
+                new System.Random(1234),
+                out var item);
+
+            Assert.That(selected, Is.True);
+            Assert.That(item, Is.Not.Null);
+            Assert.That(item.Source, Is.EqualTo(MenuItemSource.PersistentData));
+            Assert.That(item.ModelLocation, Does.EndWith("model.glb"));
+            Assert.That(new[] { "カレー", "寿司" }, Does.Contain(item.DisplayName));
+        }
+
+        [Test]
+        public void RandomSelectionReturnsFalseWhenNoPersistentFoodExists()
+        {
+            Assert.That(PersistentFoodCatalogScanner.TrySelectRandom(
+                _temporaryRoot,
+                new System.Random(1234),
+                out var item), Is.False);
+            Assert.That(item, Is.Null);
+        }
+
+        [Test]
+        public void ChefReadyStepServesRandomPersistentFoodOnlyOnceAtS5Completion()
+        {
+            var chefReady = AssetDatabase.LoadAssetAtPath<NarrationStep>(
+                "Assets/YummyVerse/Data/Tutorial/Steps/Step_S5_ChefReady.asset");
+            var appetizerPrompt = AssetDatabase.LoadAssetAtPath<NarrationStep>(
+                "Assets/YummyVerse/Data/Tutorial/Steps/Step_S6d_Appetizer.asset");
+
+            Assert.That(chefReady, Is.Not.Null);
+            Assert.That(appetizerPrompt, Is.Not.Null);
+            Assert.That(
+                new SerializedObject(chefReady).FindProperty("onCompletedCommand").intValue,
+                Is.EqualTo((int)GameCommandId.ServeRandomPersistentFood));
+            Assert.That(
+                new SerializedObject(appetizerPrompt).FindProperty("onCompletedCommand").intValue,
+                Is.EqualTo((int)GameCommandId.None));
         }
 
         [Test]

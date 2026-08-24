@@ -25,7 +25,7 @@ MonoBehaviour:
     m_LocalVariables: []
   voiceClip: {fileID: 0}
   completionCondition: {fileID: 11400000, guid: 20f2d5ded40914ab4859624fbfc4469e, type: 2}
-  onCompletedCommand: 0
+  onCompletedCommand: 1
   keepMessageVisible: 0
   references:
     version: 2
