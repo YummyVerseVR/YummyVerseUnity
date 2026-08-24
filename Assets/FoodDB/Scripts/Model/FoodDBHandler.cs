@@ -1,6 +1,7 @@
 using System;
 using Cysharp.Threading.Tasks;
 using Food3DModel.Interface;
+using UnityEngine;
 
 namespace Food3DModel.Model
 {
@@ -8,7 +9,9 @@ namespace Food3DModel.Model
     {
         public UniTask<bool> Request(Guid userId)
         {
-            throw new NotImplementedException();
+            Debug.LogWarning(
+                "YummyService v2 transport is unavailable because its path/auth/download contract has not been published.");
+            return UniTask.FromResult(false);
         }
     }
 }

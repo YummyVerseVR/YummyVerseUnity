@@ -6076,10 +6076,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4455134865026609997, guid: ac2e09824bbe6da42bff68e86401d411, type: 3}
       propertyPath: m_text
-      value: 'ex. https://yummy-control-server.upiscium.dev/
-
-        DO NOT FORGET
-        LAST "/" !!!'
+      value: YummyService v2 endpoint is not available yet.
       objectReference: {fileID: 0}
     - target: {fileID: 4455134865026609997, guid: ac2e09824bbe6da42bff68e86401d411, type: 3}
       propertyPath: m_Enabled

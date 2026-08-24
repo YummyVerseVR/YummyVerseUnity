@@ -18,12 +18,6 @@ namespace YummyVerse.Scripts.Model.Interface
         void NotifyDetectQR(Guid guid, Transform transform);
 
         /// <summary>
-        /// Standalone UIなど、物理QRの検出を伴わずに食べ物GUIDだけを変更する。
-        /// QR検出イベントや位置情報は更新しない。
-        /// </summary>
-        void NotifyFoodGuid(Guid guid);
-
-        /// <summary>
         /// QRの認識がロストしたことを通知する。
         /// </summary>
         void NotifyLostQR();

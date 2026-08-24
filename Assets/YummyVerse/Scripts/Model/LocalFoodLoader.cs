@@ -24,7 +24,11 @@ namespace YummyVerse.Scripts.Model
         {
             var result = new FoodDownloadResult() { RequestedGuid =  guid };
             
-            _localFoodSO.TryGetLocalFood(guid, out var  localFood);
+            if (!_localFoodSO.TryGetLocalFood(guid, out var localFood))
+            {
+                result.StatusCode = HttpStatusCode.NotFound;
+                return result;
+            }
 
             var foodNameStr = localFood switch
             {
@@ -32,9 +36,16 @@ namespace YummyVerse.Scripts.Model
                 LocalFoods.Shrimp => "shrimp.glb",
                 LocalFoods.Hamburg => "hamburg.glb",
                 LocalFoods.DragonSteak => "dragonsteak.glb",
+                _ => null,
             };
 
-            var gltfPath = Application.persistentDataPath + "/TestData/" + foodNameStr;
+            if (string.IsNullOrWhiteSpace(foodNameStr))
+            {
+                result.StatusCode = HttpStatusCode.NotFound;
+                return result;
+            }
+
+            var gltfPath = Path.Combine(Application.persistentDataPath, "TestData", foodNameStr);
 
             if (string.IsNullOrWhiteSpace(gltfPath) || !File.Exists(gltfPath))
             {
@@ -58,6 +69,16 @@ namespace YummyVerse.Scripts.Model
             }
             catch (UnauthorizedAccessException)
             {
+                result.StatusCode = HttpStatusCode.InternalServerError;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                // 破損・未対応形式は item 単位の失敗として閉じ、他の local item 選択を継続可能にする。
+                Debug.LogWarning($"Standalone food could not be loaded: {exception.GetType().Name}");
                 result.StatusCode = HttpStatusCode.InternalServerError;
             }
 

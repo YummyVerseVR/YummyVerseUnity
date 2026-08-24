@@ -1,55 +1,24 @@
 using System.Net;
 using System.Threading;
-using System;
 using Cysharp.Threading.Tasks;
-using R3;
-using UnityEngine.Networking;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
-using Zenject;
 
 namespace YummyVerse.Scripts.Model
 {
     public class NetworkConnectionTester : INetworkConnectionTester
     {
-        private readonly IEndPointManager _endPointManager;
-        
-        private CompositeDisposable _disposables = new ();
-
-        public NetworkConnectionTester(IEndPointManager endPointManager)
+        public UniTask<TestConnectionResult> TestConnection(CancellationToken ct)
         {
-            _endPointManager = endPointManager;
-        }
+            ct.ThrowIfCancellationRequested();
 
-        public async UniTask<TestConnectionResult> TestConnection(CancellationToken ct)
-        {
-            var url = _endPointManager.baseEndPointUrl;
-            var result = new TestConnectionResult
+            // 現行 v2 OpenAPI には path/auth/compatibility operation が存在しない。
+            // 任意 URL や旧 server へ probing request を送らず、契約未公開として fail closed にする。
+            return UniTask.FromResult(new TestConnectionResult
             {
                 success = false,
-                StatusCode = 0
-            };
-            using UnityWebRequest req = UnityWebRequest.Get(url);
-            req.timeout = 10;
-
-            try
-            {
-                var res = await req.SendWebRequest().WithCancellation(ct);
-                result.success = res.result != UnityWebRequest.Result.ConnectionError;
-                result.StatusCode = (HttpStatusCode)res.responseCode;
-            }
-            catch (UnityWebRequestException)
-            {
-                result.success = req.result != UnityWebRequest.Result.ConnectionError;
-                result.StatusCode = (HttpStatusCode)req.responseCode;
-            }
-            catch (OperationCanceledException) when (req.result == UnityWebRequest.Result.ConnectionError)
-            {
-                result.success = false;
-                result.StatusCode = 0;
-            }
-
-            return result;
+                StatusCode = HttpStatusCode.ServiceUnavailable
+            });
         }
     }
 }

@@ -10,15 +10,13 @@ namespace YummyVerse.Scripts.ViewModel
     public class StandaloneWindowViewModel : IStandaloneWindowViewModel, IInitializable, IDisposable
     {
         private readonly ISettingManager _settingManager;
-        private readonly IQRDetectionService _qrDetectionService;
         private readonly LocalFoodSO _localFoodSO;
         
         private readonly CompositeDisposable _disposables = new();
         
-        public StandaloneWindowViewModel(ISettingManager settingManager,  IQRDetectionService qrDetectionService, LocalFoodSO localFoodSO)
+        public StandaloneWindowViewModel(ISettingManager settingManager, LocalFoodSO localFoodSO)
         {
             _settingManager = settingManager;
-            _qrDetectionService = qrDetectionService;
             _localFoodSO = localFoodSO;
         }
 
@@ -33,10 +31,10 @@ namespace YummyVerse.Scripts.ViewModel
         
         public void SpawnLocalFood(LocalFoods food)
         {
-            if(!_localFoodSO.TryGetGuid(food, out var localFoodGuid)) return;
-            // Transformは元の位置をそのまま使用し、Guidのみ更新する
-            // Standaloneで変更するのは料理IDだけ。表示位置と皿検出イベントはSpatial Anchor/物理QRから独立させる。
-            _qrDetectionService.NotifyFoodGuid(localFoodGuid);
+            if (!_localFoodSO.TryGetGuid(food, out _)) return;
+
+            // 食品 selection は MenuSelectionBridge から game event として発行する。
+            // QR detection service へ食品 GUID を流すと designation と identity が再結合するため使用しない。
             OnLocalFoodSpawned?.Invoke(food);
         }
 

@@ -37,7 +37,7 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
                     h => _standaloneWindowViewModel.OnLocalFoodSpawned -= h)
                 .Subscribe(food =>
                 {
-                    _localFoodSO.TryGetGuid(food, out var guid);
+                    if (!_localFoodSO.TryGetGuid(food, out var guid)) return;
                     _eventPublisher.PublishMenuItemSelected(new MenuItem(food, guid));
                 }).AddTo(_disposables);
         }

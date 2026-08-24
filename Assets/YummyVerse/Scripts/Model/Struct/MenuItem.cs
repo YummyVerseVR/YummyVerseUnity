@@ -4,8 +4,9 @@ using YummyVerse.Scripts.Model.Struct.SO;
 namespace YummyVerse.Scripts.Model.Struct
 {
     /// <summary>
-    /// 来場者が選んだメニュー。
-    /// 現状の食品同一性は LocalFoods(ローカル) と Guid(サーバ) の2系統しかないため、その両方を持つ。
+    /// 既存 Standalone catalog から来場者が選んだローカル食品。
+    /// Guid は端末内 catalog の内部 ID であり、QR payload や YummyService の order identity ではない。
+    /// Network item は v2 transport と unified catalog が確定するまでこの型へ詰め替えない。
     /// </summary>
     public readonly struct MenuItem
     {

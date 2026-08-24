@@ -5,8 +5,8 @@
 - Created: 2026-08-24
 - Space: `default`
 - Operation mode: documentation-only manual workflow
-- Status: `requirements-baselined-api-contract-blocked`
-- Current phase: Inception
+- Status: `partial-construction-ready-units-implemented`
+- Current phase: Construction (partial)
 
 ## Executed Stages
 
@@ -15,7 +15,8 @@
 - Inception / domain-design: 責務境界、体験フロー、失敗経路、ADR、トレーサビリティを記録済み。
 - Inception / contract-design: YummyService v2 domain contract、required consumer API capabilities、current transport gaps、client adapter gate を記録済み。
 - Verification: API source revision/checksum、v2 OpenAPI readiness、route scan、current Unity gap、requirement/ADR traceability を確認済み。
-- Construction / Operation: この intent では未実施。既存実装が全要件を満たすとは判定していない。
+- Construction: 利用者が明示承認した `UNIT-01`〜`UNIT-03` のみ実装・検証済み。`UNIT-04`〜`UNIT-08` は未実施。
+- Operation: 未実施。既存実装と今回の partial delivery が全要件を満たすとは判定していない。
 
 ## Approval Basis
 
@@ -35,4 +36,5 @@
 - 要件移管と要件ベースライン: `READY`
 - YummyService v2 domain mapping: `READY`。
 - YummyService v2 production HTTP integration: `NOT-READY`。現行 v2 OpenAPI は `2.0.0-draft`、`paths: {}`、placeholder server URL で、auth/artifact lookup/download が deferred。
-- Construction 開始: `NOT-READY`。`Q1`〜`Q11` のうち対象 Unit に影響する項目を解決し、既存実装との差分計画を作成する必要がある。
+- `UNIT-01`〜`UNIT-03` partial Construction: `IMPLEMENTED-VERIFIED`。
+- Intent-wide Construction completion: `NOT-READY`。`Q1`〜`Q11`、normative v2 transport operations、scene/device-specific decisions を解決する必要がある。

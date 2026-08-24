@@ -10,7 +10,6 @@ public class FoodDBInstaller : MonoInstaller
     {
         Container.BindInterfacesAndSelfTo<FoodRepository>().AsSingle().NonLazy();
         Container.BindInterfacesAndSelfTo<FoodInstanceHolder>().AsSingle().NonLazy();
-        Container.BindInterfacesAndSelfTo<TestFoodDBHandler>().AsSingle().NonLazy();
         Container.BindInterfacesAndSelfTo<SoundViewModel>().AsSingle().NonLazy();
         Container.BindInterfacesAndSelfTo<QRViewModel>().AsSingle().NonLazy();
     }

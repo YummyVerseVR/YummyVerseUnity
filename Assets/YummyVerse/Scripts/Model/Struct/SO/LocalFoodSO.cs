@@ -26,9 +26,13 @@ public class LocalFoodSO : ScriptableObject
     public bool TryGetGuid(LocalFoods food, out Guid guid)
     {
         if (_dict.Count == 0) InitializeDict();
-        var success =_dict.TryGetValue(food, out var tmp);
-        guid = success ? Guid.Parse(tmp) :  Guid.Empty;
-        return success;
+        if (!_dict.TryGetValue(food, out var value) || !System.Guid.TryParse(value, out guid))
+        {
+            guid = System.Guid.Empty;
+            return false;
+        }
+
+        return true;
     }
 
     // 与えられたGuidが内部的にどのLocalFoodsに対応しているかを返す。(.glbファイル読み込み用)

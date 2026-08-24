@@ -1,12 +1,7 @@
 using System;
-using System.IO;
-using System.Net;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using GLTFast;
 using R3;
-using UnityEngine;
-using UnityEngine.Networking;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 using Zenject;
@@ -16,27 +11,32 @@ namespace YummyVerse.Scripts.Model
     public class FoodContext : IFoodContext, IInitializable, IDisposable
     {
         private IFoodFetchable _foodFetchable;
-        private readonly IQRDetectionService _qrDetectionService;
+        private readonly IGameEventBus _gameEventBus;
         private readonly IFoodFetchableFactory _foodFetchableFactory;
         
         private readonly CompositeDisposable _disposables  = new CompositeDisposable();
         
         public ReactiveProperty<FoodDownloadResult> downloadResult { get; } = new ();
         
-        public FoodContext(IQRDetectionService qrDetectionService,  IFoodFetchableFactory foodFetchableFactory)
+        public FoodContext(IGameEventBus gameEventBus, IFoodFetchableFactory foodFetchableFactory)
         {
-            this._qrDetectionService = qrDetectionService;
-            this._foodFetchableFactory = foodFetchableFactory;
+            _gameEventBus = gameEventBus;
+            _foodFetchableFactory = foodFetchableFactory;
         }
 
         public void Initialize()
         {
-            // QRコードに映っているGuidが更新されたらダウンロードを開始する。
-            _qrDetectionService.OnChangeGUID.Where(v => v != Guid.Empty).SubscribeAwait(async (v, ct) =>
-            {
-                _foodFetchable = _foodFetchableFactory.Create();
-                downloadResult.Value = await _foodFetchable.Download(v, ct);
-            }).AddTo(_disposables);
+            // 食品 identity はメニュー選択からのみ受け取る。
+            // 物理 QR の payload/GUID は anchor designation の入力であり、食品 load の起点にしない。
+            Observable.FromEvent<MenuItem>(
+                    h => _gameEventBus.OnMenuItemSelected += h,
+                    h => _gameEventBus.OnMenuItemSelected -= h)
+                .Where(item => item.Guid != Guid.Empty)
+                .SubscribeAwait(async (item, ct) =>
+                {
+                    _foodFetchable = _foodFetchableFactory.Create();
+                    downloadResult.Value = await _foodFetchable.Download(item.Guid, ct);
+                }).AddTo(_disposables);
         }
         
         public void Reset()
