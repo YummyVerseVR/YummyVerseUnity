@@ -3203,10 +3203,10 @@ MonoBehaviour:
     type: 3}
   inputField: {fileID: 7112805301816702407}
   targetCamera: {fileID: 0}
-  positionMode: 1
-  forwardOffset: 0.4
-  dropHeight: 0.5
-  tiltAngle: 45
+  positionMode: 2
+  positionOffset: {x: 0, y: -0.4, z: 0.4}
+  tiltAngle: 65
+  scale: 0.4
 --- !u!114 &5219836823556852555
 MonoBehaviour:
   m_ObjectHideFlags: 0

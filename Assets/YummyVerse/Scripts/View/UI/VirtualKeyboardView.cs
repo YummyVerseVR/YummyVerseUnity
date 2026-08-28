@@ -27,21 +27,21 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private Camera targetCamera;
 
         /// <summary>
-        /// Near = ランタイムが手元に置く(Quest 単体のシステムキーボードと同じ挙動)。
-        /// Far = ランタイムが少し先に置く。Custom = 下の3項目で自分で決める。
+        /// Custom = 下の3項目で自分で決める(既定)。
+        /// Near / Far はランタイム任せの位置で、こちらの設定は一切効かない。
         /// </summary>
         [Header("Placement")]
         [SerializeField]
-        private OVRVirtualKeyboard.KeyboardPosition positionMode = OVRVirtualKeyboard.KeyboardPosition.Near;
+        private OVRVirtualKeyboard.KeyboardPosition positionMode = OVRVirtualKeyboard.KeyboardPosition.Custom;
 
-        [Tooltip("Custom のとき、頭から前にどれだけ離すか[m]。")]
-        [SerializeField] private float forwardOffset = 0.4f;
+        [Tooltip("頭から見た表示位置[m]。x=右, y=上(負で下), z=前。SDK の Near 相当は (0, -0.4, 0.4)、Far 相当は (0, -0.5, 1)。")]
+        [SerializeField] private Vector3 positionOffset = new(0f, -0.4f, 0.4f);
 
-        [Tooltip("Custom のとき、目線からどれだけ下げるか[m]。手元に置くなら 0.5 前後。")]
-        [SerializeField] private float dropHeight = 0.5f;
+        [Tooltip("手前に倒す角度[deg]。0 で垂直、90 で水平。SDK の Near 相当は 65、Far 相当は 0。")]
+        [SerializeField] private float tiltAngle = 65f;
 
-        [Tooltip("Custom のとき、キーボードを何度手前に倒すか[deg]。90 で水平。")]
-        [SerializeField] private float tiltAngle = 45f;
+        [Tooltip("キーボードの大きさ。1 で幅1.0m×高さ0.4mの実寸になる。SDK の Near 相当は 0.4、Far 相当は 1。")]
+        [SerializeField] private float scale = 0.4f;
 
         private OVRVirtualKeyboard _keyboard;
         private TMPVirtualKeyboardTextHandler _textHandler;
@@ -133,11 +133,12 @@ namespace YummyVerse.Scripts.View.UI
         private OVRVirtualKeyboard CreateKeyboard()
         {
             // Instantiate した時点で Awake / OnEnable が走り、キーボードの生成と
-            // モデルの読み込みが始まる。位置と入力ソースはその前に決めておく必要があるので、
-            // 位置は Instantiate の引数で渡し、残りは Awake 後・初回 Update 前に差し込む。
-            GetPlacement(out var position, out var rotation);
-            var keyboard = Instantiate(keyboardPrefab, position, rotation);
+            // モデルの読み込みが始まる。ランタイム上のキーボードの位置と大きさは
+            // 初回 Update の SyncKeyboardLocation で Transform から決まるので、
+            // 入力ソースともども、そこまでに設定しておく。
+            var keyboard = Instantiate(keyboardPrefab);
             keyboard.name = "YummyVerse Virtual Keyboard";
+            ApplyPlacement(keyboard.transform);
 
             _textHandler = keyboard.gameObject.AddComponent<TMPVirtualKeyboardTextHandler>();
             _textHandler.InputField = inputField;
@@ -145,8 +146,6 @@ namespace YummyVerse.Scripts.View.UI
 
             BindInputSources(keyboard);
 
-            // 入力ソース(_inputSources)は初回 Update で組み立てられるため、
-            // ここまでに transform を設定しておけば Custom 配置も反映される。
             keyboard.UseSuggestedLocation(positionMode);
             return keyboard;
         }
@@ -204,38 +203,42 @@ namespace YummyVerse.Scripts.View.UI
             return anchor;
         }
 
+        /// <summary>
+        /// Custom のときの位置・向き・大きさを Transform に書き込む。
+        /// </summary>
+        /// <remarks>
+        /// 既定値は SDK が Near(直接タッチ向けの手元配置)の目安として持っている
+        /// 値に合わせてある(OVRVirtualKeyboard.OnDrawGizmos 参照)。
+        /// Near / Far モードを使わないのは、どちらもランタイムが位置を決めるモードで、
+        /// こちらの Transform が毎フレーム上書きされてしまうため。
+        ///
+        /// 大きさも Transform で決まる。localScale の最大成分がそのまま倍率として
+        /// ランタイムに渡り(ComputeLocation → MaxElement)、1 のときキーボードの
+        /// 実寸は幅1.0m×高さ0.4mになる。手元に置くなら 0.4 前後まで小さくする。
+        ///
+        /// また Transform はワールド座標のままトラッキング空間の座標として渡される。
+        /// このシーンは OVRCameraRig が原点・無回転・等倍なので両者は一致しているが、
+        /// リグを動かす作りに変えるとここがずれる。高さも固定値ではなく
+        /// 実行時の頭の高さからの相対で出しているので、原点が FloorLevel でも問題ない。
+        ///
+        /// 呼ぶのは表示するときの1回だけ。毎フレーム書き込むと、ランタイム側の姿勢を
+        /// Transform に書き戻す SyncKeyboardLocation と取り合いになって震える。
+        /// </remarks>
         private void ApplyPlacement(Transform keyboardTransform)
         {
             if (positionMode != OVRVirtualKeyboard.KeyboardPosition.Custom) return;
 
-            GetPlacement(out var position, out var rotation);
-            keyboardTransform.SetPositionAndRotation(position, rotation);
-        }
-
-        /// <summary>
-        /// Custom のときの配置。頭の位置を基準に、少し前・かなり下(手元)へ置く。
-        /// </summary>
-        /// <remarks>
-        /// 設定パネル基準ではなく頭基準にしているのは、パネルが目線の高さに出るため、
-        /// パネルを基準にすると必ずパネルの近くにキーボードが来てしまうため。
-        /// また水平成分だけを使うので、見下ろしていても高さがぶれない。
-        /// </remarks>
-        private void GetPlacement(out Vector3 position, out Quaternion rotation)
-        {
             var camera = targetCamera != null ? targetCamera : Camera.main;
-            if (camera == null)
-            {
-                position = transform.position;
-                rotation = transform.rotation;
-                return;
-            }
+            if (camera == null) return;
 
+            // 頭の向きのうち水平成分だけを使う。見上げ / 見下ろしで位置が動かないようにするため。
             var head = camera.transform;
-            var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up);
-            forward = forward.sqrMagnitude > 1e-6f ? forward.normalized : Vector3.forward;
+            var yaw = Quaternion.Euler(0f, head.eulerAngles.y, 0f);
 
-            position = head.position + forward * forwardOffset + Vector3.down * dropHeight;
-            rotation = Quaternion.LookRotation(forward, Vector3.up) * Quaternion.Euler(tiltAngle, 0f, 0f);
+            keyboardTransform.SetPositionAndRotation(
+                head.position + yaw * positionOffset,
+                yaw * Quaternion.Euler(tiltAngle, 0f, 0f));
+            keyboardTransform.localScale = Vector3.one * scale;
         }
     }
 }
