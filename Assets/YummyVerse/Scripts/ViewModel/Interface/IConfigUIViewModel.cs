@@ -13,7 +13,6 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         ReactiveProperty<string> APIEndPointUrl { get; }
         ReactiveProperty<string> LastRequestHTTPStatus { get; }
         ReactiveProperty<string> LastDetectedGuid { get; }
-        ReactiveProperty<bool> IsStandaloneMode { get; }
         ReactiveProperty<float> FoodScale { get; }
         ReactiveProperty<string> SpatialPlacementStatus { get; }
         ReactiveProperty<bool> IsSpatialAnchorReady { get; }
@@ -32,8 +31,6 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         void ResetToStart();
 
         void UpdateEndPointUrl(string url);
-        
-        void SetStandaloneMode(bool isStandalone);
         
         void SetFoodScale(float scale);
 

@@ -14,7 +14,6 @@ namespace YummyVerse.Scripts.ViewModel
     {
         private readonly IEndPointManager _endPointManager;
         private readonly IFoodContext _foodContext;
-        private readonly ISettingManager _settingManager;
         private readonly IFoodScaleManager _foodScaleManager;
         private readonly IInputLayer _inputLayer;
         private readonly IQRDetectionService _qrDetectionService;
@@ -29,7 +28,6 @@ namespace YummyVerse.Scripts.ViewModel
         public ReactiveProperty<string> APIEndPointUrl { get; }  = new();
         public ReactiveProperty<string> LastRequestHTTPStatus { get; } = new();
         public ReactiveProperty<string> LastDetectedGuid { get; }  = new();
-        public ReactiveProperty<bool> IsStandaloneMode { get; }  = new();
         public ReactiveProperty<float> FoodScale { get; } = new();
         public ReactiveProperty<string> SpatialPlacementStatus { get; } = new();
         public ReactiveProperty<bool> IsSpatialAnchorReady { get; } = new();
@@ -47,7 +45,6 @@ namespace YummyVerse.Scripts.ViewModel
 
         public ConfigUIViewModel(IEndPointManager endPointManager, 
             IFoodContext foodContext, 
-            ISettingManager settingManager,  
             IFoodScaleManager foodScaleManager,
             IInputLayer inputLayer,
             IQRDetectionService qrDetectionService,
@@ -58,7 +55,6 @@ namespace YummyVerse.Scripts.ViewModel
         {
             _endPointManager = endPointManager;
             _foodContext = foodContext;
-            _settingManager = settingManager;
             _foodScaleManager = foodScaleManager;
             _inputLayer = inputLayer;
             _qrDetectionService = qrDetectionService;
@@ -125,7 +121,6 @@ namespace YummyVerse.Scripts.ViewModel
             APIEndPointUrl?.Dispose();
             LastRequestHTTPStatus?.Dispose();
             LastDetectedGuid?.Dispose();
-            IsStandaloneMode?.Dispose();
             SpatialPlacementStatus?.Dispose();
             IsSpatialAnchorReady?.Dispose();
             IsFoodPositionFixed?.Dispose();
@@ -165,12 +160,6 @@ namespace YummyVerse.Scripts.ViewModel
                 return;
             }
             OnAPIEndPointValidationError.Invoke();
-        }
-
-        public void SetStandaloneMode(bool isStandalone)
-        {
-            IsStandaloneMode.Value = isStandalone;
-            _settingManager.isStandaloneMode.Value = isStandalone;
         }
 
         public void SetFoodScale(float scale)

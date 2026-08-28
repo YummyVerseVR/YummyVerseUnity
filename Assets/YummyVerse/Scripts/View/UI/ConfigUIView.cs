@@ -12,7 +12,6 @@ namespace YummyVerse.Scripts.View.UI
     {
         [SerializeField] private TMP_InputField apiEndPointUrl;
         [SerializeField] private Button testConnectionButton;
-        [SerializeField] private Toggle standaloneModeToggle;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private OVROverlayCanvas overlayCanvas;
         [SerializeField] private Slider foodScaleSlider;
@@ -32,9 +31,9 @@ namespace YummyVerse.Scripts.View.UI
 
         private void Awake()
         {
-            // OVROverlayCanvas is composited in front of scene geometry, so the
-            // controller ray's world-space cursor cannot appear over this menu.
-            // Draw the interaction point as part of the canvas as well.
+            // Keep the pointer visual inside the canvas texture.  The canvas is
+            // submitted as an underlay (see EnableOverlayCanvas), so scene geometry
+            // such as the controller still participates in depth ordering.
             if (!TryGetComponent<PointableCanvasPointerVisual>(out _))
             {
                 gameObject.AddComponent<PointableCanvasPointerVisual>();
@@ -89,8 +88,6 @@ namespace YummyVerse.Scripts.View.UI
             
             apiEndPointUrl.onEndEdit.AddListener(v => _configUIViewModel.UpdateEndPointUrl(v));
             _configUIViewModel.APIEndPointUrl.Subscribe(v => apiEndPointUrl.SetTextWithoutNotify(v)).AddTo(this);
-            
-            standaloneModeToggle.onValueChanged.AddListener(v => _configUIViewModel.SetStandaloneMode(v));
             
             // スライダーの値が変化したら、その値をViewModelに知らせる
             foodScaleSlider.onValueChanged.AddListener(v => _configUIViewModel.SetFoodScale(v));
@@ -161,9 +158,11 @@ namespace YummyVerse.Scripts.View.UI
         {
             if (overlayCanvas == null) return;
 
-            // An underlay requires a black imposter in the eye buffer. It masks the
-            // passthrough layer even after CanvasGroup alpha reaches zero.
-            overlayCanvas.overlayType = OVROverlay.OverlayType.Overlay;
+            // An Overlay is composited after the eye buffer and therefore always
+            // appears in front of scene objects, including the controller.  The
+            // settings panel is a world-space UI, so submit it as an Underlay and
+            // let the scene depth determine which object is in front.
+            overlayCanvas.overlayType = OVROverlay.OverlayType.Underlay;
             overlayCanvas.overlayEnabled = true;
             overlayCanvas.enabled = true;
         }
