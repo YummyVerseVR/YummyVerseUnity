@@ -11,7 +11,7 @@ using YummyVerse.Scripts.Model.Struct.SO;
 
 namespace YummyVerse.Scripts.Model
 {
-    public class LocalFoodLoader : IFoodFetchable
+    public sealed class LocalFoodLoader : ILocalFoodModelLoader
     {
         private readonly LocalFoodSO _localFoodSO;
 
@@ -20,7 +20,7 @@ namespace YummyVerse.Scripts.Model
             _localFoodSO = localFoodSO;
         }
         
-        public async UniTask<FoodDownloadResult> Download(MenuItem item, CancellationToken ct)
+        public async UniTask<FoodDownloadResult> LoadAsync(MenuItem item, CancellationToken ct)
         {
             var result = new FoodDownloadResult
             {

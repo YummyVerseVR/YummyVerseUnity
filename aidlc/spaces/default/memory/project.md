@@ -22,6 +22,16 @@
 - Preview/GLB は artifact ID、revision、SHA-256、verified、selected pointer を検証し、固定 filename や QR GUID を cache identity にしない。
 - Tutorial 完了後の一つの Virtual Menu は YummyService v2 item と Standalone local item を同時表示し、source-specific adapter から共通 food presentation flow へ接続する。
 - Standalone Mode は API 非依存の第一級 source として維持し、Network/API failure から独立して local catalog/model を利用可能にする。
+- 再設計の runtime root は `ProjectSettings/EditorBuildSettings.asset` で唯一 enabled の `Assets/YummyVerse/Scene/Restaurant.unity`、そこから再帰的に到達する Prefab/asset graph、Extenject の `NonLazy`/`IInitializable`、Unity lifecycle callback、Editor test とする。Scene/Prefab に付いているだけでは到達根拠としない。
+- レイヤーの依存方向は `Domain contracts/value objects → Application/use cases → Infrastructure adapters / Presentation` とする。新しい依存は View → application port、Application → Domain/port、Infrastructure → port の実装、composition root → concrete に限定し、逆方向を追加しない。
+- Domain/Application は `MonoBehaviour`、View concrete、network/filesystem/PlayerPrefs、Meta XR、glTF、input の具体実装を知らない。外部境界の port は利用者の役割ごとに定義し、local/remote を同じ汎用 interface の多重 bind で曖昧にしない。
+- View 層の MonoBehaviour は serialized reference、Unity lifecycle、render/input event forwarding、`Update`/`LateUpdate` の tick forwarding だけを担う。UI 生成、network/file 処理、catalog policy、session/business decision、状態遷移、長い `switch`、購読所有判断は plain C# collaborator/use case に置く。`partial MonoBehaviour` への移動は薄型化とみなさない。
+- View に公開する状態は原則 read-only stream/property とし、変更は command method で表す。subscription/cancellation/disposal の所有者を明記し、session または GameObject の lifetime と一致させる。
+- Installer は composition root として feature registration へ委譲し、空 Installer と、scene に置かれているだけで登録を持たない component を禁止する。具象の `new`/bind は composition root に閉じ込める。
+- transport DTO は mapper 境界で Domain/Application 型へ変換し、Network source と Standalone source の identity、failure、loading、lifecycle を混同しない。
+- serialized asset を rename/move/delete する場合は `.meta` の GUID と Scene/Prefab/ScriptableObject/UnityEvent の参照を検証し、Unity load 検証まで完了条件に含める。
+- 未使用コードは active runtime roots から code call、DI activation、Unity callback、serialized UnityEvent、ScriptableObject data reference のいずれでも到達しないものと定義する。Scene/Prefab に付いているだけでは使用根拠にならない。削除前に class reference、script GUID、active asset graph、tests/editor tooling を確認し、証拠を intent に残す。
+- architecture gate として `FindObject`/service locator/static singleton は、device adapter 内の SDK 境界で避けられない場合を除き禁止する。例外は理由、期限、除去条件を intent/decision に記録する。
 
 ## Testing Posture
 
@@ -33,6 +43,10 @@
 - VR menu と physical viewer の item identity/状態整合性を、対象 device/transport が確定した後に確認する。
 - YummyService v2 の全 OrderState/StageState/ArtifactType/ProblemDetails mapping、unknown enum、v1 rejection、SHA mismatch、stale response を contract test する。
 - Contract test と production API integration を分け、v2 OpenAPI に paths/security/responses がない状態を integration 合格にしない。
+- active runtime roots、DI activation、Unity callback、serialized reference の到達性を、削除候補ごとに記録する。到達性監査をしていない削除は合格としない。
+- Domain と Application の pure core/use case は EditMode unit test を基本とし、adapter の mapping、failure、timeout、cancellation は contract test で確認する。Scene/Prefab/ScriptableObject の変更は Unity Editor の load/参照検証を別に行う。
+- Quest/Android/OpenXR、PCVR、Editor/Standalone の結果を一つにまとめない。未実行は `NOT-RUN` と記録し、成功扱いにしない。
+- session/GameObject lifetime に紐付く subscription、CancellationToken、disposal を、正常終了・reset・destroy・再入場で検証する。Network と Standalone の片系 failure が他方を利用不能にしないことも確認する。
 
 ## Documentation
 
@@ -63,6 +77,13 @@
 
 - NEVER `Library/`, `Temp/`, `Logs/`, `obj/`, `Build/`, `UserSettings/` を設計上のソースまたはコミット対象として扱う。
 - NEVER Unity の `.meta` と対応アセットの関係を無視して移動・削除する。
+- NEVER Domain/Application から MonoBehaviour、View concrete、network/filesystem/PlayerPrefs、Meta XR、glTF、input の具体実装へ参照を張る。
+- NEVER View MonoBehaviour に UI tree の生成、外部 I/O、catalog/session policy、business state transition、長い分岐、購読の lifetime 判断を置く。`partial` 化、helper MonoBehaviour の増設で規約を迂回しない。
+- NEVER role-specific port を generic `IFetchable`/`IService` にまとめ、local と remote の具象を同じ曖昧な multi-bind にする。
+- NEVER Installer を空のまま Scene component として残す、または composition root の外で具象を `new`/bind する。
+- NEVER transport DTO、SDK type、raw JSON、route、PlayerPrefs key を Domain/Application の契約として漏らす。
+- NEVER `FindObjectOfType`、service locator、static singleton を通常の解決経路に使う。device adapter 内の避けられない SDK 境界以外では使用しない。
+- NEVER Scene/Prefab に attach されていることだけを理由に未使用コードを残す、または到達性の証拠なしにコードを削除する。
 
 ## Mandated
 
@@ -76,6 +97,14 @@
 - ALWAYS v2 draft contract を更新するときは source commit/version/checksum と schema/path/security diff を review する。
 - ALWAYS downloaded artifact bytes の SHA-256 を確認してから decode/load/shared cache publish する。
 - ALWAYS Network と Standalone の identity namespace、loading、error、availability を分離し、一方の失敗で他方を利用不能にしない。
+- ALWAYS 新しい feature ごとに Domain/Application の責務、role-specific port、Infrastructure adapter、Presentation boundary、composition root の登録箇所を記録する。
+- ALWAYS read-only state と command を分け、各 subscription の owner、開始条件、cancel 条件、disposal owner を実装と設計資料に明記する。UniTask/R3 は session または GameObject lifetime まで cancellation を伝播する。
+- ALWAYS View の変更は forwarding に留め、UI 生成、I/O、policy、状態遷移を plain C# collaborator/use case へ抽出する。抽出先を `partial MonoBehaviour` にしない。
+- ALWAYS port 追加時は consumer 側に役割固有の契約を置き、transport DTO は mapper で遮断する。Network と Standalone は別 adapter と別 failure policy を持つ。
+- ALWAYS 削除候補について active runtime root からの code/DI/callback/UnityEvent/ScriptableObject の到達性を調べ、class reference、script GUID、asset graph、tests/editor tooling の証拠を `260828-architecture-redesign/audit/` または対応 decision に残す。
+- ALWAYS architecture gate では許可された依存方向、具象 bind の位置、singleton/service locator の不在、空 Installer の不在を review checklist で確認する。
+- ALWAYS 例外には一意 ID、理由、影響範囲、owner、期限、除去条件、代替テストを付け、intent/decision に期限付きで記録する。期限切れの例外は新規変更の合格条件を満たさない。
+- ALWAYS この恒久規約の詳細と実例は `aidlc/spaces/default/knowledge/aidlc-shared/architecture-and-code-quality.md`、今回の適用計画と監査証拠は `aidlc/spaces/default/intents/260828-architecture-redesign/` に記録する。
 
 ## Corrections
 

@@ -473,7 +473,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3613868102660323786, guid: c2e00db6d2dfa42ac8d821db8d493a44, type: 3}
       propertyPath: SceneSettings.<TrackableAdded>k__BackingField.m_PersistentCalls.m_Calls.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3613868102660323786, guid: c2e00db6d2dfa42ac8d821db8d493a44, type: 3}
       propertyPath: SceneSettings.<TrackableRemoved>k__BackingField.m_PersistentCalls.m_Calls.Array.size
@@ -494,7 +494,7 @@ PrefabInstance:
     - target: {fileID: 3613868102660323786, guid: c2e00db6d2dfa42ac8d821db8d493a44, type: 3}
       propertyPath: SceneSettings.<TrackableAdded>k__BackingField.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1621951480}
+      objectReference: {fileID: 0}
     - target: {fileID: 3613868102660323786, guid: c2e00db6d2dfa42ac8d821db8d493a44, type: 3}
       propertyPath: SceneSettings.<TrackableAdded>k__BackingField.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 2
@@ -1334,19 +1334,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 392623880}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1300202494}
-        m_TargetAssemblyTypeName: Food3DModel.View.DummyQRView, Assembly-CSharp
-        m_MethodName: OnTrackableAdded
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &392623880
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1573,7 +1561,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 562243918}
-  - component: {fileID: 562243917}
   m_Layer: 0
   m_Name: Controller
   m_TagString: Untagged
@@ -1581,18 +1568,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &562243917
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 562243916}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 55a0ef8b62da34118a26595e55c7009a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ControllerController
 --- !u!4 &562243918
 Transform:
   m_ObjectHideFlags: 0
@@ -2826,7 +2801,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1300202495}
-  - component: {fileID: 1300202494}
   m_Layer: 0
   m_Name: DummyQRView
   m_TagString: Untagged
@@ -2834,18 +2808,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &1300202494
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1300202493}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dcd17cef5aa6435dab2dc05004b028b5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Food3DModel.View.DummyQRView
 --- !u!4 &1300202495
 Transform:
   m_ObjectHideFlags: 0
@@ -3168,7 +3130,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1621951481}
-  - component: {fileID: 1621951480}
   m_Layer: 0
   m_Name: QRView
   m_TagString: Untagged
@@ -3176,19 +3137,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1621951480
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1621951479}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 49c367c05aa84ebc89612dd9b473d3b8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Food3DModel.View.QRView
-  _debugText: {fileID: 25607115}
 --- !u!4 &1621951481
 Transform:
   m_ObjectHideFlags: 0

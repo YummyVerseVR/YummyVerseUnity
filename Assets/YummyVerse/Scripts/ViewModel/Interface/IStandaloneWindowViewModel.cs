@@ -8,6 +8,9 @@ namespace YummyVerse.Scripts.ViewModel.Interface
     {
         ReactiveProperty<bool> IsVisible { get; }
 
+        /// <summary>Changes visibility without exposing state mutation to application callers.</summary>
+        void SetVisible(bool isVisible);
+
         void SpawnLocalFood(LocalFoods food);
 
         /// <summary>

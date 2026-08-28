@@ -1,5 +1,4 @@
-using System.IO;
-using UnityEngine;
+using System;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 
@@ -10,19 +9,23 @@ namespace YummyVerse.Scripts.Model
     /// </summary>
     public sealed class RandomLocalFoodSelectionProvider : ILocalFoodSelectionProvider
     {
-        private readonly System.Random _random = new();
+        private readonly IPersistentFoodCatalogSource _persistentSource;
         private FoodCatalogItem _selected;
+
+        public RandomLocalFoodSelectionProvider(IPersistentFoodCatalogSource persistentSource)
+        {
+            _persistentSource = persistentSource ?? throw new ArgumentNullException(nameof(persistentSource));
+        }
 
         public bool TryGetSelected(out FoodCatalogItem item)
         {
-            if (_selected != null && File.Exists(_selected.ModelLocation))
+            if (_selected != null && _selected.IsSelectable)
             {
                 item = _selected;
                 return true;
             }
 
-            var foodsDirectory = Path.Combine(Application.persistentDataPath, "Foods");
-            if (!PersistentFoodCatalogScanner.TrySelectRandom(foodsDirectory, _random, out _selected))
+            if (!_persistentSource.TrySelectRandom(out _selected))
             {
                 item = null;
                 return false;

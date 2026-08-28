@@ -26,7 +26,7 @@ namespace YummyVerse.Scripts.ViewModel
 
         public void Initialize()
         {
-            _settingManager.isStandaloneMode.Subscribe(v => IsVisible.Value = v).AddTo(_disposables);
+            _settingManager.isStandaloneMode.Subscribe(SetVisible).AddTo(_disposables);
         }
         
         public void SpawnLocalFood(LocalFoods food)
@@ -36,6 +36,11 @@ namespace YummyVerse.Scripts.ViewModel
             // 食品 selection は MenuSelectionBridge から game event として発行する。
             // QR detection service へ食品 GUID を流すと designation と identity が再結合するため使用しない。
             OnLocalFoodSpawned?.Invoke(food);
+        }
+
+        public void SetVisible(bool isVisible)
+        {
+            IsVisible.Value = isVisible;
         }
 
         public void Dispose()

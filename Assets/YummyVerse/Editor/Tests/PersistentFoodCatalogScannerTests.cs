@@ -7,6 +7,7 @@ using UnityEngine.UI;
 using YummyVerse.Scripts.Model;
 using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.Model.YummyServiceV2;
+using YummyVerse.Scripts.Presentation;
 using YummyVerse.Scripts.View.UI;
 using YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps;
 
@@ -98,21 +99,27 @@ namespace YummyVerse.Editor.Tests
         }
 
         [Test]
-        public void ChefReadyStepServesRandomPersistentFoodOnlyOnceAtS5Completion()
+        public void ScoopStepServesRandomPersistentFoodOnceAtS8Start()
         {
             var chefReady = AssetDatabase.LoadAssetAtPath<NarrationStep>(
                 "Assets/YummyVerse/Data/Tutorial/Steps/Step_S5_ChefReady.asset");
             var appetizerPrompt = AssetDatabase.LoadAssetAtPath<NarrationStep>(
                 "Assets/YummyVerse/Data/Tutorial/Steps/Step_S6d_Appetizer.asset");
+            var scoop = AssetDatabase.LoadAssetAtPath<TaskStep>(
+                "Assets/YummyVerse/Data/Tutorial/Steps/Step_S8_Scoop.asset");
 
             Assert.That(chefReady, Is.Not.Null);
             Assert.That(appetizerPrompt, Is.Not.Null);
+            Assert.That(scoop, Is.Not.Null);
             Assert.That(
                 new SerializedObject(chefReady).FindProperty("onCompletedCommand").intValue,
-                Is.EqualTo((int)GameCommandId.ServeRandomPersistentFood));
+                Is.EqualTo((int)GameCommandId.None));
             Assert.That(
                 new SerializedObject(appetizerPrompt).FindProperty("onCompletedCommand").intValue,
                 Is.EqualTo((int)GameCommandId.None));
+            Assert.That(
+                new SerializedObject(scoop).FindProperty("onStartedCommand").intValue,
+                Is.EqualTo((int)GameCommandId.ServeRandomPersistentFood));
         }
 
         [Test]
@@ -161,6 +168,9 @@ namespace YummyVerse.Editor.Tests
             var view = root.AddComponent<FoodSelectionMenuView>();
             try
             {
+                view.Construct(new FoodSelectionMenuPresenter(
+                    new FoodSelectionMenuUiBuilder(),
+                    new FoodPreviewLoader()));
                 view.Initialize();
 
                 var scroll = root.GetComponentInChildren<ScrollRect>(true);

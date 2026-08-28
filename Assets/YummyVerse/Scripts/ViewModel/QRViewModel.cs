@@ -1,5 +1,4 @@
 using System;
-using Food3DModel.Interface;
 using Meta.XR.MRUtilityKit;
 using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;

@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3348757062876466796}
   - component: {fileID: 8004462586665310097}
-  - component: {fileID: -3449712509274674577}
   m_Layer: 0
   m_Name: SceneContext
   m_TagString: Untagged
@@ -46,8 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Zenject::Zenject.SceneContext
   _scriptableObjectInstallers: []
-  _monoInstallers:
-  - {fileID: -3449712509274674577}
+  _monoInstallers: []
   _installerPrefabs: []
   _findSiblingMonoInstallers: 0
   _autoRun: 1
@@ -66,15 +64,3 @@ MonoBehaviour:
   _parentNewObjectsUnderSceneContext: 0
   _contractNames: []
   _parentContractNames: []
---- !u!114 &-3449712509274674577
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7511052106916868076}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 65bba82fae8914140a58bb0b8f5d578a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FoodDBInstaller

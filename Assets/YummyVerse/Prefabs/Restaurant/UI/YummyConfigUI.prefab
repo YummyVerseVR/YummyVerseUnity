@@ -3175,7 +3175,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e562b9a3ab8e4f249151d42f2ec5888d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.View.ConfigUIView
+  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.View.UI.ConfigUIView
   apiEndPointUrl: {fileID: 7112805301816702407}
   testConnectionButton: {fileID: 4522097541274067082}
   canvasGroup: {fileID: 2764984737716230343}

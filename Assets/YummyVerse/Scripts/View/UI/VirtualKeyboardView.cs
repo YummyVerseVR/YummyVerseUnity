@@ -1,7 +1,8 @@
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using YummyVerse.Scripts.Presentation;
+using Zenject;
 
 namespace YummyVerse.Scripts.View.UI
 {
@@ -46,7 +47,17 @@ namespace YummyVerse.Scripts.View.UI
 
         private OVRVirtualKeyboard _keyboard;
         private TMPVirtualKeyboardTextHandler _textHandler;
-        private readonly List<GameObject> _interactorAnchors = new();
+        private VirtualKeyboardInputSourceBinder _inputSourceBinder;
+        private VirtualKeyboardPlacement _placement;
+
+        [Inject]
+        public void Construct(
+            VirtualKeyboardInputSourceBinder inputSourceBinder,
+            VirtualKeyboardPlacement placement)
+        {
+            _inputSourceBinder = inputSourceBinder;
+            _placement = placement;
+        }
 
         private void Awake()
         {
@@ -60,6 +71,7 @@ namespace YummyVerse.Scripts.View.UI
             // 入力手段をバーチャルキーボードに一本化する。
             // (Android 実機ではこれを切らないと OS のシステムキーボードも同時に出る)
             inputField.shouldHideSoftKeyboard = true;
+            ConfigurePlacement();
         }
 
         private void OnEnable()
@@ -89,13 +101,7 @@ namespace YummyVerse.Scripts.View.UI
                 _keyboard = null;
             }
 
-            // コントローラー配下に足したアンカーはキーボードとは別の親にいるので個別に消す。
-            foreach (var anchor in _interactorAnchors)
-            {
-                if (anchor != null) Destroy(anchor);
-            }
-
-            _interactorAnchors.Clear();
+            _inputSourceBinder?.Dispose();
         }
 
         /// <summary>キーボードを表示する。初回はここでプレハブを生成する。</summary>
@@ -135,7 +141,8 @@ namespace YummyVerse.Scripts.View.UI
             // Instantiate した時点で Awake / OnEnable が走り、ランタイム側のキーボード生成と
             // モデルの読み込みが始まる。位置と向きだけは原点に出さないためここで渡すが、
             // 大きさはプレハブのまま(等倍)にしておく(理由は下のコルーチン)。
-            GetPose(out var position, out var rotation);
+            ConfigurePlacement();
+            _placement.GetInitialPose(out var position, out var rotation);
             var keyboard = Instantiate(keyboardPrefab, position, rotation);
             keyboard.name = "YummyVerse Virtual Keyboard";
 
@@ -176,51 +183,7 @@ namespace YummyVerse.Scripts.View.UI
         /// </summary>
         private void BindInputSources(OVRVirtualKeyboard keyboard)
         {
-            var cameraRig = FindAnyObjectByType<OVRCameraRig>();
-            if (cameraRig != null)
-            {
-                keyboard.leftControllerRootTransform = cameraRig.leftControllerAnchor;
-                keyboard.rightControllerRootTransform = cameraRig.rightControllerAnchor;
-                keyboard.leftControllerDirectTransform =
-                    CreateInteractorAnchor(cameraRig.leftControllerAnchor, "KeyboardInteractorAnchorLeft");
-                keyboard.rightControllerDirectTransform =
-                    CreateInteractorAnchor(cameraRig.rightControllerAnchor, "KeyboardInteractorAnchorRight");
-            }
-            else
-            {
-                Debug.LogWarning($"{nameof(VirtualKeyboardView)}: OVRCameraRig が見つからないため、コントローラー入力を接続できません。", this);
-            }
-
-            // OVRHand.HandType は internal なので、併設の OVRSkeleton から左右を判定する。
-            foreach (var hand in FindObjectsByType<OVRHand>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            {
-                if (!hand.TryGetComponent<OVRSkeleton>(out var skeleton)) continue;
-
-                switch (skeleton.GetSkeletonType())
-                {
-                    case OVRSkeleton.SkeletonType.HandLeft:
-                    case OVRSkeleton.SkeletonType.XRHandLeft:
-                        keyboard.handLeft = hand;
-                        break;
-                    case OVRSkeleton.SkeletonType.HandRight:
-                    case OVRSkeleton.SkeletonType.XRHandRight:
-                        keyboard.handRight = hand;
-                        break;
-                }
-            }
-        }
-
-        /// <summary>直接タッチ入力で指先として扱う位置。コントローラー先端あたりに置く。</summary>
-        private Transform CreateInteractorAnchor(Transform parent, string name)
-        {
-            if (parent == null) return null;
-
-            var anchor = new GameObject(name).transform;
-            anchor.SetParent(parent, false);
-            anchor.localPosition = new Vector3(0f, 0f, 0.062f);
-            anchor.localRotation = Quaternion.identity;
-            _interactorAnchors.Add(anchor.gameObject);
-            return anchor;
+            _inputSourceBinder.Bind(keyboard);
         }
 
         /// <summary>
@@ -245,28 +208,21 @@ namespace YummyVerse.Scripts.View.UI
         /// </remarks>
         private void ApplyPlacement(Transform keyboardTransform)
         {
-            if (positionMode != OVRVirtualKeyboard.KeyboardPosition.Custom) return;
-            if (panelAnchor == null) return;
-
-            GetPose(out var position, out var rotation);
-            keyboardTransform.SetPositionAndRotation(position, rotation);
-            keyboardTransform.localScale = Vector3.one * scale;
+            ConfigurePlacement();
+            _placement.Apply(keyboardTransform);
         }
 
-        /// <summary>設定ダイアログ基準のキーボードの姿勢。</summary>
-        private void GetPose(out Vector3 position, out Quaternion rotation)
+        private void ConfigurePlacement()
         {
-            if (panelAnchor == null)
-            {
-                Debug.LogWarning($"{nameof(VirtualKeyboardView)}: panelAnchor が未設定です。", this);
-                position = transform.position;
-                rotation = transform.rotation;
-                return;
-            }
+            if (_placement == null) return;
 
-            // パネルのスケールを持ち込まないよう、position + rotation * offset で組む。
-            position = panelAnchor.position + panelAnchor.rotation * positionOffset;
-            rotation = panelAnchor.rotation * Quaternion.Euler(tiltAngle, 0f, 0f);
+            _placement.Configure(
+                positionMode,
+                panelAnchor,
+                transform,
+                positionOffset,
+                tiltAngle,
+                scale);
         }
     }
 }

@@ -32,7 +32,7 @@ namespace YummyVerse.Editor.Tests
                     binding.path == "<XRController>{RightHand}/secondaryButton");
 
                 Assert.That(aButton.interactions, Is.EqualTo("Press(behavior=1)"));
-                Assert.That(bButton.interactions, Is.Empty);
+                Assert.That(string.IsNullOrEmpty(bButton.interactions), Is.True);
                 Assert.That(startBindings.Any(binding => binding.path == "<XRController>{RightHand}/triggerPressed"),
                     Is.False);
             }

@@ -6,18 +6,24 @@ using YummyVerse.Scripts.Model.Struct;
 
 namespace YummyVerse.Scripts.Model
 {
-    public sealed class FoodLoaderRouter : IFoodFetchable
+    /// <summary>
+    /// Selects an already-composed model adapter. The router owns no factories and
+    /// therefore cannot create a new loader for every menu selection.
+    /// </summary>
+    public sealed class FoodLoaderRouter : IFoodModelLoader
     {
-        private readonly IFoodFetchable _localLoader;
-        private readonly IFoodFetchable _networkLoader;
+        private readonly ILocalFoodModelLoader _localLoader;
+        private readonly INetworkFoodModelLoader _networkLoader;
 
-        public FoodLoaderRouter(IFoodFetchable localLoader, IFoodFetchable networkLoader)
+        public FoodLoaderRouter(
+            ILocalFoodModelLoader localLoader,
+            INetworkFoodModelLoader networkLoader)
         {
-            _localLoader = localLoader;
-            _networkLoader = networkLoader;
+            _localLoader = localLoader ?? throw new System.ArgumentNullException(nameof(localLoader));
+            _networkLoader = networkLoader ?? throw new System.ArgumentNullException(nameof(networkLoader));
         }
 
-        public UniTask<FoodDownloadResult> Download(MenuItem item, CancellationToken ct)
+        public UniTask<FoodDownloadResult> LoadAsync(MenuItem item, CancellationToken ct)
         {
             if (!item.IsValid)
             {
@@ -30,8 +36,8 @@ namespace YummyVerse.Scripts.Model
             }
 
             return item.Source == MenuItemSource.ApiV2
-                ? _networkLoader.Download(item, ct)
-                : _localLoader.Download(item, ct);
+                ? _networkLoader.LoadAsync(item, ct)
+                : _localLoader.LoadAsync(item, ct);
         }
     }
 }

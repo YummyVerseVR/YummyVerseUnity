@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using R3;
+using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 using Zenject;
@@ -10,18 +11,21 @@ namespace YummyVerse.Scripts.Model
 {
     public class FoodContext : IFoodContext, IInitializable, IDisposable
     {
-        private IFoodFetchable _foodFetchable;
         private readonly IGameEventBus _gameEventBus;
-        private readonly IFoodFetchableFactory _foodFetchableFactory;
+        private readonly IFoodModelLoader _foodModelLoader;
+        private readonly CancellationTokenSource _lifetimeCancellation = new();
         
         private readonly CompositeDisposable _disposables  = new CompositeDisposable();
+        private CancellationTokenSource _selectionCancellation;
+        private int _selectionVersion;
+        private bool _isDisposed;
         
         public ReactiveProperty<FoodDownloadResult> downloadResult { get; } = new ();
         
-        public FoodContext(IGameEventBus gameEventBus, IFoodFetchableFactory foodFetchableFactory)
+        public FoodContext(IGameEventBus gameEventBus, IFoodModelLoader foodModelLoader)
         {
-            _gameEventBus = gameEventBus;
-            _foodFetchableFactory = foodFetchableFactory;
+            _gameEventBus = gameEventBus ?? throw new ArgumentNullException(nameof(gameEventBus));
+            _foodModelLoader = foodModelLoader ?? throw new ArgumentNullException(nameof(foodModelLoader));
         }
 
         public void Initialize()
@@ -32,22 +36,67 @@ namespace YummyVerse.Scripts.Model
                     h => _gameEventBus.OnMenuItemSelected += h,
                     h => _gameEventBus.OnMenuItemSelected -= h)
                 .Where(item => item.IsValid)
-                .SubscribeAwait(async (item, ct) =>
-                {
-                    _foodFetchable = _foodFetchableFactory.Create();
-                    downloadResult.Value = await _foodFetchable.Download(item, ct);
-                }).AddTo(_disposables);
+                .Subscribe(StartLoad).AddTo(_disposables);
         }
         
         public void Reset()
         {
+            CancelSelection();
+            _selectionVersion++;
             downloadResult.Value = default;
         }
 
         public void Dispose()
         {
+            if (_isDisposed) return;
+            _isDisposed = true;
+            CancelSelection();
+            _lifetimeCancellation.Cancel();
+            _lifetimeCancellation.Dispose();
             downloadResult?.Dispose();
             _disposables?.Dispose();
+        }
+
+        private void StartLoad(MenuItem item)
+        {
+            if (_isDisposed) return;
+
+            CancelSelection();
+            var version = ++_selectionVersion;
+            _selectionCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                _lifetimeCancellation.Token);
+            LoadAsync(item, version, _selectionCancellation.Token).Forget();
+        }
+
+        private async UniTaskVoid LoadAsync(
+            MenuItem item,
+            int version,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var result = await _foodModelLoader.LoadAsync(item, cancellationToken);
+                if (!_isDisposed && version == _selectionVersion && !cancellationToken.IsCancellationRequested)
+                {
+                    downloadResult.Value = result;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // A newer selection or the owning scene cancelled this request.
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+        }
+
+        private void CancelSelection()
+        {
+            if (_selectionCancellation == null) return;
+            _selectionCancellation.Cancel();
+            _selectionCancellation.Dispose();
+            _selectionCancellation = null;
         }
     }
 }

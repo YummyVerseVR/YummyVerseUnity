@@ -15,9 +15,9 @@ using YummyVerse.Scripts.Model.YummyServiceV2;
 namespace YummyVerse.Scripts.Model
 {
     /// <summary>選択されたAPI v2食品のGLBだけを取得してglTFastへ渡す。</summary>
-    public sealed class NetworkFoodLoader : IFoodFetchable
+    public sealed class NetworkFoodLoader : INetworkFoodModelLoader
     {
-        public async UniTask<FoodDownloadResult> Download(MenuItem item, CancellationToken ct)
+        public async UniTask<FoodDownloadResult> LoadAsync(MenuItem item, CancellationToken ct)
         {
             var result = new FoodDownloadResult
             {

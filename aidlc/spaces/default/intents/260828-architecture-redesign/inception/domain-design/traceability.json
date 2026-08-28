@@ -1,0 +1,52 @@
+{
+  "intent": "260828-architecture-redesign",
+  "status": "design-baseline-only",
+  "decisions": [
+    {
+      "id": "ADR-AR-001",
+      "requirements": ["FR-AR-001", "FR-AR-009", "NFR-AR-008", "NFR-AR-010"],
+      "components": ["C-AR-01 ActiveRootAudit", "C-AR-10 DeletionAndAssetGate"]
+    },
+    {
+      "id": "ADR-AR-002",
+      "requirements": ["FR-AR-002", "FR-AR-003", "FR-AR-008", "NFR-AR-001", "NFR-AR-002"],
+      "components": ["C-AR-02 Domain Core", "C-AR-03 Application Use Cases"]
+    },
+    {
+      "id": "ADR-AR-003",
+      "requirements": ["FR-AR-005", "FR-AR-008", "FR-AR-011", "NFR-AR-004", "NFR-AR-006"],
+      "components": ["C-AR-04 Application Role-Specific Ports", "C-AR-05 Infrastructure Adapters"]
+    },
+    {
+      "id": "ADR-AR-004",
+      "requirements": ["FR-AR-003", "FR-AR-004", "FR-AR-007", "FR-AR-011", "NFR-AR-005"],
+      "components": ["C-AR-06 Application Coordinator / Presentation ViewModel", "C-AR-07 Thin Unity View"]
+    },
+    {
+      "id": "ADR-AR-005",
+      "requirements": ["FR-AR-006", "NFR-AR-006", "NFR-AR-010"],
+      "components": ["C-AR-08 Composition Root"]
+    },
+    {
+      "id": "ADR-AR-006",
+      "requirements": ["FR-AR-007", "NFR-AR-002", "NFR-AR-003", "NFR-AR-004"],
+      "components": ["C-AR-03 Application Use Cases", "C-AR-06 Application Coordinator / Presentation ViewModel", "C-AR-09 Lifecycle Registry"]
+    },
+    {
+      "id": "ADR-AR-007",
+      "requirements": ["FR-AR-005", "FR-AR-008", "NFR-AR-004", "NFR-AR-008"],
+      "components": ["C-AR-04 Application Role-Specific Ports", "C-AR-05 Infrastructure Adapters"]
+    },
+    {
+      "id": "ADR-AR-008",
+      "requirements": ["FR-AR-009", "FR-AR-010", "FR-AR-011", "NFR-AR-007", "NFR-AR-009", "NFR-AR-010"],
+      "components": ["C-AR-10 DeletionAndAssetGate", "C-AR-11 VerificationMatrix"]
+    },
+    {
+      "id": "ADR-AR-009",
+      "requirements": ["FR-AR-002", "FR-AR-004", "FR-AR-006", "FR-AR-009", "NFR-AR-001", "NFR-AR-005", "NFR-AR-011"],
+      "components": ["C-AR-08 Composition Root", "C-AR-10 DeletionAndAssetGate", "C-AR-11 VerificationMatrix"]
+    }
+  ],
+  "requirementsWithoutDecision": []
+}

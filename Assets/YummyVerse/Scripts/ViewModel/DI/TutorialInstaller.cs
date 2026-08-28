@@ -1,4 +1,5 @@
 using UnityEngine;
+using YummyVerse.Scripts.Presentation;
 using YummyVerse.Scripts.View.Tutorial;
 using YummyVerse.Scripts.View.UI;
 using YummyVerse.Scripts.ViewModel.Tutorial;
@@ -45,6 +46,9 @@ namespace YummyVerse.Scripts.ViewModel.DI
                 .FromNewComponentOnNewGameObject()
                 .AsSingle()
                 .NonLazy();
+            Container.Bind<FoodSelectionMenuUiBuilder>().AsTransient();
+            Container.Bind<FoodPreviewLoader>().AsTransient();
+            Container.Bind<FoodSelectionMenuPresenter>().AsTransient();
 
             // 既存機能との接着
             Container.BindInterfacesAndSelfTo<MenuSelectionBridge>().AsSingle().NonLazy();

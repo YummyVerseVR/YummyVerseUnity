@@ -17,7 +17,7 @@ namespace YummyVerse.Editor.Tests
         {
             var events = new FakeGameEventBus();
             var fetcher = new RecordingFoodFetcher();
-            var context = new FoodContext(events, new FakeFoodFetcherFactory(fetcher));
+            var context = new FoodContext(events, fetcher);
             var selectedGuid = Guid.NewGuid();
 
             try
@@ -39,7 +39,7 @@ namespace YummyVerse.Editor.Tests
         {
             var events = new FakeGameEventBus();
             var fetcher = new RecordingFoodFetcher();
-            var context = new FoodContext(events, new FakeFoodFetcherFactory(fetcher));
+            var context = new FoodContext(events, fetcher);
 
             try
             {
@@ -59,7 +59,7 @@ namespace YummyVerse.Editor.Tests
         {
             var events = new FakeGameEventBus();
             var fetcher = new RecordingFoodFetcher();
-            var context = new FoodContext(events, new FakeFoodFetcherFactory(fetcher));
+            var context = new FoodContext(events, fetcher);
 
             try
             {
@@ -74,24 +74,12 @@ namespace YummyVerse.Editor.Tests
             }
         }
 
-        private sealed class FakeFoodFetcherFactory : IFoodFetchableFactory
-        {
-            private readonly IFoodFetchable _fetcher;
-
-            public FakeFoodFetcherFactory(IFoodFetchable fetcher)
-            {
-                _fetcher = fetcher;
-            }
-
-            public IFoodFetchable Create() => _fetcher;
-        }
-
-        private sealed class RecordingFoodFetcher : IFoodFetchable
+        private sealed class RecordingFoodFetcher : IFoodModelLoader
         {
             public int DownloadCount { get; private set; }
             public MenuItem LastRequestedItem { get; private set; }
 
-            public UniTask<FoodDownloadResult> Download(MenuItem item, CancellationToken ct)
+            public UniTask<FoodDownloadResult> LoadAsync(MenuItem item, CancellationToken ct)
             {
                 ct.ThrowIfCancellationRequested();
                 DownloadCount++;

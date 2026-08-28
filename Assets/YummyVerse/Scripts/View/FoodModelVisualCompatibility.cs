@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace YummyVerse.Scripts.View
+namespace YummyVerse.Scripts.Presentation
 {
-    /// <summary>実食品と配置プレビューに共通のランタイムマテリアル互換処理。</summary>
+    /// <summary>Runtime material compatibility for displayed and preview food models.</summary>
     public static class FoodModelVisualCompatibility
     {
         public static void Apply(GameObject root)
@@ -21,7 +21,9 @@ namespace YummyVerse.Scripts.View
                     var source = materials[i];
                     if (source == null) continue;
                     var shader = source.shader;
-                    var isUnsupported = shader == null || !shader.isSupported || shader.name == "Hidden/InternalErrorShader";
+                    var isUnsupported = shader == null
+                                        || !shader.isSupported
+                                        || shader.name == "Hidden/InternalErrorShader";
                     if (!isUnsupported) continue;
 
                     var target = new Material(fallbackShader);
@@ -40,12 +42,10 @@ namespace YummyVerse.Scripts.View
             CopyColorIfPossible(source, target, "_Color", "_BaseColor");
             CopyColorIfPossible(source, target, "_BaseColor", "_Color");
             CopyColorIfPossible(source, target, "_Color", "_Color");
-
             CopyTextureIfPossible(source, target, "_BaseMap", "_BaseMap");
             CopyTextureIfPossible(source, target, "_MainTex", "_BaseMap");
             CopyTextureIfPossible(source, target, "_BaseMap", "_MainTex");
             CopyTextureIfPossible(source, target, "_MainTex", "_MainTex");
-
             CopyFloatIfPossible(source, target, "_Metallic", "_Metallic");
             CopyFloatIfPossible(source, target, "_Smoothness", "_Smoothness");
         }
