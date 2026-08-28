@@ -5,7 +5,7 @@ using UnityEngine;
 namespace YummyVerse.Scripts.View.UI
 {
     /// <summary>
-    /// 非表示中のワールド空間 UI が Interaction SDK のポインタを奪わないようにするための開閉口。
+    /// ワールド空間 UI の Interactable を、表示状態と前後関係に応じて開け閉めする開閉口。
     ///
     /// CanvasGroup の alpha / blocksRaycasts は uGUI のレイキャストしか止めない。
     /// PointableCanvas の土台にある RayInteractable / PokeInteractable はそのまま生きているので、
@@ -13,12 +13,23 @@ namespace YummyVerse.Scripts.View.UI
     /// その裏や奥にある表示中のパネルのボタンを押せなくなる。
     /// チュートリアルのパネルと設定画面はどれもカメラ前の同じ位置に出るため、これが起きる。
     ///
-    /// 表示/非表示の切り替えに合わせて Interactable ごと有効・無効にして、
-    /// 「見えているパネルだけが触れる」状態を保つ。
+    /// さらに、表示中のパネルが複数あるときは <b>カメラに一番近いものだけ</b>を触れるようにする。
+    /// ISDK の RayInteractor は本来一番近い当たりを選ぶ実装(RayInteractor.ComputeCandidate)だが、
+    /// 同じ方向に重なって出るパネル同士では奥のパネルが選ばれてしまうことがあるため、
+    /// 「見た目で手前にあるものが勝つ」をこちら側で確定させる。
     /// </summary>
     public sealed class PointableCanvasInteractionGate
     {
+        /// <summary>生成済みの開閉口。前後関係の判定に全パネルを見る必要があるため静的に持つ。</summary>
+        private static readonly List<PointableCanvasInteractionGate> Gates = new();
+
         private readonly List<MonoBehaviour> _interactables = new();
+
+        /// <summary>パネルの位置。カメラからの距離を測る基準に使う。</summary>
+        private readonly Transform _anchor;
+
+        /// <summary>パネル自身が「触れる状態になりたい」かどうか(= 表示中かどうか)。</summary>
+        private bool _wantsInteraction;
 
         /// <param name="context">パネル側のコンポーネント。ここから PointableCanvas の根を辿る。</param>
         public PointableCanvasInteractionGate(Component context)
@@ -28,21 +39,74 @@ namespace YummyVerse.Scripts.View.UI
             // Interactable は Canvas より上(バックプレートの根)に付いているので、
             // PointableCanvas まで遡ってからその配下を集める。
             var pointableCanvas = context.GetComponentInParent<PointableCanvas>(true);
-            var root = pointableCanvas != null ? pointableCanvas.transform : context.transform;
+            _anchor = pointableCanvas != null ? pointableCanvas.transform : context.transform;
 
-            foreach (var interactable in root.GetComponentsInChildren<IInteractable>(true))
+            foreach (var interactable in _anchor.GetComponentsInChildren<IInteractable>(true))
             {
                 if (interactable is MonoBehaviour behaviour) _interactables.Add(behaviour);
             }
+
+            if (_interactables.Count > 0) Gates.Add(this);
         }
 
+        /// <summary>
+        /// このパネルを触れる状態にしたいかを伝える。実際に有効になるかは、
+        /// 同時に表示されている他のパネルとの前後関係で決まる。
+        /// </summary>
         public void SetEnabled(bool value)
+        {
+            _wantsInteraction = value;
+            Reevaluate();
+        }
+
+        /// <summary>表示中のパネルのうち、カメラに一番近いものだけを有効にする。</summary>
+        private static void Reevaluate()
+        {
+            // 破棄済みのパネルを掃除する(ドメインリロードを切っていると再生をまたいで残る)。
+            Gates.RemoveAll(gate => gate._anchor == null);
+
+            var cameraTransform = Camera.main != null ? Camera.main.transform : null;
+
+            PointableCanvasInteractionGate frontMost = null;
+            var nearestDistance = float.MaxValue;
+
+            foreach (var gate in Gates)
+            {
+                if (!gate._wantsInteraction) continue;
+
+                // カメラが取れないときは前後を決めようがないので、表示中のものは全て有効に倒す。
+                if (cameraTransform == null)
+                {
+                    frontMost = null;
+                    break;
+                }
+
+                var distance = Vector3.Distance(cameraTransform.position, gate._anchor.position);
+                if (distance >= nearestDistance) continue;
+
+                nearestDistance = distance;
+                frontMost = gate;
+            }
+
+            foreach (var gate in Gates)
+            {
+                gate.Apply(gate._wantsInteraction && (frontMost == null || gate == frontMost));
+            }
+        }
+
+        private void Apply(bool value)
         {
             foreach (var interactable in _interactables)
             {
                 // OnEnable/OnDisable 側で ISDK のレジストリ登録・解除が行われる。
                 if (interactable != null) interactable.enabled = value;
             }
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetState()
+        {
+            Gates.Clear();
         }
     }
 }

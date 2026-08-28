@@ -3202,10 +3202,10 @@ MonoBehaviour:
   keyboardPrefab: {fileID: 3631170893708523032, guid: 325510b4b085edf48876b864e4744ec6,
     type: 3}
   inputField: {fileID: 7112805301816702407}
-  targetCamera: {fileID: 0}
+  panelAnchor: {fileID: 500786508898637685}
   positionMode: 2
-  positionOffset: {x: 0, y: -0.4, z: 0.4}
-  tiltAngle: 65
+  positionOffset: {x: 0, y: -0.3, z: -0.05}
+  tiltAngle: 30
   scale: 0.4
 --- !u!114 &5219836823556852555
 MonoBehaviour:
