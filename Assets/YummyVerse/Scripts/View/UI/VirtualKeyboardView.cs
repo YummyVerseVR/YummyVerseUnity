@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -105,18 +106,17 @@ namespace YummyVerse.Scripts.View.UI
             if (_keyboard == null)
             {
                 _keyboard = CreateKeyboard();
-                if (_keyboard == null) return;
-
-                // 生成直後は OnEnable 済み(= 表示済み)なので、ここで戻る。
                 return;
             }
 
-            ApplyPlacement(_keyboard.transform);
+            // ランタイム側の生成に一度でも失敗していると、GameObject は生きたまま
+            // 中身(キーボード本体とモデル)だけ破棄された状態になる。SetActive(true) は
+            // 既に active だと何も起きないので、必ず OnEnable を通してやり直させる。
+            _keyboard.gameObject.SetActive(false);
             _keyboard.gameObject.SetActive(true);
 
-            // キーボードの位置はランタイム側の空間に固定されるので、開き直すたびに
-            // 置き直さないと、前に開いた場所(移動前の足元など)に取り残される。
-            _keyboard.UseSuggestedLocation(positionMode);
+            // 位置はランタイム側の空間に固定されるので、開き直すたびに置き直す。
+            StartCoroutine(ApplyPlacementNextFrame(_keyboard));
         }
 
         /// <summary>キーボードを隠す。設定画面を閉じるときにも呼ぶ。</summary>
@@ -132,13 +132,12 @@ namespace YummyVerse.Scripts.View.UI
 
         private OVRVirtualKeyboard CreateKeyboard()
         {
-            // Instantiate した時点で Awake / OnEnable が走り、キーボードの生成と
-            // モデルの読み込みが始まる。ランタイム上のキーボードの位置と大きさは
-            // 初回 Update の SyncKeyboardLocation で Transform から決まるので、
-            // 入力ソースともども、そこまでに設定しておく。
-            var keyboard = Instantiate(keyboardPrefab);
+            // Instantiate した時点で Awake / OnEnable が走り、ランタイム側のキーボード生成と
+            // モデルの読み込みが始まる。位置と向きだけは原点に出さないためここで渡すが、
+            // 大きさはプレハブのまま(等倍)にしておく(理由は下のコルーチン)。
+            GetPose(out var position, out var rotation);
+            var keyboard = Instantiate(keyboardPrefab, position, rotation);
             keyboard.name = "YummyVerse Virtual Keyboard";
-            ApplyPlacement(keyboard.transform);
 
             _textHandler = keyboard.gameObject.AddComponent<TMPVirtualKeyboardTextHandler>();
             _textHandler.InputField = inputField;
@@ -146,8 +145,29 @@ namespace YummyVerse.Scripts.View.UI
 
             BindInputSources(keyboard);
 
-            keyboard.UseSuggestedLocation(positionMode);
+            StartCoroutine(ApplyPlacementNextFrame(keyboard));
             return keyboard;
+        }
+
+        /// <summary>
+        /// ランタイム側のキーボード空間ができてから位置・大きさを反映する。
+        /// </summary>
+        /// <remarks>
+        /// キーボード空間は表示後の初回 Update(SyncKeyboardLocation → GetKeyboardSpace)で、
+        /// そのときの Transform をそのまま姿勢として作られる。生成と同じフレームに
+        /// Transform を動かしてしまうと、その姿勢で空間生成が走り、ランタイムが受け付けないと
+        /// SDK 側が DestroyKeyboard() まで実行してキーボードごと消える
+        /// (OVRVirtualKeyboard.GetKeyboardSpace の失敗時処理)。
+        /// この場合 GameObject だけが残るため、外からは「キーボードが出ない」ようにしか見えない。
+        /// </remarks>
+        private IEnumerator ApplyPlacementNextFrame(OVRVirtualKeyboard keyboard)
+        {
+            yield return null;
+
+            if (keyboard == null || !keyboard.gameObject.activeInHierarchy) yield break;
+
+            ApplyPlacement(keyboard.transform);
+            keyboard.UseSuggestedLocation(positionMode);
         }
 
         /// <summary>
@@ -226,18 +246,27 @@ namespace YummyVerse.Scripts.View.UI
         private void ApplyPlacement(Transform keyboardTransform)
         {
             if (positionMode != OVRVirtualKeyboard.KeyboardPosition.Custom) return;
+            if (panelAnchor == null) return;
 
+            GetPose(out var position, out var rotation);
+            keyboardTransform.SetPositionAndRotation(position, rotation);
+            keyboardTransform.localScale = Vector3.one * scale;
+        }
+
+        /// <summary>設定ダイアログ基準のキーボードの姿勢。</summary>
+        private void GetPose(out Vector3 position, out Quaternion rotation)
+        {
             if (panelAnchor == null)
             {
-                Debug.LogWarning($"{nameof(VirtualKeyboardView)}: panelAnchor が未設定のため配置できません。", this);
+                Debug.LogWarning($"{nameof(VirtualKeyboardView)}: panelAnchor が未設定です。", this);
+                position = transform.position;
+                rotation = transform.rotation;
                 return;
             }
 
             // パネルのスケールを持ち込まないよう、position + rotation * offset で組む。
-            keyboardTransform.SetPositionAndRotation(
-                panelAnchor.position + panelAnchor.rotation * positionOffset,
-                panelAnchor.rotation * Quaternion.Euler(tiltAngle, 0f, 0f));
-            keyboardTransform.localScale = Vector3.one * scale;
+            position = panelAnchor.position + panelAnchor.rotation * positionOffset;
+            rotation = panelAnchor.rotation * Quaternion.Euler(tiltAngle, 0f, 0f);
         }
     }
 }

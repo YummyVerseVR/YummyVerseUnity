@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Oculus.Interaction;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace YummyVerse.Scripts.View.UI
 {
@@ -25,6 +26,12 @@ namespace YummyVerse.Scripts.View.UI
 
         private readonly List<MonoBehaviour> _interactables = new();
 
+        /// <summary>
+        /// ポインタの受け口。Interactable を切るだけでは、ISDK 側の候補選びから外れても
+        /// PointableCanvasModule の RaycastAll には残り続けるため、これらもまとめて切る。
+        /// </summary>
+        private readonly List<Behaviour> _pointerReceivers = new();
+
         /// <summary>パネルの位置。カメラからの距離を測る基準に使う。</summary>
         private readonly Transform _anchor;
 
@@ -46,7 +53,10 @@ namespace YummyVerse.Scripts.View.UI
                 if (interactable is MonoBehaviour behaviour) _interactables.Add(behaviour);
             }
 
-            if (_interactables.Count > 0) Gates.Add(this);
+            _pointerReceivers.AddRange(_anchor.GetComponentsInChildren<PointableCanvas>(true));
+            _pointerReceivers.AddRange(_anchor.GetComponentsInChildren<GraphicRaycaster>(true));
+
+            if (_interactables.Count > 0 || _pointerReceivers.Count > 0) Gates.Add(this);
         }
 
         /// <summary>
@@ -100,6 +110,14 @@ namespace YummyVerse.Scripts.View.UI
             {
                 // OnEnable/OnDisable 側で ISDK のレジストリ登録・解除が行われる。
                 if (interactable != null) interactable.enabled = value;
+            }
+
+            // PointableCanvas を切ると PointableCanvasModule への登録ごと外れ、
+            // GraphicRaycaster を切ると EventSystem.RaycastAll の対象からも外れる。
+            // 見た目(Canvas の描画)はそのまま残るので、奥のダイアログは見えたまま反応しなくなる。
+            foreach (var receiver in _pointerReceivers)
+            {
+                if (receiver != null) receiver.enabled = value;
             }
         }
 
