@@ -24,6 +24,15 @@ MonoBehaviour:
     m_WaitForCompletion: 0
     m_LocalVariables: []
   attractVoiceClip: {fileID: 0}
+  foodPlacementRequiredMessage:
+    m_TableReference:
+      m_TableCollectionName: TutorialStrings
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: S0.FoodPlacementRequired
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   idleTimeoutSeconds: 90
   references:
     version: 2

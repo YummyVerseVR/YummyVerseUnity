@@ -16,6 +16,13 @@ namespace YummyVerse.Scripts.Model.Interface
         ReactiveProperty<bool> IsConfigurationVisible { get; }
         ReactiveProperty<bool> IsBusy { get; }
 
+        /// <summary>
+        /// 食べ物の表示位置が使える状態かどうか。
+        /// 保存済み設定の復元中・復元済み、または設定画面で配置モデルを置いた場合に true。
+        /// false のまま食べ物を出すと、表示位置が無いため画面に何も現れない。
+        /// </summary>
+        ReactiveProperty<bool> IsPlacementConfigured { get; }
+
         void SetConfigurationVisible(bool isVisible);
         void UpdateDraftPose(Pose pose);
         bool TryActivateDraftPoseForFood();

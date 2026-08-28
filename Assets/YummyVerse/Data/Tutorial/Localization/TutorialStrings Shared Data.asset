@@ -95,6 +95,10 @@ MonoBehaviour:
     m_Key: S1
     m_Metadata:
       m_Items: []
+  - m_Id: 5229240321
+    m_Key: S0.FoodPlacementRequired
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

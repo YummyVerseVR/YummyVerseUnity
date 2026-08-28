@@ -19,6 +19,7 @@ namespace YummyVerse.Scripts.Model
         private Transform _foodPlacementRoot;
         private Pose _draftPose;
         private bool _hasDraftPose;
+        private bool _isRestoring;
 
         public ReactiveProperty<Transform> FoodTransform { get; } = new();
         public ReactiveProperty<FoodPlacementState> State { get; } = new(FoodPlacementState.Unconfigured);
@@ -27,6 +28,7 @@ namespace YummyVerse.Scripts.Model
         public ReactiveProperty<bool> IsFoodPositionFixed { get; } = new(false);
         public ReactiveProperty<bool> IsConfigurationVisible { get; } = new(false);
         public ReactiveProperty<bool> IsBusy { get; } = new(false);
+        public ReactiveProperty<bool> IsPlacementConfigured { get; } = new(false);
 
         public FoodPlacementService(
             ISpatialAnchorBackend spatialAnchorBackend,
@@ -38,7 +40,20 @@ namespace YummyVerse.Scripts.Model
 
         public void Initialize()
         {
-            RestoreAsync(_lifetimeCancellation.Token).Forget();
+            // 保存済み設定の有無は同期的に判定できる。Spatial Anchorの復元完了を待たずに
+            // 「未設定」と誤判定しないよう、復元を始める時点で構成済み扱いにしておく。
+            if (_placementStore.TryLoad(out _data) && _data.TryGetAnchorUuid(out var uuid))
+            {
+                _isRestoring = true;
+                RefreshPlacementConfigured();
+                RestoreAsync(uuid, _lifetimeCancellation.Token).Forget();
+                return;
+            }
+
+            _data = default;
+            State.Value = FoodPlacementState.Unconfigured;
+            StatusMessage.Value = "Spatial Anchor is not configured.";
+            RefreshPlacementConfigured();
         }
 
         public void SetConfigurationVisible(bool isVisible)
@@ -63,6 +78,7 @@ namespace YummyVerse.Scripts.Model
         {
             _draftPose = pose;
             _hasDraftPose = true;
+            RefreshPlacementConfigured();
         }
 
         /// <summary>
@@ -90,6 +106,7 @@ namespace YummyVerse.Scripts.Model
             {
                 FoodTransform.OnNext(_foodPlacementRoot);
             }
+            RefreshPlacementConfigured();
             return true;
         }
 
@@ -236,17 +253,11 @@ namespace YummyVerse.Scripts.Model
             IsFoodPositionFixed.Dispose();
             IsConfigurationVisible.Dispose();
             IsBusy.Dispose();
+            IsPlacementConfigured.Dispose();
         }
 
-        private async UniTask RestoreAsync(CancellationToken cancellationToken)
+        private async UniTask RestoreAsync(Guid uuid, CancellationToken cancellationToken)
         {
-            if (!_placementStore.TryLoad(out _data) || !_data.TryGetAnchorUuid(out var uuid))
-            {
-                State.Value = FoodPlacementState.Unconfigured;
-                StatusMessage.Value = "Spatial Anchor is not configured.";
-                return;
-            }
-
             IsBusy.Value = true;
             State.Value = FoodPlacementState.Loading;
             StatusMessage.Value = "Loading saved Spatial Anchor...";
@@ -289,7 +300,9 @@ namespace YummyVerse.Scripts.Model
             }
             finally
             {
+                _isRestoring = false;
                 IsBusy.Value = false;
+                RefreshPlacementConfigured();
             }
         }
 
@@ -310,6 +323,7 @@ namespace YummyVerse.Scripts.Model
             {
                 FoodTransform.OnNext(_foodPlacementRoot);
             }
+            RefreshPlacementConfigured();
         }
 
         private void ClearFoodTransform()
@@ -338,6 +352,17 @@ namespace YummyVerse.Scripts.Model
             StatusMessage.Value = hasPreviousPlacement
                 ? $"{message} The previous placement is still active."
                 : message;
+        }
+
+        /// <summary>
+        /// 「食べ物の表示位置が明示的に指定されているか」を再評価する。
+        /// ここが false のまま食べ物を生成すると FoodView が表示先を持てず、
+        /// モデルは読み込まれているのに何も見えない状態になる。
+        /// </summary>
+        private void RefreshPlacementConfigured()
+        {
+            IsPlacementConfigured.Value =
+                _isRestoring || _hasDraftPose || FoodTransform.Value != null;
         }
 
         private static Quaternion NormalizeRotation(Quaternion rotation)

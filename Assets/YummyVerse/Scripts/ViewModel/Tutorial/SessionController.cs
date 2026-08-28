@@ -29,6 +29,7 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
         private readonly IGameResetter _gameResetter;
         private readonly IIdleWatcher _idleWatcher;
         private readonly IInputLayer _inputLayer;
+        private readonly IFoodPlacementService _foodPlacementService;
 
         private readonly CompositeDisposable _disposables = new();
         private readonly CancellationTokenSource _lifetimeCts = new();
@@ -45,7 +46,8 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
             IGameEventPublisher eventPublisher,
             IGameResetter gameResetter,
             IIdleWatcher idleWatcher,
-            IInputLayer inputLayer)
+            IInputLayer inputLayer,
+            IFoodPlacementService foodPlacementService)
         {
             _runner = runner;
             _freePlay = freePlay;
@@ -57,6 +59,7 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
             _gameResetter = gameResetter;
             _idleWatcher = idleWatcher;
             _inputLayer = inputLayer;
+            _foodPlacementService = foodPlacementService;
         }
 
         public void Initialize()
@@ -123,12 +126,31 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
             _appState.TrySet(AppState.Attract);
             _idleWatcher.SetActive(false);
 
+            await WaitForFoodPlacementAsync(lifetimeCt);
+
             await _ctx.Message.ShowAsync(_config.AttractMessage, lifetimeCt);
             _ctx.Voice.PlayAsync(_config.AttractVoiceClip, lifetimeCt).SuppressCancellationThrow().Forget();
 
             await _events.GetStream(GameEventId.StartButtonPressed).FirstAsync(lifetimeCt);
 
             _ctx.Voice.Stop();
+            await _ctx.Message.HideAsync(lifetimeCt);
+        }
+
+        /// <summary>
+        /// 食べ物の表示位置が未設定のままセッションを始めると、食品モデルは読み込まれても
+        /// 表示先の Transform が無いため何も見えない(チュートリアルの前菜が出ない不具合)。
+        /// そのためスタート待ちの手前で、設定画面での位置指定を待つ。
+        /// </summary>
+        private async UniTask WaitForFoodPlacementAsync(CancellationToken lifetimeCt)
+        {
+            if (_foodPlacementService.IsPlacementConfigured.Value) return;
+
+            Debug.Log("[Session] 食べ物の表示位置が未設定です。設定されるまでスタートを待ちます。");
+            await _ctx.Message.ShowAsync(_config.FoodPlacementRequiredMessage, lifetimeCt);
+            await _foodPlacementService.IsPlacementConfigured
+                .Where(isConfigured => isConfigured)
+                .FirstAsync(lifetimeCt);
             await _ctx.Message.HideAsync(lifetimeCt);
         }
 

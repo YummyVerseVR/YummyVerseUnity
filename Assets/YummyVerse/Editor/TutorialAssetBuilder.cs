@@ -302,6 +302,8 @@ namespace YummyVerse.Editor
             SetField(config, "freePlaySequence", freePlay);
             SetField(config, "attractMessage",
                 Str(table, "S1", "ボタンを押してスタート"));
+            SetField(config, "foodPlacementRequiredMessage",
+                Str(table, "S0.FoodPlacementRequired", "食べ物の表示位置を設定してください"));
             SetField(config, "idleTimeoutSeconds", 90f);
         }
 
