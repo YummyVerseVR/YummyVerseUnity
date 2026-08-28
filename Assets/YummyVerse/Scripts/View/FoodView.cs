@@ -63,11 +63,11 @@ namespace YummyVerse.Scripts.View
                 await InstantiateFood(v, _foodViewModel.foodTransform.Value, ct);
             }).AddTo(this);
             
-            // 食べ物破壊ボタンが押されたら、食べ物を破壊
+            // セッションリセットなどの要求で、表示中の食べ物と残量を初期化する。
             Observable.FromEvent(
-                h => _foodViewModel.OnFoodDestroy += h,
-                h =>  _foodViewModel.OnFoodDestroy -= h
-                ).Subscribe(_ => TryDestroyFood()).AddTo(this);
+                h => _foodViewModel.OnFoodResetRequested += h,
+                h =>  _foodViewModel.OnFoodResetRequested -= h
+                ).Subscribe(_ => ResetFoodState()).AddTo(this);
             
             
             _foodViewModel.foodTransform.Subscribe(SetFoodTransform).AddTo(this);
@@ -86,7 +86,7 @@ namespace YummyVerse.Scripts.View
         /// <param name="ct">CancellationToken</param>
         private async UniTask InstantiateFood(GltfImport gltfImport, Transform initialTransform, CancellationToken ct)
         {
-            TryDestroyFood();
+            ResetFoodState();
             
             var instantiator = new GameObjectInstantiator(gltfImport, _foodRoot.transform);
             var instantiated = await gltfImport.InstantiateMainSceneAsync(instantiator, ct);
@@ -157,17 +157,20 @@ namespace YummyVerse.Scripts.View
             if (_currentConsumptionScale > DisappearThreshold) return;
             if (_foodRoot == null || _foodRoot.GetComponent<FoodScoopTargetView>() == null) return;
 
-            TryDestroyFood();
+            ResetFoodState();
         }
 
-        private void TryDestroyFood()
+        private void ResetFoodState()
         {
-            if(_foodRoot  == null) return;
-            Destroy(_foodRoot);
+            if (_foodRoot != null)
+            {
+                Destroy(_foodRoot);
+            }
+
             _foodRoot = new GameObject("FoodRoot");
             _foodRoot.transform.SetParent(_foodAnchor, false);
 
-            // 破棄は完食とは限らない(破棄ボタン・セッションリセット)ので、DishCleared は出さない。
+            // リセットは完食ではないため DishCleared は出さない。
             _foodEatingService.AbandonFood();
             _currentConsumptionScale = 1f;
             _targetConsumptionScale = 1f;

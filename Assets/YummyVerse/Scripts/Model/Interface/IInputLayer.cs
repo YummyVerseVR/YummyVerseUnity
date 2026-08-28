@@ -6,10 +6,8 @@ namespace YummyVerse.Scripts.Model.Interface
     {
         event Action OnConfigUIButtonClicked;
 
-        event Action OnFoodDestroyButtonClicked;
-
         /// <summary>
-        /// 決定/スタートボタン。チュートリアルの S1 や Narration の「ボタンで次へ」に使う。
+        /// 親指位置の A/B ボタン。チュートリアルの S1 や Narration の「ボタンで次へ」に使う。
         /// </summary>
         event Action OnStartButtonPressed;
 

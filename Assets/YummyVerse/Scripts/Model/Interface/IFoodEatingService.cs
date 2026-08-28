@@ -24,7 +24,7 @@ namespace YummyVerse.Scripts.Model.Interface
         void BeginFood();
 
         /// <summary>
-        /// 破棄ボタン・セッションリセット・表示失敗で食べ物が無くなったときに呼ぶ。
+        /// セッションリセット・表示失敗で食べ物が無くなったときに呼ぶ。
         /// 完食ではないので DishCleared は発行しない。
         /// </summary>
         void AbandonFood();

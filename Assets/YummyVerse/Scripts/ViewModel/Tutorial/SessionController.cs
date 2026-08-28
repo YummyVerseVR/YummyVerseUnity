@@ -118,7 +118,7 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
         }
 
         /// <summary>
-        /// 仕様書 S1「ボタンを押してスタート」に相当する待機。
+        /// 仕様書 S1「親指の位置のボタンを押してスタート」に相当する待機。
         /// AppState.Attract が「来場者を待つ」を担うため、ステップ列ではなくここで扱う。
         /// </summary>
         private async UniTask WaitInAttractAsync(CancellationToken lifetimeCt)

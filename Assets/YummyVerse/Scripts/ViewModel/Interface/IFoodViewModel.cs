@@ -15,11 +15,11 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         
         ReactiveProperty<float>  foodScale { get; }
 
-        event Action OnFoodDestroy;
+        event Action OnFoodResetRequested;
 
         /// <summary>
-        /// ボタン入力以外(救済のForceComplete、セッションリセット)から食べ物の破棄を依頼する。
+        /// セッション終了や救済処理から、表示中の食べ物と残量を初期状態へ戻す。
         /// </summary>
-        void RequestDestroyFood();
+        void ResetFoodState();
     }
 }

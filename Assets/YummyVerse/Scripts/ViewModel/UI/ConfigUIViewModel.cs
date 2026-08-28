@@ -20,6 +20,7 @@ namespace YummyVerse.Scripts.ViewModel
         private readonly IQRDetectionService _qrDetectionService;
         private readonly IFoodPlacementService _foodPlacementService;
         private readonly INetworkConnectionTester _networkConnectionTester;
+        private readonly ISessionController _sessionController;
         
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
         private bool _isDisposed;
@@ -51,7 +52,8 @@ namespace YummyVerse.Scripts.ViewModel
             IInputLayer inputLayer,
             IQRDetectionService qrDetectionService,
             IFoodPlacementService foodPlacementService,
-            INetworkConnectionTester networkConnectionTester
+            INetworkConnectionTester networkConnectionTester,
+            ISessionController sessionController
             )
         {
             _endPointManager = endPointManager;
@@ -62,6 +64,7 @@ namespace YummyVerse.Scripts.ViewModel
             _qrDetectionService = qrDetectionService;
             _foodPlacementService = foodPlacementService;
             _networkConnectionTester = networkConnectionTester;
+            _sessionController = sessionController;
         }
 
         public void Initialize()
@@ -143,6 +146,14 @@ namespace YummyVerse.Scripts.ViewModel
             }
 
             IsVisible.Value = isVisible;
+        }
+
+        public void ResetToStart()
+        {
+            // UIを先に閉じ、SessionController の既存の finally 経路へ中断を流す。
+            // これにより食品モデル・残量・注文・QR認識をまとめて初期化して Attract へ戻る。
+            SetVisible(false);
+            _sessionController.AbortSession();
         }
         
         public void UpdateEndPointUrl(string url)

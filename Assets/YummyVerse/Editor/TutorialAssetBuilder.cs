@@ -214,7 +214,7 @@ namespace YummyVerse.Editor
             // --- S6': 前菜の案内 (食品は次の S8 の指示と同時に提供する) ---
             var s6d = Narration(
                 "Steps/Step_S6d_Appetizer", "S6'",
-                Str(table, "S6d", "まずは前菜からいきましょう。\n決定ボタンを押してください。"),
+                Str(table, "S6d", "まずは前菜からいきましょう。\n親指の位置のボタンを押してください。"),
                 conditions.Button);
             SetEnum(s6d, "onCompletedCommand", GameCommandId.None);
             SetField(s6d, "skippableOnRepeat", true);
@@ -315,9 +315,10 @@ namespace YummyVerse.Editor
             SetField(config, "mainSequence", main);
             SetField(config, "freePlaySequence", freePlay);
             SetField(config, "attractMessage",
-                Str(table, "S1", "ボタンを押してスタート"));
+                Str(table, "S1", "親指の位置のボタンを押してスタート"));
             SetField(config, "foodPlacementRequiredMessage",
-                Str(table, "S0.FoodPlacementRequired", "食べ物の表示位置を設定してください"));
+                Str(table, "S0.FoodPlacementRequired",
+                    "食べ物の表示位置を設定してください。\n設定画面はAとXの同時押しで表示されます。"));
             SetField(config, "idleTimeoutSeconds", 90f);
         }
 

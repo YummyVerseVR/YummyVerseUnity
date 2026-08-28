@@ -12,8 +12,6 @@ namespace YummyVerse.Scripts.View.UI
     {
         [SerializeField] private TMP_InputField apiEndPointUrl;
         [SerializeField] private Button testConnectionButton;
-        [SerializeField] private TextMeshProUGUI lastRequestHttpStatus;
-        [SerializeField] private TextMeshProUGUI lastRequestGuid;
         [SerializeField] private Toggle standaloneModeToggle;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private OVROverlayCanvas overlayCanvas;
@@ -23,6 +21,7 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private Button spatialAnchorButton;
         [SerializeField] private Button fixFoodPositionButton;
         [SerializeField] private TextMeshProUGUI spatialPlacementStatus;
+        [SerializeField] private Button returnToStartButton;
         
         private IConfigUIViewModel _configUIViewModel;
         private Tween _visibilityTween;
@@ -86,20 +85,6 @@ namespace YummyVerse.Scripts.View.UI
                 }
             }).AddTo(this);
             
-            _configUIViewModel.LastRequestHTTPStatus.Subscribe(v =>
-            {
-                lastRequestHttpStatus.text = "Last Request HTTP Status "
-                                             + (_configUIViewModel.IsStandaloneMode.Value ? "(Overridden by Standalone Mode) : " : ": ")
-                                             + v;
-            }).AddTo(this);
-
-            _configUIViewModel.LastDetectedGuid.Subscribe(v =>
-            {
-                lastRequestGuid.text = "Last Request GUID " 
-                                       + (_configUIViewModel.IsStandaloneMode.Value ? "(Overridden by Standalone Mode) : " : ": ")
-                                       + v;
-            }).AddTo(this);
-
             _configUIViewModel.APIEndPointUrl.Subscribe(SetAPIEndPointUrl).AddTo(this);
             
             apiEndPointUrl.onEndEdit.AddListener(v => _configUIViewModel.UpdateEndPointUrl(v));
@@ -147,6 +132,21 @@ namespace YummyVerse.Scripts.View.UI
             {
                 fixFoodPositionButton.OnClickAsObservable()
                     .SubscribeAwait(async (_, ct) => await _configUIViewModel.FixFoodPosition(ct))
+                    .AddTo(this);
+            }
+
+            if (returnToStartButton != null)
+            {
+                returnToStartButton.OnClickAsObservable()
+                    .Subscribe(_ =>
+                    {
+                        // ResetToStart aborts the active session and lets the session
+                        // controller perform the full food/state cleanup. Hide the
+                        // settings overlay immediately so the attract message can be
+                        // seen while that reset completes.
+                        _configUIViewModel.SetVisible(false);
+                        _configUIViewModel.ResetToStart();
+                    })
                     .AddTo(this);
             }
             

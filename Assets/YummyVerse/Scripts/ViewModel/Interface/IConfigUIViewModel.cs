@@ -25,6 +25,12 @@ namespace YummyVerse.Scripts.ViewModel.Interface
 
         void SetVisible(bool isVisible);
 
+        /// <summary>
+        /// 設定画面から現在のプレイを中断し、スタート待ちへ戻す。
+        /// 実際の食品・セッション状態の初期化は実装側のセッション管理へ委譲する。
+        /// </summary>
+        void ResetToStart();
+
         void UpdateEndPointUrl(string url);
         
         void SetStandaloneMode(bool isStandalone);

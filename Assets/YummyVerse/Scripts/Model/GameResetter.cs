@@ -33,9 +33,9 @@ namespace YummyVerse.Scripts.Model
         {
             Debug.Log("[Session] ゲーム状態をリセットします");
 
-            // 皿の上の食品を消す(既存の FoodView.TryDestroyFood が働く)
+            // 表示中の食品と食事の残量を初期状態へ戻す。
             _gameCommandBus.Request(GameCommandId.HideMenu);
-            _gameCommandBus.Request(GameCommandId.DestroyAllFood);
+            _gameCommandBus.Request(GameCommandId.ResetFoodState);
 
             // 注文内容・認識状態を捨てる
             _foodContext.Reset();

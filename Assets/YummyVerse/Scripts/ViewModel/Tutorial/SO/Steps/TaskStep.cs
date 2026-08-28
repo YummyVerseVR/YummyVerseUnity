@@ -31,7 +31,7 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps
         [SerializeField, Min(1f)] private float rescueTimeoutSeconds = 30f;
         [SerializeField] private RescuePolicy rescuePolicy = RescuePolicy.AutoAdvance;
         [Tooltip("rescuePolicy が ForceComplete のときにゲーム側へ送るコマンド")]
-        [SerializeField] private GameCommandId forceCompleteCommand = GameCommandId.DestroyAllFood;
+        [SerializeField] private GameCommandId forceCompleteCommand = GameCommandId.ResetFoodState;
 
         [Header("成功演出")]
         [SerializeField] private SuccessFeedbackAsset successFeedback;

@@ -17,7 +17,7 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO
         [SerializeField] private TutorialSequence freePlaySequence;
 
         [Header("Attract (来場者を待つ状態)")]
-        [Tooltip("仕様書 S1「ボタンを押してスタート」に相当。ここで決定ボタンを待つ。")]
+        [Tooltip("仕様書 S1「親指の位置のボタンを押してスタート」に相当。ここで A/B ボタンを待つ。")]
         [SerializeField] private LocalizedString attractMessage;
         [SerializeField] private AudioClip attractVoiceClip;
 

@@ -55,8 +55,8 @@ namespace YummyVerse.Scripts.View.Tutorial
                     ServeRandomPersistentFood();
                     break;
 
-                case GameCommandId.DestroyAllFood:
-                    _foodViewModel.RequestDestroyFood();
+                case GameCommandId.ResetFoodState:
+                    _foodViewModel.ResetFoodState();
                     break;
 
                 case GameCommandId.ShowMenu:
@@ -80,7 +80,7 @@ namespace YummyVerse.Scripts.View.Tutorial
                     if (!_foodEatingService.ForceClear())
                     {
                         // 食べ物が無い/既に完食済みなら、少なくとも皿の上は空にしておく。
-                        _foodViewModel.RequestDestroyFood();
+                        _foodViewModel.ResetFoodState();
                     }
                     break;
             }
