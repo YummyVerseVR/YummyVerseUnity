@@ -3141,6 +3141,7 @@ GameObject:
   - component: {fileID: 2734785894328321341}
   - component: {fileID: 2528361463992955457}
   - component: {fileID: 2614805185669813836}
+  - component: {fileID: 3140719283645100001}
   m_Layer: 0
   m_Name: View
   m_TagString: Untagged
@@ -3186,6 +3187,26 @@ MonoBehaviour:
   fixFoodPositionButton: {fileID: 4852818933832477883}
   spatialPlacementStatus: {fileID: 1293588011340526222}
   returnToStartButton: {fileID: 915345812345678901}
+--- !u!114 &3140719283645100001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8854211564068036764}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3208033743f648bf9ed6e045485e2ad6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.View.UI.VirtualKeyboardView
+  keyboardPrefab: {fileID: 3631170893708523032, guid: 325510b4b085edf48876b864e4744ec6,
+    type: 3}
+  inputField: {fileID: 7112805301816702407}
+  placementAnchor: {fileID: 500786508898637685}
+  positionMode: 2
+  verticalOffset: 0.35
+  nearOffset: 0.1
+  tiltAngle: 30
 --- !u!114 &5219836823556852555
 MonoBehaviour:
   m_ObjectHideFlags: 0

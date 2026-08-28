@@ -2,6 +2,7 @@ using DG.Tweening;
 using R3;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using YummyVerse.Scripts.ViewModel.Interface;
 using Zenject;
@@ -70,6 +71,7 @@ namespace YummyVerse.Scripts.View.UI
                     canvasGroup.interactable = false;
                     canvasGroup.blocksRaycasts = false;
                     _interactionGate.SetEnabled(false);
+                    ReleaseInputFieldFocus();
                     _visibilityTween = canvasGroup.DOFade(0f, FadeDuration);
                 }
             }).AddTo(this);
@@ -142,6 +144,23 @@ namespace YummyVerse.Scripts.View.UI
         private void SetAPIEndPointUrl(string url)
         {
             apiEndPointUrl.text = url;
+        }
+
+        /// <summary>
+        /// 設定画面を閉じるときに URL 入力欄のフォーカスを外す。
+        /// </summary>
+        /// <remarks>
+        /// EventSystem の選択が入力欄に残ったままだと、次に開いて入力欄をクリックしても
+        /// onSelect が発火せず、<see cref="VirtualKeyboardView"/> がキーボードを出せない。
+        /// 選択解除で onDeselect が走るので、表示中のキーボードもここで一緒に閉じる。
+        /// </remarks>
+        private void ReleaseInputFieldFocus()
+        {
+            var eventSystem = EventSystem.current;
+            if (eventSystem == null || apiEndPointUrl == null) return;
+            if (eventSystem.currentSelectedGameObject != apiEndPointUrl.gameObject) return;
+
+            eventSystem.SetSelectedGameObject(null);
         }
 
         /// <summary>
