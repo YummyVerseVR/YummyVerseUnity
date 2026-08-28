@@ -23,24 +23,25 @@ namespace YummyVerse.Scripts.View.UI
         /// <summary>キーボードを出す対象の入力欄。</summary>
         [SerializeField] private TMP_InputField inputField;
 
-        /// <summary>配置の基準にするトランスフォーム。通常は設定画面のルート。</summary>
-        [SerializeField] private Transform placementAnchor;
+        /// <summary>Custom 配置の基準にする頭のカメラ。未設定なら Camera.main。</summary>
+        [SerializeField] private Camera targetCamera;
 
         /// <summary>
-        /// Custom は placementAnchor の下に自前で置く。Far / Near はランタイムに任せる。
+        /// Near = ランタイムが手元に置く(Quest 単体のシステムキーボードと同じ挙動)。
+        /// Far = ランタイムが少し先に置く。Custom = 下の3項目で自分で決める。
         /// </summary>
         [Header("Placement")]
         [SerializeField]
-        private OVRVirtualKeyboard.KeyboardPosition positionMode = OVRVirtualKeyboard.KeyboardPosition.Custom;
+        private OVRVirtualKeyboard.KeyboardPosition positionMode = OVRVirtualKeyboard.KeyboardPosition.Near;
 
-        [Tooltip("Custom のとき、基準トランスフォームからどれだけ下に置くか[m]。パネルと重なるとレイが取られるので、パネル下端(約0.2m)より下に置く。")]
-        [SerializeField] private float verticalOffset = 0.35f;
+        [Tooltip("Custom のとき、頭から前にどれだけ離すか[m]。")]
+        [SerializeField] private float forwardOffset = 0.4f;
 
-        [Tooltip("Custom のとき、基準トランスフォームからどれだけ手前に置くか[m]。")]
-        [SerializeField] private float nearOffset = 0.1f;
+        [Tooltip("Custom のとき、目線からどれだけ下げるか[m]。手元に置くなら 0.5 前後。")]
+        [SerializeField] private float dropHeight = 0.5f;
 
-        [Tooltip("Custom のとき、キーボードを何度手前に倒すか[deg]。")]
-        [SerializeField] private float tiltAngle = 30f;
+        [Tooltip("Custom のとき、キーボードを何度手前に倒すか[deg]。90 で水平。")]
+        [SerializeField] private float tiltAngle = 45f;
 
         private OVRVirtualKeyboard _keyboard;
         private TMPVirtualKeyboardTextHandler _textHandler;
@@ -112,6 +113,10 @@ namespace YummyVerse.Scripts.View.UI
 
             ApplyPlacement(_keyboard.transform);
             _keyboard.gameObject.SetActive(true);
+
+            // キーボードの位置はランタイム側の空間に固定されるので、開き直すたびに
+            // 置き直さないと、前に開いた場所(移動前の足元など)に取り残される。
+            _keyboard.UseSuggestedLocation(positionMode);
         }
 
         /// <summary>キーボードを隠す。設定画面を閉じるときにも呼ぶ。</summary>
@@ -207,16 +212,30 @@ namespace YummyVerse.Scripts.View.UI
             keyboardTransform.SetPositionAndRotation(position, rotation);
         }
 
+        /// <summary>
+        /// Custom のときの配置。頭の位置を基準に、少し前・かなり下(手元)へ置く。
+        /// </summary>
+        /// <remarks>
+        /// 設定パネル基準ではなく頭基準にしているのは、パネルが目線の高さに出るため、
+        /// パネルを基準にすると必ずパネルの近くにキーボードが来てしまうため。
+        /// また水平成分だけを使うので、見下ろしていても高さがぶれない。
+        /// </remarks>
         private void GetPlacement(out Vector3 position, out Quaternion rotation)
         {
-            var anchor = placementAnchor != null ? placementAnchor : transform;
+            var camera = targetCamera != null ? targetCamera : Camera.main;
+            if (camera == null)
+            {
+                position = transform.position;
+                rotation = transform.rotation;
+                return;
+            }
 
-            // 設定パネルは正面(anchor.forward)を向いているので、その手前下に置く。
-            // パネルと視線上で重なるとキーボードを押すトリガーがパネル側のレイに拾われてしまう。
-            position = anchor.position
-                       - anchor.up * verticalOffset
-                       - anchor.forward * nearOffset;
-            rotation = anchor.rotation * Quaternion.Euler(tiltAngle, 0f, 0f);
+            var head = camera.transform;
+            var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up);
+            forward = forward.sqrMagnitude > 1e-6f ? forward.normalized : Vector3.forward;
+
+            position = head.position + forward * forwardOffset + Vector3.down * dropHeight;
+            rotation = Quaternion.LookRotation(forward, Vector3.up) * Quaternion.Euler(tiltAngle, 0f, 0f);
         }
     }
 }
