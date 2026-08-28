@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Step_S14_Recap
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps.NarrationStep
   stepId: S14
-  skippableOnRepeat: 0
+  skippableOnRepeat: 1
   message:
     m_TableReference:
       m_TableCollectionName: TutorialStrings

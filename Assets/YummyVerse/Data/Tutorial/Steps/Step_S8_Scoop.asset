@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Step_S8_Scoop
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps.TaskStep
   stepId: S8
-  skippableOnRepeat: 0
+  skippableOnRepeat: 1
   instruction:
     m_TableReference:
       m_TableCollectionName: TutorialStrings
@@ -25,6 +25,7 @@ MonoBehaviour:
     m_LocalVariables: []
   voiceClip: {fileID: 0}
   successCondition: {fileID: 11400000, guid: 3bae3a5ab8ccf4835b481de46da26ef7, type: 2}
+  onStartedCommand: 1
   hint: {fileID: 0}
   hintDelaySeconds: 5
   rescueTimeoutSeconds: 30

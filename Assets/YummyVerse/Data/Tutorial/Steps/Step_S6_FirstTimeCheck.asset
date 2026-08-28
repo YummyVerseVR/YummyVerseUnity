@@ -51,7 +51,6 @@ MonoBehaviour:
   timeoutSeconds: 15
   defaultOptionIndex: 0
   blackboardKey: isFirstTime
-  onCompletedCommand: 1
   references:
     version: 2
     RefIds: []

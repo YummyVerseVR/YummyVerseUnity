@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Step_S11_ClearDish
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps.TaskStep
   stepId: S11
-  skippableOnRepeat: 0
+  skippableOnRepeat: 1
   instruction:
     m_TableReference:
       m_TableCollectionName: TutorialStrings

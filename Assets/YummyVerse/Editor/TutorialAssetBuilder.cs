@@ -185,7 +185,7 @@ namespace YummyVerse.Editor
                 conditions.ButtonOr8);
 
             // --- S5: AIシェフの準備 (時間) ---
-            // 前菜の提供は S6 の初回判定に答えてから。ここで出すと初回判定の
+            // 前菜の提供は S8 の指示と同時。ここで出すと初回判定の
             // ダイアログが出ている最中に食べ物が現れてしまう。
             var s5 = Narration(
                 "Steps/Step_S5_ChefReady", "S5",
@@ -201,8 +201,6 @@ namespace YummyVerse.Editor
             SetField(s6, "timeoutSeconds", 15f);
             SetField(s6, "defaultOptionIndex", 0);
             SetField(s6, "blackboardKey", "isFirstTime");
-            // S7: 選択が確定してから前菜を提供する。
-            SetEnum(s6, "onCompletedCommand", GameCommandId.ServeRandomPersistentFood);
             SetList(s6, "options", new[]
             {
                 Option(Str(table, "S6.Yes", "はじめて"), "yes", FirstTimeUserEffect.SetTrue),
@@ -210,7 +208,10 @@ namespace YummyVerse.Editor
             });
             steps["S6"] = s6;
 
-            // --- S6': 前菜の案内 (食品は S6 の選択確定時に提供済み) ---
+            // S6' 〜 S14 は前菜での練習。「2回目以降」を選んだ来場者は skippableOnRepeat で
+            // ここを丸ごと飛ばし、Main シーケンス終了後の FreePlay(食べ物選択ダイアログ)へ直行する。
+
+            // --- S6': 前菜の案内 (食品は次の S8 の指示と同時に提供する) ---
             var s6d = Narration(
                 "Steps/Step_S6d_Appetizer", "S6'",
                 Str(table, "S6d", "まずは前菜からいきましょう。\n決定ボタンを押してください。"),
@@ -225,12 +226,15 @@ namespace YummyVerse.Editor
             var s8 = Create<TaskStep>("Steps/Step_S8_Scoop");
             SetField(s8, "stepId", "S8");
             SetField(s8, "instruction", Str(table, "S8", "スプーンで食べ物をすくってみましょう。"));
+            // S7: すくう指示が出たタイミングで前菜を提供する。
+            SetEnum(s8, "onStartedCommand", GameCommandId.ServeRandomPersistentFood);
             SetField(s8, "successCondition", conditions.FoodScooped);
             SetField(s8, "hintDelaySeconds", 5f);
             SetField(s8, "rescueTimeoutSeconds", 30f);
             SetEnum(s8, "rescuePolicy", RescuePolicy.ForceComplete);
             SetEnum(s8, "forceCompleteCommand", GameCommandId.ForceScoopFood);
             SetField(s8, "successFeedback", feedback);
+            SetField(s8, "skippableOnRepeat", true);
             steps["S8"] = s8;
 
             // --- S11: 完食しよう (Task / 完食) ---
@@ -243,13 +247,16 @@ namespace YummyVerse.Editor
             SetEnum(s11, "rescuePolicy", RescuePolicy.ForceComplete);
             SetEnum(s11, "forceCompleteCommand", GameCommandId.ForceClearDish);
             SetField(s11, "successFeedback", feedback);
+            SetField(s11, "skippableOnRepeat", true);
             steps["S11"] = s11;
 
             // --- S14: 食事作法はお分かりいただけましたか (時間) ---
-            steps["S14"] = Narration(
+            var s14 = Narration(
                 "Steps/Step_S14_Recap", "S14",
                 Str(table, "S14", "食事作法はお分かりいただけましたか。"),
                 conditions.Time3);
+            SetField(s14, "skippableOnRepeat", true);
+            steps["S14"] = s14;
 
             // ================= FreePlay (S15〜S19) =================
 

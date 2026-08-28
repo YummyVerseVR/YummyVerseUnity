@@ -3,7 +3,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Localization;
-using YummyVerse.Scripts.Model.Struct;
 
 namespace YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps
 {
@@ -21,9 +20,6 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps
 
         [Tooltip("選択結果を格納する Blackboard のキー")]
         [SerializeField] private string blackboardKey = "choice";
-
-        [Header("選択が確定した後にゲーム側へ依頼するコマンド (S7 のような「ゲームに何かさせる」処理)")]
-        [SerializeField] private GameCommandId onCompletedCommand = GameCommandId.None;
 
         public override async UniTask ExecuteAsync(TutorialContext ctx, CancellationToken ct)
         {
@@ -61,9 +57,6 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps
             }
 
             Debug.Log($"[Tutorial] {StepId}: '{selected.Value}' が選択されました (index={index})");
-
-            // 選択肢が出ている間にゲーム側を動かさないため、依頼は選択が確定してからにする。
-            ctx.Commands.Request(onCompletedCommand);
 
             if (selected.SubSequence == null) return;
 

@@ -20,6 +20,9 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps
         [SerializeField] private AudioClip voiceClip;
         [SerializeField] private TutorialCondition successCondition;
 
+        [Header("指示を出した時点でゲーム側へ依頼するコマンド (S7 のような「ゲームに何かさせる」処理)")]
+        [SerializeField] private GameCommandId onStartedCommand = GameCommandId.None;
+
         [Header("滞留時のヒント")]
         [SerializeField] private HintPresentation hint;
         [SerializeField, Min(0f)] private float hintDelaySeconds = 5f;
@@ -40,6 +43,9 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps
 
             await ctx.Message.ShowAsync(instruction, ct);
             ctx.Voice.PlayAsync(voiceClip, ct).SuppressCancellationThrow().Forget();
+
+            // 指示が出てから依頼する。S8 の前菜のように「指示と同時に対象を出す」ものはここで揃う。
+            ctx.Commands.Request(onStartedCommand);
 
             if (successCondition == null)
             {
