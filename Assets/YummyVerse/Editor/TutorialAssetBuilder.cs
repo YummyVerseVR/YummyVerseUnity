@@ -185,11 +185,13 @@ namespace YummyVerse.Editor
                 conditions.ButtonOr8);
 
             // --- S5: AIシェフの準備 (時間) ---
+            // 前菜の提供は S6 の初回判定に答えてから。ここで出すと初回判定の
+            // ダイアログが出ている最中に食べ物が現れてしまう。
             var s5 = Narration(
                 "Steps/Step_S5_ChefReady", "S5",
                 Str(table, "S5", "AIシェフの準備ができたようです。"),
                 conditions.Time3);
-            SetEnum(s5, "onCompletedCommand", GameCommandId.ServeRandomPersistentFood);
+            SetEnum(s5, "onCompletedCommand", GameCommandId.None);
             steps["S5"] = s5;
 
             // --- S6: 初回かどうかの判定 (Choice) ---
@@ -199,6 +201,8 @@ namespace YummyVerse.Editor
             SetField(s6, "timeoutSeconds", 15f);
             SetField(s6, "defaultOptionIndex", 0);
             SetField(s6, "blackboardKey", "isFirstTime");
+            // S7: 選択が確定してから前菜を提供する。
+            SetEnum(s6, "onCompletedCommand", GameCommandId.ServeRandomPersistentFood);
             SetList(s6, "options", new[]
             {
                 Option(Str(table, "S6.Yes", "はじめて"), "yes", FirstTimeUserEffect.SetTrue),
@@ -206,7 +210,7 @@ namespace YummyVerse.Editor
             });
             steps["S6"] = s6;
 
-            // --- S6': 前菜の案内 (食品は S5 完了時に提供済み) ---
+            // --- S6': 前菜の案内 (食品は S6 の選択確定時に提供済み) ---
             var s6d = Narration(
                 "Steps/Step_S6d_Appetizer", "S6'",
                 Str(table, "S6d", "まずは前菜からいきましょう。\n決定ボタンを押してください。"),

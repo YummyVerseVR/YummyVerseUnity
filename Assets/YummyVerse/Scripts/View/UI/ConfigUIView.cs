@@ -26,6 +26,7 @@ namespace YummyVerse.Scripts.View.UI
         
         private IConfigUIViewModel _configUIViewModel;
         private Tween _visibilityTween;
+        private PointableCanvasInteractionGate _interactionGate;
 
         private const float FadeDuration = 0.1f;
         private float displayDistanceFromCamera = 0.6f;
@@ -45,6 +46,12 @@ namespace YummyVerse.Scripts.View.UI
             canvasGroup.alpha = 0f;
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
+
+            // 閉じている設定画面はカメラ前(0.6m)に残ったままなので、Interactable を切らないと
+            // その奥(0.8m)に出るチュートリアルのダイアログよりも手前でレイを奪ってしまう。
+            // 実際の開閉は Start の IsVisible 購読(初期値 false)から行う。
+            _interactionGate = new PointableCanvasInteractionGate(canvasGroup);
+
             DisableOverlayCanvas();
         }
         
@@ -67,11 +74,13 @@ namespace YummyVerse.Scripts.View.UI
                     _visibilityTween = canvasGroup.DOFade(1f, FadeDuration);
                     canvasGroup.interactable = true;
                     canvasGroup.blocksRaycasts = true;
+                    _interactionGate.SetEnabled(true);
                 }
                 else
                 {
                     canvasGroup.interactable = false;
                     canvasGroup.blocksRaycasts = false;
+                    _interactionGate.SetEnabled(false);
                     _visibilityTween = canvasGroup.DOFade(0f, FadeDuration)
                         .OnComplete(DisableOverlayCanvas);
                 }

@@ -18,6 +18,8 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private float displayDistanceFromCamera = 0.6f;
         [SerializeField] private bool followCameraOnShow;
 
+        private PointableCanvasInteractionGate _interactionGate;
+
         private void Reset()
         {
             canvasGroup = GetComponent<CanvasGroup>();
@@ -27,6 +29,7 @@ namespace YummyVerse.Scripts.View.UI
         private void Awake()
         {
             if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
+            _interactionGate = new PointableCanvasInteractionGate(this);
         }
 
         public void SetVisible(bool visible)
@@ -43,6 +46,7 @@ namespace YummyVerse.Scripts.View.UI
             canvasGroup.DOFade(1, fadeDuration);
             canvasGroup.interactable = true;
             canvasGroup.blocksRaycasts = true;
+            _interactionGate?.SetEnabled(true);
         }
 
         public void Hide()
@@ -52,6 +56,9 @@ namespace YummyVerse.Scripts.View.UI
             canvasGroup.DOFade(0, fadeDuration);
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
+
+            // 見えていないパネルがコントローラのレイを奪うと、表示中のダイアログを押せなくなる。
+            _interactionGate?.SetEnabled(false);
         }
 
         public void PlaceInFrontOfCamera()
