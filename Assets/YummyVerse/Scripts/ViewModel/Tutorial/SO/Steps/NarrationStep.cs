@@ -15,6 +15,10 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps
     {
         [SerializeField] private LocalizedString message;
         [SerializeField] private AudioClip voiceClip;
+
+        [Header("メッセージを表示する前に待つ条件 (完食後に謝辞を出す場合など)")]
+        [SerializeField] private TutorialCondition presentationCondition;
+
         [SerializeField] private TutorialCondition completionCondition;
 
         [Header("完了時にゲーム側へ依頼するコマンド (S7 のような「ゲームに何かさせる」処理)")]
@@ -25,6 +29,11 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO.Steps
 
         public override async UniTask ExecuteAsync(TutorialContext ctx, CancellationToken ct)
         {
+            if (presentationCondition != null)
+            {
+                await presentationCondition.WaitAsync(ctx, ct);
+            }
+
             await ctx.Message.ShowAsync(message, ct);
 
             // 音声はメッセージ表示と並走させる。完了条件の待機を音声で縛らない。

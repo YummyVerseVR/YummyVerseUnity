@@ -281,10 +281,12 @@ namespace YummyVerse.Editor
             steps["S16"] = s16;
 
             // S17 の提供はメニュー選択(既存の SpawnLocalFood)で行われるため専用ステップは作らない。
-            steps["S18"] = Narration(
+            var s18 = Narration(
                 "Steps/Step_S18_ThankYou", "S18",
                 Str(table, "S18", "完食ありがとうございました。"),
-                conditions.DishCleared);
+                conditions.Time5);
+            SetField(s18, "presentationCondition", conditions.DishCleared);
+            steps["S18"] = s18;
 
             steps["S19"] = Narration(
                 "Steps/Step_S19_Farewell", "S19",
