@@ -5,8 +5,8 @@
 - Created: 2026-08-28
 - Space: `default`
 - Operation mode: documentation-only manual workflow
-- Status: `construction-in-progress`
-- Current phase: Construction (implementation agent in progress)
+- Status: `construction-code-complete`
+- Current phase: Construction 完了、Verification は `G-01` と静的検査のみ実施
 
 ## Purpose
 
@@ -22,8 +22,8 @@
 - Inception / requirements-analysis: `FR-AR-001`〜`FR-AR-011`、`NFR-AR-001`〜`NFR-AR-011` を固定 ID で記録済み。
 - Inception / domain-design: target layer、port、View、DI、lifecycle、削除証拠、ADR、traceability を記録済み。
 - Inception / delivery-planning: 実装単位、依存順序、品質 gate、rollback を計画済み。
-- Construction: 別の実装 agent が進行中。この文書作成時点では実装完了・削除完了・テスト成功を記録しない。
-- Verification: Ideation/Inception の文書 gate のみ実施。コード、Unity Scene/Prefab、Quest、PCVR の結果は未確認。
+- Construction: `UNIT-AR-01`〜`UNIT-AR-07` のコード変更と証拠付き削除を完了。`UNIT-AR-08` は部分実施。詳細は `construction/implementation.md`。
+- Verification: `G-01`（C# compile）と静的 asset/依存検査が `PASS`。`G-02`〜`G-06` は `NOT-RUN`。詳細は `verification/test-results.md`。
 
 ## Product Decision Preservation
 
@@ -31,4 +31,4 @@
 
 ## Documentation Boundary
 
-この intent の documentation agent は `aidlc/` 配下だけを編集する。`Assets/`、`Packages/`、`ProjectSettings/`、コード、Prefab、Scene は編集しない。実装中の agent が後で確認した変更・テスト結果は、別途証拠を受領してから `construction`/`verification` へ追記する。
+設計・要件を記録した documentation agent は `aidlc/` 配下だけを編集した。`Assets/` のコード・Prefab・Scene 変更は実装側が行い、その結果を証拠付きで `construction`/`verification` へ追記している。実機・Editor 実行を伴う gate は、実際に実行した証拠を受領するまで `NOT-RUN` のままにする。

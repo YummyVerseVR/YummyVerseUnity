@@ -9,7 +9,7 @@ using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.Model.Struct.SO;
 
-namespace YummyVerse.Scripts.Model
+namespace YummyVerse.Scripts.Infrastructure
 {
     public sealed class LocalFoodLoader : ILocalFoodModelLoader
     {

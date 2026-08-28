@@ -2,7 +2,7 @@ using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 
-namespace YummyVerse.Scripts.Model
+namespace YummyVerse.Scripts.Infrastructure
 {
     public sealed class PlayerPrefsFoodPlacementStore : IFoodPlacementStore
     {

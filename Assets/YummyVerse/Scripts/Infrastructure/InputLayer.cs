@@ -5,7 +5,7 @@ using YummyVerse.Scripts.InputActions;
 using YummyVerse.Scripts.Model.Interface;
 using Zenject;
 
-namespace YummyVerse.Scripts.Model
+namespace YummyVerse.Scripts.Infrastructure
 {
     public class InputLayer : IInputLayer, IInitializable, IDisposable
     {
