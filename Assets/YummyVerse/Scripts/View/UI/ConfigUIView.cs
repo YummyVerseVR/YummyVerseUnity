@@ -31,16 +31,8 @@ namespace YummyVerse.Scripts.View.UI
 
         private void Awake()
         {
-            // Keep the pointer visual inside the canvas texture.  The canvas is
-            // submitted as an underlay (see EnableOverlayCanvas), so scene geometry
-            // such as the controller still participates in depth ordering.
-            if (!TryGetComponent<PointableCanvasPointerVisual>(out _))
-            {
-                gameObject.AddComponent<PointableCanvasPointerVisual>();
-            }
-
-            // The settings menu starts hidden. Applying this before Start prevents the
-            // compositor canvas from affecting the first rendered frame.
+            // The settings menu starts hidden. Applying this before Start keeps the
+            // panel out of the first rendered frame.
             canvasGroup.alpha = 0f;
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
@@ -68,7 +60,6 @@ namespace YummyVerse.Scripts.View.UI
                 if (isVisible)
                 {
                     SetMenuPositionInFrontOfCamera();
-                    EnableOverlayCanvas();
                     _visibilityTween = canvasGroup.DOFade(1f, FadeDuration);
                     canvasGroup.interactable = true;
                     canvasGroup.blocksRaycasts = true;
@@ -79,8 +70,7 @@ namespace YummyVerse.Scripts.View.UI
                     canvasGroup.interactable = false;
                     canvasGroup.blocksRaycasts = false;
                     _interactionGate.SetEnabled(false);
-                    _visibilityTween = canvasGroup.DOFade(0f, FadeDuration)
-                        .OnComplete(DisableOverlayCanvas);
+                    _visibilityTween = canvasGroup.DOFade(0f, FadeDuration);
                 }
             }).AddTo(this);
             
@@ -154,19 +144,22 @@ namespace YummyVerse.Scripts.View.UI
             apiEndPointUrl.text = url;
         }
 
-        private void EnableOverlayCanvas()
-        {
-            if (overlayCanvas == null) return;
-
-            // An Overlay is composited after the eye buffer and therefore always
-            // appears in front of scene objects, including the controller.  The
-            // settings panel is a world-space UI, so submit it as an Underlay and
-            // let the scene depth determine which object is in front.
-            overlayCanvas.overlayType = OVROverlay.OverlayType.Underlay;
-            overlayCanvas.overlayEnabled = true;
-            overlayCanvas.enabled = true;
-        }
-
+        /// <summary>
+        /// 設定画面はコンポジタレイヤー(OVROverlayCanvas)を使わず、通常のワールドスペースCanvasとして描画する。
+        /// </summary>
+        /// <remarks>
+        /// Underlay にするとパススルーが消える。パススルー自体がアンダーレイとして合成されており
+        /// (シーンの [BuildingBlock] Passthrough / compositionDepth 0)、そこへ設定画面の
+        /// アンダーレイを追加すると同じ合成スロットを奪い合ってしまうため。
+        /// かといって Overlay はアイバッファの後に合成されるので、コントローラーなどのシーン
+        /// ジオメトリより常に手前へ出てしまい、コントローラーと設定UIの前後関係が壊れる。
+        /// どちらも成立しないので、レイヤー化そのものをやめて通常の描画に任せる。
+        /// (テクスチャの解像感は下がるが、パススルーと前後関係を両立できるのはこの経路だけ。)
+        ///
+        /// これに伴い、設定UIのレイヤーは Overlay UI(3, メインカメラのカリング対象外)から
+        /// Default(0) に戻してある。再びコンポジタレイヤーを使う場合は、レイヤーを Overlay UI に
+        /// 戻してメインカメラから外さないと、UIが二重描画される点に注意。
+        /// </remarks>
         private void DisableOverlayCanvas()
         {
             if (overlayCanvas == null) return;
