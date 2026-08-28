@@ -12,6 +12,8 @@ namespace YummyVerse.Scripts.Model.Struct
         ServeRandomPersistentFood, // S5完了時: PersistentDataPath/Foods からランダムに1品出す
         DestroyAllFood,   // 救済(ForceComplete) / セッションリセット
         ShowMenu,         // S16: メニューUIを出す
-        HideMenu
+        HideMenu,
+        ForceScoopFood,   // 救済: すくえないまま滞留したときに1回すくったことにする
+        ForceClearDish    // 救済: 完食できないまま滞留したときに残りを食べ切ったことにする
     }
 }

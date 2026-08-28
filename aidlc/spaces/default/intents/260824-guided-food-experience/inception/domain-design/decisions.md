@@ -79,7 +79,7 @@ model geometry から透明 AABB collider を作り、spoon scoop を一回の a
 - Positive: 不定形 model に共通の低コスト interaction を適用できる。
 - Positive: Tutorial と FreePlay が同じ FoodScooped/DishCleared event を使える。
 - Negative: AABB は形状に厳密ではなく、空間を含む false positive が起こり得る。
-- Follow-up: `Q3` の最遠2点/AABB algorithm と、Quest 実機で許容できる interaction tolerance を決定する。
+- Follow-up: `Q3` は 2026-08-28 に「食品ルートのローカル座標系での全頂点集合の最小/最大コーナー」で解決した。Quest 実機で許容できる interaction tolerance (すくい体積の半径・cooldown) は Inspector 調整値として残しており、実機で確定する。
 
 ### Traceability
 

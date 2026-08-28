@@ -19,7 +19,6 @@ namespace YummyVerse.Scripts.Model
         private Transform _foodPlacementRoot;
         private Pose _draftPose;
         private bool _hasDraftPose;
-        private bool _isRestoring;
 
         public ReactiveProperty<Transform> FoodTransform { get; } = new();
         public ReactiveProperty<FoodPlacementState> State { get; } = new(FoodPlacementState.Unconfigured);
@@ -40,20 +39,7 @@ namespace YummyVerse.Scripts.Model
 
         public void Initialize()
         {
-            // 保存済み設定の有無は同期的に判定できる。Spatial Anchorの復元完了を待たずに
-            // 「未設定」と誤判定しないよう、復元を始める時点で構成済み扱いにしておく。
-            if (_placementStore.TryLoad(out _data) && _data.TryGetAnchorUuid(out var uuid))
-            {
-                _isRestoring = true;
-                RefreshPlacementConfigured();
-                RestoreAsync(uuid, _lifetimeCancellation.Token).Forget();
-                return;
-            }
-
-            _data = default;
-            State.Value = FoodPlacementState.Unconfigured;
-            StatusMessage.Value = "Spatial Anchor is not configured.";
-            RefreshPlacementConfigured();
+            RestoreAsync(_lifetimeCancellation.Token).Forget();
         }
 
         public void SetConfigurationVisible(bool isVisible)
@@ -256,8 +242,17 @@ namespace YummyVerse.Scripts.Model
             IsPlacementConfigured.Dispose();
         }
 
-        private async UniTask RestoreAsync(Guid uuid, CancellationToken cancellationToken)
+        private async UniTask RestoreAsync(CancellationToken cancellationToken)
         {
+            if (!_placementStore.TryLoad(out _data) || !_data.TryGetAnchorUuid(out var uuid))
+            {
+                State.Value = FoodPlacementState.Unconfigured;
+                StatusMessage.Value = "Spatial Anchor is not configured.";
+                return;
+            }
+
+            // 復元は Spatial Anchor の localize 待ちで数秒かかる。IsBusy を見ている側は
+            // この間「表示位置が決まっていない」ではなく「決着していない」として扱うこと。
             IsBusy.Value = true;
             State.Value = FoodPlacementState.Loading;
             StatusMessage.Value = "Loading saved Spatial Anchor...";
@@ -300,9 +295,7 @@ namespace YummyVerse.Scripts.Model
             }
             finally
             {
-                _isRestoring = false;
                 IsBusy.Value = false;
-                RefreshPlacementConfigured();
             }
         }
 
@@ -355,14 +348,14 @@ namespace YummyVerse.Scripts.Model
         }
 
         /// <summary>
-        /// 「食べ物の表示位置が明示的に指定されているか」を再評価する。
+        /// 「食べ物を出せる表示先が今あるか」を再評価する。
         /// ここが false のまま食べ物を生成すると FoodView が表示先を持てず、
         /// モデルは読み込まれているのに何も見えない状態になる。
+        /// 保存済み設定があっても Spatial Anchor の復元に失敗すれば false のままである点に注意。
         /// </summary>
         private void RefreshPlacementConfigured()
         {
-            IsPlacementConfigured.Value =
-                _isRestoring || _hasDraftPose || FoodTransform.Value != null;
+            IsPlacementConfigured.Value = _hasDraftPose || FoodTransform.Value != null;
         }
 
         private static Quaternion NormalizeRotation(Quaternion rotation)

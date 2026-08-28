@@ -3,8 +3,9 @@
 ## Result
 
 - `UNIT-01`〜`UNIT-03`: `IMPLEMENTED-VERIFIED`
+- `UNIT-07`: `IMPLEMENTED-VERIFIED` (2026-08-28、`Q3` 解決後)
 - Full intent Construction: `NOT-READY`
-- 実装日: 2026-08-24
+- 実装日: 2026-08-24、2026-08-28
 
 利用者が「現行 `aidlc` で決定済みの要件だけ」を実装するよう明示したため、`Q1`〜`Q11` と未公開の YummyService v2 HTTP contract に依存しない3 Unit だけを実装した。後続 Unit の仕様を推測していない。
 
@@ -46,16 +47,41 @@ Traceability: `FR13`, `FR16`, `FR25`, `FR34`, `FR35`, `NFR7`, `NFR11`
 - 一つの Food Instance に属する portion state を View/collider/effect から独立した pure state として追加した。
 - 有効 action ごとに一段階だけ残量を減らし、0未満にせず、remaining fraction を単調減少させる。
 - 最終 action だけが `DishCleared` 相当結果を返し、完食後の重複 action は false となる。
-- AABB、scoop detector、visual/collider scale、crumb/disappear、game event wiring は未実装である。
+- AABB、scoop detector、visual/collider scale、crumb/disappear、game event wiring は `UNIT-07` で実装した。
 
 Traceability: `FR21`, `FR22`, `FR23`, `FR24`, `NFR4`, `NFR9`
+
+### UNIT-07: Food bounds, scoop, and effects integration
+
+- `Q3` を「食品ルートのローカル座標系での全頂点集合の最小/最大コーナー」と決定し、任意の生成モデルに対して
+  透明な box collider (`isTrigger`, renderer なし) を1つ生成するようにした。頂点を読めないメッシュは
+  そのメッシュの bounds の8隅で代用し、形状を1つも取得できないモデルは interaction ready にせず警告を残す。
+- collider は食品ルートのコンポーネントなので、表示位置・回転・食事による縮小へ自動で追従する。
+- すくい体積は手/コントローラーを中心とする球で近似し、`Collider.ClosestPoint` による距離計算で接触を判定する。
+  Rigidbody・レイヤー・物理イベントに依存しない。
+- 手の位置は `OVRCameraRig` の左右 hand anchor から取る。同 anchor はコントローラー使用時はコントローラーを、
+  ハンドトラッキング中は手を追従するため、入力方式ごとの分岐を持たない。追跡が無効な間は判定しない。
+- 接触の毎フレーム多重発火は、enter/exit の hysteresis と cooldown を持つ純粋な状態機械で1回へ正規化する。
+- 有効なすくい1回ごとに残量が1段階減り、表示スケールを `運営設定スケール x 残量比` へ補間する。
+  完食までの回数は要件で未規定のため既定値 5 とした (`FoodEatingService.DefaultPortionsPerFood`)。
+- 完食時に当たり判定を閉じ、縮小しきってから食品を破棄し、`DishCleared` を一度だけ発行する。
+  破棄ボタン・セッションリセットによる消去は完食ではないので `DishCleared` を発行しない。
+- 破棄ボタンを完食として扱う暫定 dummy 経路を撤去した (`FR23`)。エディタ確認用の手動入力は
+  実装済みの eating service を叩くだけにしてあり、イベントを偽装しない。
+- チュートリアル S8「すくってみましょう」は、時間経過で素通りする `AutoAdvance` をやめ、
+  滞留時もゲーム側に1回すくわせる `ForceComplete` + `ForceScoopFood` にした。S11 も同様に
+  `DestroyAllFood` から `ForceClearDish` へ変更した。これによりチュートリアルの進行は
+  常に実際の `FoodScooped` / `DishCleared` を待つ。
+- crumb effect (`FR22` の食べカス散らし) は未実装である。
+
+Traceability: `FR18`, `FR19`, `FR20`, `FR21`, `FR22` (部分), `FR23`, `NFR6`, `NFR9`
 
 ## Explicitly Not Implemented
 
 - `UNIT-04`: Unified catalog / Virtual Menu
 - `UNIT-05`: Selected model / artifact delivery
 - `UNIT-06`: QR anchor designation integration
-- `UNIT-07`: AABB、scoop、visual/effect integration
+- `FR22` の crumb (食べカス) effect
 - `UNIT-08`: Physical Menu Viewer
 - YummyService v2 production HTTP path/auth/history/status/metadata/download
 - Scene wiring の追加、Quest/PCVR build、実機検証、deployment
@@ -66,6 +92,11 @@ Traceability: `FR21`, `FR22`, `FR23`, `FR24`, `NFR4`, `NFR9`
 
 - New: `Assets/YummyVerse/Scripts/Model/YummyServiceV2/YummyServiceV2Domain.cs`
 - New: `Assets/YummyVerse/Scripts/Model/FoodConsumptionState.cs`
+- New: `Assets/YummyVerse/Scripts/Model/FoodEatingService.cs`、`Model/Interface/IFoodEatingService.cs`
+- New: `Assets/YummyVerse/Scripts/Model/FoodInteractionBoundsCalculator.cs`、`Model/ScoopContactDetector.cs`
+- New: `Assets/YummyVerse/Scripts/Model/OvrScoopProbeProvider.cs`、`Model/OvrScoopHaptics.cs` と各 interface
+- New: `Assets/YummyVerse/Scripts/Model/Struct/ScoopProbe.cs`、`Model/Struct/ScoopDetectionSettings.cs`
+- New: `Assets/YummyVerse/Scripts/View/FoodScoopTargetView.cs`
 - Removed: `Assets/YummyVerse/Scripts/Model/FoodDownloader.cs`
 - Removed: `Assets/FoodDB/Scripts/Model/TestFoodDBHandler.cs`
 - Updated: Food selection、QR detection、Standalone loading、endpoint/connection fail-closed、DI binding、config UI copy

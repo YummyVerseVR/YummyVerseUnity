@@ -14,7 +14,7 @@
 | `UNIT-04` | Unified catalog and Virtual Menu | `FR12`〜`FR14`, `FR24`, `FR34`, `FR35`, `NFR5`, `NFR7` | `NOT-READY` | Network history/preview は `Q8`/`Q9` と transport contract 待ち。表示順、同名表示、placeholder policy も UI design で確定する |
 | `UNIT-05` | Selected model/artifact delivery | `FR29`〜`FR31`, `NFR5`, `NFR12`〜`NFR14` | `NOT-READY` | `Q1`/`Q10` と v2 download operation 待ち |
 | `UNIT-06` | QR anchor designation integration | `FR16`, `FR17`, `FR24`, `NFR7` | `NOT-READY` | `Q5` の既存 Spatial Anchor/Cube flow との優先関係待ち |
-| `UNIT-07` | Food bounds, scoop, and effects integration | `FR18`〜`FR23`, `NFR6`, `NFR9` | `NOT-READY` | `Q3` の AABB 算法待ち。`UNIT-03` の pure state は先行可能 |
+| `UNIT-07` | Food bounds, scoop, and effects integration | `FR18`〜`FR23`, `NFR6`, `NFR9` | `READY` | `Q3` 解決済み (2026-08-28)。透明 AABB collider、手/コントローラーとの接触によるすくい正規化、段階縮小と消滅、共通イベント発行まで |
 | `UNIT-08` | Physical Menu Viewer | `FR15`, `FR27`〜`FR33`, `NFR6`, `NFR13` | `NOT-READY` | `Q2`/`Q7` と viewer/API contract 待ち |
 
 ## Dependency Graph

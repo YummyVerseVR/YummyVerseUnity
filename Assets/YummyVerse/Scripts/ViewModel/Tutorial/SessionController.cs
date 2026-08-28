@@ -138,19 +138,27 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
         }
 
         /// <summary>
-        /// 食べ物の表示位置が未設定のままセッションを始めると、食品モデルは読み込まれても
+        /// 食べ物の表示位置が無いままセッションを始めると、食品モデルは読み込まれても
         /// 表示先の Transform が無いため何も見えない(チュートリアルの前菜が出ない不具合)。
         /// そのためスタート待ちの手前で、設定画面での位置指定を待つ。
+        ///
+        /// 保存済み設定がある場合でも Spatial Anchor の localize には数秒かかり、失敗もする。
+        /// 決着(IsBusy が false)を待たずに判定すると、案内が一瞬出る/出すべき場面で出ない、
+        /// のどちらかになるため、必ず待ってから判定する。
         /// </summary>
         private async UniTask WaitForFoodPlacementAsync(CancellationToken lifetimeCt)
         {
+            await UniTask.WaitUntil(
+                () => !_foodPlacementService.IsBusy.Value,
+                cancellationToken: lifetimeCt);
+
             if (_foodPlacementService.IsPlacementConfigured.Value) return;
 
-            Debug.Log("[Session] 食べ物の表示位置が未設定です。設定されるまでスタートを待ちます。");
+            Debug.Log("[Session] 食べ物の表示位置がありません。設定画面で指定されるまでスタートを待ちます。");
             await _ctx.Message.ShowAsync(_config.FoodPlacementRequiredMessage, lifetimeCt);
-            await _foodPlacementService.IsPlacementConfigured
-                .Where(isConfigured => isConfigured)
-                .FirstAsync(lifetimeCt);
+            await UniTask.WaitUntil(
+                () => _foodPlacementService.IsPlacementConfigured.Value,
+                cancellationToken: lifetimeCt);
             await _ctx.Message.HideAsync(lifetimeCt);
         }
 

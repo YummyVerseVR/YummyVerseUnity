@@ -28,8 +28,8 @@ MonoBehaviour:
   hint: {fileID: 0}
   hintDelaySeconds: 5
   rescueTimeoutSeconds: 30
-  rescuePolicy: 0
-  forceCompleteCommand: 2
+  rescuePolicy: 1
+  forceCompleteCommand: 5
   successFeedback: {fileID: 11400000, guid: 07cc6e6c22a294ce3bd83b0d1b6ea66a, type: 2}
   references:
     version: 2

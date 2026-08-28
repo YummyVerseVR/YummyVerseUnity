@@ -216,13 +216,16 @@ namespace YummyVerse.Editor
             steps["S6'"] = s6d;
 
             // --- S8: スプーンですくう (Task / すくわれた) ---
+            // 進行条件は実際の FoodScooped だけ。滞留しても時間で素通りさせず、
+            // ゲーム側に1回すくわせて本物のイベントで先へ進める。
             var s8 = Create<TaskStep>("Steps/Step_S8_Scoop");
             SetField(s8, "stepId", "S8");
             SetField(s8, "instruction", Str(table, "S8", "スプーンで食べ物をすくってみましょう。"));
             SetField(s8, "successCondition", conditions.FoodScooped);
             SetField(s8, "hintDelaySeconds", 5f);
             SetField(s8, "rescueTimeoutSeconds", 30f);
-            SetEnum(s8, "rescuePolicy", RescuePolicy.AutoAdvance);
+            SetEnum(s8, "rescuePolicy", RescuePolicy.ForceComplete);
+            SetEnum(s8, "forceCompleteCommand", GameCommandId.ForceScoopFood);
             SetField(s8, "successFeedback", feedback);
             steps["S8"] = s8;
 
@@ -234,7 +237,7 @@ namespace YummyVerse.Editor
             SetField(s11, "hintDelaySeconds", 8f);
             SetField(s11, "rescueTimeoutSeconds", 45f);
             SetEnum(s11, "rescuePolicy", RescuePolicy.ForceComplete);
-            SetEnum(s11, "forceCompleteCommand", GameCommandId.DestroyAllFood);
+            SetEnum(s11, "forceCompleteCommand", GameCommandId.ForceClearDish);
             SetField(s11, "successFeedback", feedback);
             steps["S11"] = s11;
 

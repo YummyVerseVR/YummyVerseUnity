@@ -21,6 +21,11 @@ namespace YummyVerse.Scripts.Model.DI
             Container.BindInterfacesAndSelfTo<FoodCatalogService>().AsSingle();
             Container.BindInterfacesAndSelfTo<RandomLocalFoodSelectionProvider>().AsSingle();
 
+            // 食事インタラクション (当たり判定・すくい・段階縮小)
+            Container.BindInterfacesAndSelfTo<FoodEatingService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<OvrScoopProbeProvider>().AsSingle();
+            Container.BindInterfacesAndSelfTo<OvrScoopHaptics>().AsSingle();
+
             // チュートリアル基盤 (ゲーム機能側と共有するため Model 層に置く)
             Container.BindInterfacesAndSelfTo<GameEventBus>().AsSingle();
             Container.BindInterfacesAndSelfTo<GameCommandBus>().AsSingle();

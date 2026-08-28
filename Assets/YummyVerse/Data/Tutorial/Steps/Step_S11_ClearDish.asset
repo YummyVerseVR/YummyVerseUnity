@@ -29,7 +29,7 @@ MonoBehaviour:
   hintDelaySeconds: 8
   rescueTimeoutSeconds: 45
   rescuePolicy: 1
-  forceCompleteCommand: 2
+  forceCompleteCommand: 6
   successFeedback: {fileID: 11400000, guid: 07cc6e6c22a294ce3bd83b0d1b6ea66a, type: 2}
   references:
     version: 2

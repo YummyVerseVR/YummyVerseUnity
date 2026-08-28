@@ -172,6 +172,7 @@
   - 有効な食事 action ごとに残量を減らし、食品 model と collider を徐々に縮小する。
   - 縮小はカジュアルで理解しやすい演出とし、複雑な断面 mesh を生成しない。
   - 残量は0未満にならず、一つの action で意図しない多段階減少を起こさない。
+  - 完食までの食事 action の回数は要件で規定しない。実装既定値は5回とし、コード定数一箇所で変更できるようにする。
   - 検証条件: 複数回の食事 action に対してサイズが単調に小さくなり、collider と見た目が乖離しない。
   - 出典: 2026-08-24 利用者要求。
 
@@ -450,7 +451,7 @@
 
 - **Q1 (Blocking for model-delivery Unit)**: 「即座に呼び出せる」の selection-to-visible 目標時間、cache hit/miss 別の閾値、offline fallback、cache 容量/eviction policy はいくつか。
 - **Q2 (Blocking for physical-viewer Unit)**: 物理版メニューは preview image/metadata 閲覧だけでよいか、3D viewer を含むか。対象端末、配布方式、認証、LAN/Internet、更新同期の要件は何か。
-- **Q3 (Blocking for eating-collider Unit)**: 「最も離れている2点を基準とした AABB」の二点をどの座標空間/頂点集合から求め、二点だけで各軸 extent をどう決めるか。通常の renderer/mesh bounds AABB と同義か。
+- **Q3 (Resolved 2026-08-28)**: 「最も離れている2点」は、食品ルートのローカル座標系へ変換した全メッシュ頂点集合の最小コーナーと最大コーナーとする。この2点は箱の対角線を張り、各軸 extent はその差で決まる。結果は当該座標系での通常の AABB と同義であり、形状によらず必ず1つ求まる。頂点を読み出せないメッシュは、そのメッシュ自身の bounds の8隅で代用する。
 - **Q4 (Non-blocking)**: Haptic を展示版の必須受け入れに昇格するか。現時点は `SHOULD`。
 - **Q5 (Blocking for anchor Unit)**: QR designation を既存の運営者設定済み Meta Spatial Anchor の選択に使うのか、QR pose から新規/一時 anchor を作るのか。既存 Cube/UUID/relative pose flow との優先関係は何か。
 - **Q6 (Blocking for API Unit)**: `API-CAP-01`〜`API-CAP-09` の v2 path、method、request/response schema、status code は何か。現行 OpenAPI の `paths` は空である。

@@ -21,6 +21,7 @@ namespace YummyVerse.Scripts.View.Tutorial
         private IGameEventPublisher _eventPublisher;
         private ILocalFoodSelectionProvider _localFoodSelectionProvider;
         private IFoodPlacementService _foodPlacementService;
+        private IFoodEatingService _foodEatingService;
 
         [Inject]
         public void Construct(
@@ -29,7 +30,8 @@ namespace YummyVerse.Scripts.View.Tutorial
             IStandaloneWindowViewModel standaloneWindowViewModel,
             IGameEventPublisher eventPublisher,
             ILocalFoodSelectionProvider localFoodSelectionProvider,
-            IFoodPlacementService foodPlacementService)
+            IFoodPlacementService foodPlacementService,
+            IFoodEatingService foodEatingService)
         {
             _commandBus = commandBus;
             _foodViewModel = foodViewModel;
@@ -37,6 +39,7 @@ namespace YummyVerse.Scripts.View.Tutorial
             _eventPublisher = eventPublisher;
             _localFoodSelectionProvider = localFoodSelectionProvider;
             _foodPlacementService = foodPlacementService;
+            _foodEatingService = foodEatingService;
         }
 
         private void Start()
@@ -62,6 +65,23 @@ namespace YummyVerse.Scripts.View.Tutorial
 
                 case GameCommandId.HideMenu:
                     _standaloneWindowViewModel.IsVisible.Value = false;
+                    break;
+
+                // 救済も実際のすくいと同じ経路を通す。チュートリアルは常に本物の
+                // FoodScooped / DishCleared で進むため、時間経過だけで進むステップが無くなる。
+                case GameCommandId.ForceScoopFood:
+                    if (!_foodEatingService.TryScoop())
+                    {
+                        Debug.LogWarning("[Tutorial] すくえる食べ物がないため、すくいの救済を行えませんでした。");
+                    }
+                    break;
+
+                case GameCommandId.ForceClearDish:
+                    if (!_foodEatingService.ForceClear())
+                    {
+                        // 食べ物が無い/既に完食済みなら、少なくとも皿の上は空にしておく。
+                        _foodViewModel.RequestDestroyFood();
+                    }
                     break;
             }
         }

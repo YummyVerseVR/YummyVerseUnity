@@ -1,16 +1,15 @@
-using R3;
 using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;
-using YummyVerse.Scripts.ViewModel.Interface;
 using Zenject;
 
 namespace YummyVerse.Scripts.View.Dummies
 {
     /// <summary>
-    /// すくい判定・完食判定の実装がまだ無いため、チュートリアルを通しで動かすための手動発火。
-    /// ゲーム側の本実装が入ったらこの GameObject を外すだけでよい。
+    /// XR デバイスが無いエディタでチュートリアルを通しで確認するための手動入力。
+    /// 本番フローには不要なので、この GameObject をシーンへ置かなければよい。
     ///
-    /// 既存の DummyQRView と同じく、Inspector のコンテキストメニューかキー入力から叩く。
+    /// すくい/完食は実装済みの IFoodEatingService を叩くだけにしてある。
+    /// イベントを直接偽装すると残量や当たり判定と食い違うため、ここでは行わない。
     /// </summary>
     public class DummyGameEventView : MonoBehaviour
     {
@@ -19,41 +18,36 @@ namespace YummyVerse.Scripts.View.Dummies
         [SerializeField] private KeyCode dishClearedKey = KeyCode.Alpha2;
         [SerializeField] private KeyCode userAbsentKey = KeyCode.Alpha3;
 
-        [Tooltip("Bボタンでの食べ物破棄を暫定的に「完食」として扱う。本実装が入ったら外すこと。")]
-        [SerializeField] private bool treatFoodDestroyAsDishCleared = true;
-
         private IGameEventPublisher _publisher;
-        private IFoodViewModel _foodViewModel;
+        private IFoodEatingService _foodEatingService;
 
         [Inject]
-        public void Construct(IGameEventPublisher publisher, IFoodViewModel foodViewModel)
+        public void Construct(IGameEventPublisher publisher, IFoodEatingService foodEatingService)
         {
             _publisher = publisher;
-            _foodViewModel = foodViewModel;
-        }
-
-        private void Start()
-        {
-            if (!treatFoodDestroyAsDishCleared) return;
-
-            Observable.FromEvent(
-                    h => _foodViewModel.OnFoodDestroy += h,
-                    h => _foodViewModel.OnFoodDestroy -= h)
-                .Subscribe(_ => FakeDishCleared()).AddTo(this);
+            _foodEatingService = foodEatingService;
         }
 
         private void Update()
         {
-            if (Input.GetKeyDown(scoopKey)) FakeFoodScooped();
-            if (Input.GetKeyDown(dishClearedKey)) FakeDishCleared();
+            if (Input.GetKeyDown(scoopKey)) SimulateFoodScooped();
+            if (Input.GetKeyDown(dishClearedKey)) SimulateDishCleared();
             if (Input.GetKeyDown(userAbsentKey)) FakeUserAbsent();
         }
 
-        [ContextMenu("Fake: Food Scooped")]
-        public void FakeFoodScooped() => _publisher?.PublishFoodScooped();
+        [ContextMenu("Simulate: Food Scooped")]
+        public void SimulateFoodScooped()
+        {
+            if (_foodEatingService != null && _foodEatingService.TryScoop()) return;
+            Debug.LogWarning("[Eating] すくえる食べ物が皿の上にありません。");
+        }
 
-        [ContextMenu("Fake: Dish Cleared")]
-        public void FakeDishCleared() => _publisher?.PublishDishCleared();
+        [ContextMenu("Simulate: Dish Cleared")]
+        public void SimulateDishCleared()
+        {
+            if (_foodEatingService != null && _foodEatingService.ForceClear()) return;
+            Debug.LogWarning("[Eating] 完食できる食べ物が皿の上にありません。");
+        }
 
         [ContextMenu("Fake: User Absent")]
         public void FakeUserAbsent() => _publisher?.PublishUserAbsent();

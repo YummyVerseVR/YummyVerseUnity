@@ -46,7 +46,7 @@ namespace YummyVerse.Editor.Tests
             var service = new FoodPlacementService(new StubSpatialAnchorBackend(), new EmptyPlacementStore());
             service.Initialize();
 
-            // 未設定のまま食べ物を出すと表示先が無く、モデルは読み込まれても何も見えない。
+            // 表示先が無いまま食べ物を出すと、モデルは読み込まれても画面には何も出ない。
             Assert.That(service.IsPlacementConfigured.Value, Is.False);
 
             service.UpdateDraftPose(new Pose(Vector3.one, Quaternion.identity));
@@ -57,19 +57,33 @@ namespace YummyVerse.Editor.Tests
         }
 
         [Test]
-        public void PlacementStaysConfiguredWhileSavedAnchorIsRestoring()
+        public void PlacementBecomesConfiguredWhenSavedAnchorIsRestored()
         {
-            var backend = new PendingSpatialAnchorBackend();
-            var service = new FoodPlacementService(backend, new SavedPlacementStore());
+            var anchor = new GameObject("Test Anchor").transform;
+            var service = new FoodPlacementService(
+                new ScriptedSpatialAnchorBackend(SpatialAnchorBackendResult.Succeeded(Guid.NewGuid(), anchor), anchor),
+                new SavedPlacementStore());
 
             service.Initialize();
 
-            // Anchorの復元完了を待つ間に「未設定」と判定すると、起動直後に案内が一瞬出てしまう。
+            Assert.That(service.IsBusy.Value, Is.False, "復元は同期的に完了しているはず");
             Assert.That(service.IsPlacementConfigured.Value, Is.True);
 
-            backend.CompleteLoadWithFailure();
+            service.Dispose();
+            UnityEngine.Object.DestroyImmediate(anchor.gameObject);
+        }
 
-            // 復元に失敗したなら本当に表示先が無いので、未設定として案内する。
+        [Test]
+        public void PlacementStaysUnconfiguredWhenSavedAnchorCannotBeRestored()
+        {
+            var service = new FoodPlacementService(
+                new ScriptedSpatialAnchorBackend(SpatialAnchorBackendResult.Failed("anchor not found"), null),
+                new SavedPlacementStore());
+
+            service.Initialize();
+
+            // 保存済み設定があってもAnchorをlocalizeできなければ表示先は無い。
+            // ここをtrueに倒すと、案内も出ないまま食べ物だけが見えない状態になる。
             Assert.That(service.IsPlacementConfigured.Value, Is.False);
 
             service.Dispose();
@@ -95,21 +109,24 @@ namespace YummyVerse.Editor.Tests
             }
         }
 
-        /// <summary>LoadAsync を任意のタイミングまで未完了に保ち、復元中の状態を観測できるようにする。</summary>
-        private sealed class PendingSpatialAnchorBackend : ISpatialAnchorBackend
+        /// <summary>LoadAsync の結果を指定できるバックエンド。復元成功・失敗の両方を再現する。</summary>
+        private sealed class ScriptedSpatialAnchorBackend : ISpatialAnchorBackend
         {
-            private readonly UniTaskCompletionSource<SpatialAnchorBackendResult> _load = new();
+            private readonly SpatialAnchorBackendResult _loadResult;
+
+            public ScriptedSpatialAnchorBackend(SpatialAnchorBackendResult loadResult, Transform anchorTransform)
+            {
+                _loadResult = loadResult;
+                CurrentAnchorTransform = anchorTransform;
+            }
 
             public Guid CurrentUuid => Guid.Empty;
-            public Transform CurrentAnchorTransform => null;
-
-            public void CompleteLoadWithFailure() =>
-                _load.TrySetResult(SpatialAnchorBackendResult.Failed("anchor not found"));
+            public Transform CurrentAnchorTransform { get; }
 
             public UniTask<SpatialAnchorBackendResult> LoadAsync(
                 Guid uuid,
                 CancellationToken cancellationToken) =>
-                _load.Task;
+                UniTask.FromResult(_loadResult);
 
             public UniTask<SpatialAnchorBackendResult> ReplaceAsync(
                 Pose pose,
