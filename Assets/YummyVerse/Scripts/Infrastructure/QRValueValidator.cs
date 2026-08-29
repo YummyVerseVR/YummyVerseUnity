@@ -4,7 +4,7 @@ using R3;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 
-namespace YummyVerse.Scripts.Model
+namespace YummyVerse.Scripts.Infrastructure
 {
     /// <summary>
     /// QRコードの中身をValidationするクラス

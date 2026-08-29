@@ -5,6 +5,7 @@ using GLTFast;
 using Oculus.Interaction;
 using R3;
 using UnityEngine;
+using YummyVerse.Scripts.Infrastructure;
 using YummyVerse.Scripts.Model;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;

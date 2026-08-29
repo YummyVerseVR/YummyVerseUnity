@@ -2,7 +2,7 @@ using Meta.XR.MRUtilityKit;
 using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;
 
-namespace YummyVerse.Scripts.Model.Struct
+namespace YummyVerse.Scripts.Infrastructure
 {
     public class MRUKTrackableAdapter : IQRTrackable
     {

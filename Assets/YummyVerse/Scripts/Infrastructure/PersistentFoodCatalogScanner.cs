@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using YummyVerse.Scripts.Model.Struct;
 
-namespace YummyVerse.Scripts.Model
+namespace YummyVerse.Scripts.Infrastructure
 {
     /// <summary>
     /// PersistentDataPath/Foods のファイル規約を、Unity API に依存せず走査する。

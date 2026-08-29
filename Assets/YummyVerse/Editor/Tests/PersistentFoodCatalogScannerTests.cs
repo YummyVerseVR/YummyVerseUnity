@@ -4,6 +4,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using YummyVerse.Scripts.Infrastructure;
 using YummyVerse.Scripts.Model;
 using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.Model.YummyServiceV2;

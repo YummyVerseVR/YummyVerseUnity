@@ -1,7 +1,7 @@
 using GLTFast;
 using GLTFast.Materials;
 
-namespace YummyVerse.Scripts.Model
+namespace YummyVerse.Scripts.Infrastructure
 {
     public static class GltfImportFactory
     {

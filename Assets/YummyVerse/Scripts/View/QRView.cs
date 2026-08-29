@@ -2,6 +2,7 @@ using System;
 using Meta.XR.MRUtilityKit;
 using TMPro;
 using UnityEngine;
+using YummyVerse.Scripts.Infrastructure;
 using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.ViewModel.Interface;
 using Zenject;

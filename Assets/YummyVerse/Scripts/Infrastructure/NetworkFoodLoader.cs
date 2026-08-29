@@ -12,7 +12,7 @@ using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.Model.YummyServiceV2;
 
-namespace YummyVerse.Scripts.Model
+namespace YummyVerse.Scripts.Infrastructure
 {
     /// <summary>選択されたAPI v2食品のGLBだけを取得してglTFastへ渡す。</summary>
     public sealed class NetworkFoodLoader : INetworkFoodModelLoader

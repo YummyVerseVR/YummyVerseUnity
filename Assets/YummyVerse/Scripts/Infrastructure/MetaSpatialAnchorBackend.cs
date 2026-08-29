@@ -6,7 +6,7 @@ using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 
-namespace YummyVerse.Scripts.Model
+namespace YummyVerse.Scripts.Infrastructure
 {
     /// <summary>
     /// Meta XR SDK の Spatial Anchor API をアプリケーション層から隔離する境界。

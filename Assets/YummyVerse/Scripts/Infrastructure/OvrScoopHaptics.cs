@@ -5,7 +5,7 @@ using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 
-namespace YummyVerse.Scripts.Model
+namespace YummyVerse.Scripts.Infrastructure
 {
     /// <summary>
     /// Meta XR SDK の振動 API を隔離する境界。

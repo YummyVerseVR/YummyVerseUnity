@@ -7,7 +7,7 @@ using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.Model.YummyServiceV2;
 
-namespace YummyVerse.Scripts.Model
+namespace YummyVerse.Scripts.Infrastructure
 {
     public class NetworkConnectionTester : INetworkConnectionTester
     {

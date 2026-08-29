@@ -9,8 +9,6 @@ namespace YummyVerse.Scripts.ViewModel.DI
         {
             Container.BindInterfacesAndSelfTo<ConfigUIViewModel>().AsSingle();
             Container.Bind<ConfigUIPresenter>().AsTransient();
-            Container.Bind<VirtualKeyboardInputSourceBinder>().AsTransient();
-            Container.Bind<VirtualKeyboardPlacement>().AsTransient();
             // StandaloneWindowViewModel はチュートリアル層からも参照するため
             // SharedViewModelInstaller でシーンスコープにバインドしている。
         }

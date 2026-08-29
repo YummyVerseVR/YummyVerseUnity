@@ -1,6 +1,7 @@
 using System.Net;
 using System.Threading;
 using NUnit.Framework;
+using YummyVerse.Scripts.Infrastructure;
 using YummyVerse.Scripts.Model;
 
 namespace YummyVerse.Editor.Tests

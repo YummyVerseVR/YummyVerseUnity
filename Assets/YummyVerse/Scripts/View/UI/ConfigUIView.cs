@@ -21,6 +21,9 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private TextMeshProUGUI spatialPlacementStatus;
         [SerializeField] private Button returnToStartButton;
 
+        [Tooltip("入力欄に出る仮想キーボード。打鍵の途中を確定として扱わないために参照する。")]
+        [SerializeField] private VirtualKeyboardView virtualKeyboard;
+
         private ConfigUIPresenter _presenter;
 
         [Inject]
@@ -42,7 +45,9 @@ namespace YummyVerse.Scripts.View.UI
                 spatialAnchorButton,
                 fixFoodPositionButton,
                 spatialPlacementStatus,
-                returnToStartButton);
+                returnToStartButton,
+                // Unity の偽 null をインタフェースに持ち込まないよう、ここで潰しておく。
+                virtualKeyboard != null ? virtualKeyboard : null);
         }
 
         private void OnDisable()
