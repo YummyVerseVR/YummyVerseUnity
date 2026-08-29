@@ -1,84 +1,61 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using YummyVerse.Scripts.Presentation;
-using Zenject;
+using UnityEngine.EventSystems;
 
 namespace YummyVerse.Scripts.View.UI
 {
     /// <summary>
-    /// 入力欄にフォーカスが入っている間だけ Meta のバーチャルキーボード
-    /// (<see cref="OVRVirtualKeyboard"/>) を表示する。
+    /// 入力欄にフォーカスが入っているあいだだけ仮想キーボードを出す。
     /// </summary>
     /// <remarks>
-    /// Quest 単体で使うシステムキーボード(TouchScreenKeyboard)は PC ビルドでは
-    /// 一切使えないため、PCVR(Quest Link)でも動くバーチャルキーボードに寄せている。
-    /// ランタイム側が XR_META_virtual_keyboard を出していない環境では
-    /// OVRVirtualKeyboard 側が警告を出して何も表示されない。その場合でも
-    /// TMP_InputField は物理キーボードから入力できる。
+    /// Quest 単体で使うシステムキーボード(TouchScreenKeyboard)は PC ビルドでは一切使えないため、
+    /// PCVR でも動く自前のキーボードを設定ダイアログのプレハブに組み込んでいる。
+    ///
+    /// Meta の <c>OVRVirtualKeyboard</c> は使わない。あれは Unity のワールド座標を
+    /// そのままトラッキング空間の姿勢としてランタイムに渡す作り (OVRVirtualKeyboard.ComputeLocation) で、
+    /// OVRCameraRig が原点にある前提になっている。このシーンは FirstPersonLocomotor が
+    /// Camera Rig 自体を動かすので、プレイヤーが移動した分だけキーボードがズレる。
+    /// 同じ SDK でも OVROverlay や OVRSpatialAnchor は ToTrackingSpacePose() を通しているのに、
+    /// キーボードだけ変換がなく、こちら側では直しようがない。
     /// </remarks>
     public sealed class VirtualKeyboardView : MonoBehaviour
     {
-        /// <summary>Meta XR SDK の OVRVirtualKeyboard プレハブ。</summary>
-        [SerializeField] private OVRVirtualKeyboard keyboardPrefab;
+        /// <summary>設定ダイアログのプレハブに組み込んであるキーボード。</summary>
+        [SerializeField] private VirtualKeyboardPanelView keyboard;
 
         /// <summary>キーボードを出す対象の入力欄。</summary>
         [SerializeField] private TMP_InputField inputField;
 
-        /// <summary>キーボードを固定する基準。設定ダイアログのルート(パネル中心)を指す。</summary>
-        [SerializeField] private Transform panelAnchor;
-
-        /// <summary>
-        /// Custom = 下の3項目で自分で決める(既定)。
-        /// Near / Far はランタイム任せの位置で、こちらの設定は一切効かない。
-        /// </summary>
-        [Header("Placement")]
-        [SerializeField]
-        private OVRVirtualKeyboard.KeyboardPosition positionMode = OVRVirtualKeyboard.KeyboardPosition.Custom;
-
-        [Tooltip("設定ダイアログ中心から見た表示位置[m]。x=右, y=上(負で下), z=奥(負で手前)。パネルは縦0.39mなので、下端は y=-0.195。")]
-        [SerializeField] private Vector3 positionOffset = new(0f, -0.3f, -0.05f);
-
-        [Tooltip("パネル面からさらに手前に倒す角度[deg]。0 でパネルと同じ向き、90 で水平。")]
-        [SerializeField] private float tiltAngle = 30f;
-
-        [Tooltip("キーボードの大きさ。1 で幅1.0m×高さ0.4mの実寸になる。パネル幅が0.57mなので 0.4 前後が収まりが良い。")]
-        [SerializeField] private float scale = 0.4f;
-
-        private OVRVirtualKeyboard _keyboard;
-        private TMPVirtualKeyboardTextHandler _textHandler;
-        private VirtualKeyboardInputSourceBinder _inputSourceBinder;
-        private VirtualKeyboardPlacement _placement;
-
-        [Inject]
-        public void Construct(
-            VirtualKeyboardInputSourceBinder inputSourceBinder,
-            VirtualKeyboardPlacement placement)
-        {
-            _inputSourceBinder = inputSourceBinder;
-            _placement = placement;
-        }
+        private Coroutine _pendingHide;
 
         private void Awake()
         {
-            if (inputField == null || keyboardPrefab == null)
+            if (inputField == null || keyboard == null)
             {
-                Debug.LogWarning($"{nameof(VirtualKeyboardView)}: inputField / keyboardPrefab が未設定です。", this);
+                Debug.LogWarning($"{nameof(VirtualKeyboardView)}: inputField / keyboard が未設定です。", this);
                 enabled = false;
                 return;
             }
 
-            // 入力手段をバーチャルキーボードに一本化する。
+            // 入力手段を仮想キーボードに一本化する。
             // (Android 実機ではこれを切らないと OS のシステムキーボードも同時に出る)
             inputField.shouldHideSoftKeyboard = true;
-            ConfigurePlacement();
+
+            // キーを押すたびにフォーカスを入力欄へ戻す(HandleDeselect)ので、
+            // 戻すたびに全選択されると打った文字が消えたように見える。
+            inputField.onFocusSelectAll = false;
+
+            keyboard.Initialize(inputField);
+            keyboard.gameObject.SetActive(false);
         }
 
         private void OnEnable()
         {
-            if (inputField == null) return;
+            if (inputField == null || keyboard == null) return;
             inputField.onSelect.AddListener(HandleSelect);
             inputField.onDeselect.AddListener(HandleDeselect);
+            keyboard.Submitted += HandleSubmitted;
         }
 
         private void OnDisable()
@@ -89,140 +66,71 @@ namespace YummyVerse.Scripts.View.UI
                 inputField.onDeselect.RemoveListener(HandleDeselect);
             }
 
+            if (keyboard != null) keyboard.Submitted -= HandleSubmitted;
+
             Hide();
         }
 
-        private void OnDestroy()
-        {
-            // OVRVirtualKeyboard はシングルトンなので、使い終わったら必ず片付ける。
-            if (_keyboard != null)
-            {
-                Destroy(_keyboard.gameObject);
-                _keyboard = null;
-            }
-
-            _inputSourceBinder?.Dispose();
-        }
-
-        /// <summary>キーボードを表示する。初回はここでプレハブを生成する。</summary>
+        /// <summary>キーボードを表示する。</summary>
         public void Show()
         {
-            if (!enabled) return;
+            if (!enabled || keyboard == null) return;
 
-            if (_keyboard == null)
-            {
-                _keyboard = CreateKeyboard();
-                return;
-            }
-
-            // ランタイム側の生成に一度でも失敗していると、GameObject は生きたまま
-            // 中身(キーボード本体とモデル)だけ破棄された状態になる。SetActive(true) は
-            // 既に active だと何も起きないので、必ず OnEnable を通してやり直させる。
-            _keyboard.gameObject.SetActive(false);
-            _keyboard.gameObject.SetActive(true);
-
-            // 位置はランタイム側の空間に固定されるので、開き直すたびに置き直す。
-            StartCoroutine(ApplyPlacementNextFrame(_keyboard));
+            CancelPendingHide();
+            keyboard.gameObject.SetActive(true);
         }
 
         /// <summary>キーボードを隠す。設定画面を閉じるときにも呼ぶ。</summary>
         public void Hide()
         {
-            if (_keyboard == null) return;
-            _keyboard.gameObject.SetActive(false);
+            CancelPendingHide();
+            if (keyboard != null) keyboard.gameObject.SetActive(false);
         }
 
         private void HandleSelect(string _) => Show();
 
-        private void HandleDeselect(string _) => Hide();
-
-        private OVRVirtualKeyboard CreateKeyboard()
+        /// <remarks>
+        /// キーも Selectable なので、押した瞬間に入力欄からフォーカスが外れて onDeselect が飛ぶ。
+        /// そこで即座には閉じず、1フレーム待ってから行き先を見る。フォーカスがキーボードの中へ
+        /// 移っただけなら入力欄に戻して開いたままにし、それ以外なら閉じる。
+        /// </remarks>
+        private void HandleDeselect(string _)
         {
-            // Instantiate した時点で Awake / OnEnable が走り、ランタイム側のキーボード生成と
-            // モデルの読み込みが始まる。位置と向きだけは原点に出さないためここで渡すが、
-            // 大きさはプレハブのまま(等倍)にしておく(理由は下のコルーチン)。
-            ConfigurePlacement();
-            _placement.GetInitialPose(out var position, out var rotation);
-            var keyboard = Instantiate(keyboardPrefab, position, rotation);
-            keyboard.name = "YummyVerse Virtual Keyboard";
+            CancelPendingHide();
 
-            _textHandler = keyboard.gameObject.AddComponent<TMPVirtualKeyboardTextHandler>();
-            _textHandler.InputField = inputField;
-            keyboard.TextHandler = _textHandler;
+            if (!isActiveAndEnabled)
+            {
+                Hide();
+                return;
+            }
 
-            BindInputSources(keyboard);
-
-            StartCoroutine(ApplyPlacementNextFrame(keyboard));
-            return keyboard;
+            _pendingHide = StartCoroutine(HideUnlessFocusMovedIntoKeyboard());
         }
 
-        /// <summary>
-        /// ランタイム側のキーボード空間ができてから位置・大きさを反映する。
-        /// </summary>
-        /// <remarks>
-        /// キーボード空間は表示後の初回 Update(SyncKeyboardLocation → GetKeyboardSpace)で、
-        /// そのときの Transform をそのまま姿勢として作られる。生成と同じフレームに
-        /// Transform を動かしてしまうと、その姿勢で空間生成が走り、ランタイムが受け付けないと
-        /// SDK 側が DestroyKeyboard() まで実行してキーボードごと消える
-        /// (OVRVirtualKeyboard.GetKeyboardSpace の失敗時処理)。
-        /// この場合 GameObject だけが残るため、外からは「キーボードが出ない」ようにしか見えない。
-        /// </remarks>
-        private IEnumerator ApplyPlacementNextFrame(OVRVirtualKeyboard keyboard)
+        private IEnumerator HideUnlessFocusMovedIntoKeyboard()
         {
             yield return null;
+            _pendingHide = null;
 
-            if (keyboard == null || !keyboard.gameObject.activeInHierarchy) yield break;
+            var eventSystem = EventSystem.current;
+            var selected = eventSystem != null ? eventSystem.currentSelectedGameObject : null;
 
-            ApplyPlacement(keyboard.transform);
-            keyboard.UseSuggestedLocation(positionMode);
+            if (keyboard != null && keyboard.Contains(selected))
+            {
+                inputField.ActivateInputField();
+                yield break;
+            }
+
+            Hide();
         }
 
-        /// <summary>
-        /// コントローラー / ハンドをキーボードの入力ソースとして登録する。
-        /// Building Block の Virtual Keyboard と同じ配線。
-        /// </summary>
-        private void BindInputSources(OVRVirtualKeyboard keyboard)
-        {
-            _inputSourceBinder.Bind(keyboard);
-        }
+        private void HandleSubmitted() => Hide();
 
-        /// <summary>
-        /// Custom のときの位置・向き・大きさを Transform に書き込む。
-        /// </summary>
-        /// <remarks>
-        /// 頭ではなく設定ダイアログを基準にしているのは、ダイアログ自体が開くときに
-        /// カメラ前へ配置されるので、そこからの相対位置なら見えている物との関係が
-        /// そのまま決まるため。頭基準だと配置がトラッキング空間の状態に左右される。
-        ///
-        /// Near / Far モードを使わないのは、どちらもランタイムが位置を決めるモードで、
-        /// こちらの Transform が毎フレーム上書きされてしまうため(SDK ドキュメント:
-        /// "If set to Far or Near, the keyboard position is runtime controlled,
-        /// so the Transform component will be locked")。
-        ///
-        /// 大きさも Transform で決まる。localScale の最大成分がそのまま倍率として
-        /// ランタイムに渡り(ComputeLocation → MaxElement)、1 のときキーボードの
-        /// 実寸は幅1.0m×高さ0.4mになる(OVRVirtualKeyboard.OnDrawGizmos 参照)。
-        ///
-        /// 呼ぶのは表示するときの1回だけ。毎フレーム書き込むと、ランタイム側の姿勢を
-        /// Transform に書き戻す SyncKeyboardLocation と取り合いになって震える。
-        /// </remarks>
-        private void ApplyPlacement(Transform keyboardTransform)
+        private void CancelPendingHide()
         {
-            ConfigurePlacement();
-            _placement.Apply(keyboardTransform);
-        }
-
-        private void ConfigurePlacement()
-        {
-            if (_placement == null) return;
-
-            _placement.Configure(
-                positionMode,
-                panelAnchor,
-                transform,
-                positionOffset,
-                tiltAngle,
-                scale);
+            if (_pendingHide == null) return;
+            StopCoroutine(_pendingHide);
+            _pendingHide = null;
         }
     }
 }
