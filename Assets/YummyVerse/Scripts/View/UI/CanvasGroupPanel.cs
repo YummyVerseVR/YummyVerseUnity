@@ -30,7 +30,9 @@ namespace YummyVerse.Scripts.View.UI
         private void Awake()
         {
             if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
-            _interactionGate = new PointableCanvasInteractionGate(this);
+            // CanvasGroup を渡す。ゲートは「その CanvasGroup が塞いでいるか」で
+            // 表示中かどうかを判断するので、パネル本体ではなくこちらが入口になる。
+            _interactionGate = new PointableCanvasInteractionGate(canvasGroup != null ? canvasGroup : (Component)this);
         }
 
         public void SetVisible(bool visible)
