@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace YummyVerse.Scripts.View.UI
@@ -20,10 +21,13 @@ namespace YummyVerse.Scripts.View.UI
     /// 入力欄の書き換えは持たない。
     /// </summary>
     /// <remarks>
-    /// キーの並びは <c>YummyVerse/UI/Rebuild Virtual Keyboard</c> で生成するが、
-    /// 生成後はただの GameObject なので、位置も文字もインスペクタで直せる。
+    /// 反応するのは click ではなく pointer down。uGUI の click は「押した相手と離した相手が
+    /// 同じ」ことを要求し (PointableCanvasModule.ProcessPress)、さらに押している間に
+    /// pixelDragThreshold を超えて動くと click 自体が捨てられる (同 ProcessDrag →
+    /// ClearPointerSelection)。canvas は 2000px/m なので、レイでもポークでも手ブレで
+    /// 簡単に閾値を超え、「音は鳴るのに文字が入らない」状態になる。押した時点で確定させる。
     /// </remarks>
-    public sealed class VirtualKeyboardKeyView : MonoBehaviour
+    public sealed class VirtualKeyboardKeyView : MonoBehaviour, IPointerDownHandler
     {
         [SerializeField] private VirtualKeyboardKeyKind kind = VirtualKeyboardKeyKind.Character;
 
@@ -34,7 +38,9 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private string shiftedCharacter = string.Empty;
 
         [SerializeField] private TextMeshProUGUI label;
-        [SerializeField] private Button button;
+
+        [Tooltip("押下時の色替え用。入力の受け取りには使わない。")]
+        [SerializeField] private Selectable selectable;
 
         private VirtualKeyboardPanelView _panel;
 
@@ -45,18 +51,9 @@ namespace YummyVerse.Scripts.View.UI
         public string ShiftedCharacter =>
             string.IsNullOrEmpty(shiftedCharacter) ? character : shiftedCharacter;
 
-        internal void Bind(VirtualKeyboardPanelView panel)
-        {
-            _panel = panel;
-            if (button == null) button = GetComponent<Button>();
-            if (button != null) button.onClick.AddListener(HandleClick);
-        }
+        internal void Bind(VirtualKeyboardPanelView panel) => _panel = panel;
 
-        internal void Unbind()
-        {
-            if (button != null) button.onClick.RemoveListener(HandleClick);
-            _panel = null;
-        }
+        internal void Unbind() => _panel = null;
 
         /// <summary>Shift の状態に合わせて表示を切り替える。文字キー以外は固定ラベルなので触らない。</summary>
         internal void ApplyShift(bool isShifted)
@@ -65,9 +62,11 @@ namespace YummyVerse.Scripts.View.UI
             label.text = isShifted ? ShiftedCharacter : character;
         }
 
-        private void HandleClick()
+        public void OnPointerDown(PointerEventData eventData)
         {
-            if (_panel != null) _panel.HandleKeyPressed(this);
+            if (_panel == null) return;
+            if (selectable != null && !selectable.IsInteractable()) return;
+            _panel.HandleKeyPressed(this);
         }
     }
 }

@@ -1,7 +1,9 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using YummyVerse.Scripts.Presentation;
 
 namespace YummyVerse.Scripts.View.UI
 {
@@ -19,7 +21,7 @@ namespace YummyVerse.Scripts.View.UI
     /// 同じ SDK でも OVROverlay や OVRSpatialAnchor は ToTrackingSpacePose() を通しているのに、
     /// キーボードだけ変換がなく、こちら側では直しようがない。
     /// </remarks>
-    public sealed class VirtualKeyboardView : MonoBehaviour
+    public sealed class VirtualKeyboardView : MonoBehaviour, IVirtualKeyboard
     {
         /// <summary>設定ダイアログのプレハブに組み込んであるキーボード。</summary>
         [SerializeField] private VirtualKeyboardPanelView keyboard;
@@ -28,6 +30,14 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private TMP_InputField inputField;
 
         private Coroutine _pendingHide;
+
+        /// <summary>
+        /// キーボードを閉じたとき、そのときの入力欄の中身を渡す。編集の確定はここ一本。
+        /// </summary>
+        public event Action<string> EditingFinished;
+
+        /// <summary>キーボードが開いている=まだ打鍵の途中かどうか。</summary>
+        public bool IsEditing => keyboard != null && keyboard.gameObject.activeSelf;
 
         private void Awake()
         {
@@ -80,11 +90,18 @@ namespace YummyVerse.Scripts.View.UI
             keyboard.gameObject.SetActive(true);
         }
 
+        void IVirtualKeyboard.Close() => Hide();
+
         /// <summary>キーボードを隠す。設定画面を閉じるときにも呼ぶ。</summary>
         public void Hide()
         {
             CancelPendingHide();
-            if (keyboard != null) keyboard.gameObject.SetActive(false);
+            if (keyboard == null) return;
+
+            var wasEditing = keyboard.gameObject.activeSelf;
+            keyboard.gameObject.SetActive(false);
+
+            if (wasEditing && inputField != null) EditingFinished?.Invoke(inputField.text);
         }
 
         private void HandleSelect(string _) => Show();

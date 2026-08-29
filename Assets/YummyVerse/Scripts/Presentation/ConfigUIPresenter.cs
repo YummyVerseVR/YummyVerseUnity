@@ -34,6 +34,7 @@ namespace YummyVerse.Scripts.Presentation
         private Button _fixFoodPositionButton;
         private TextMeshProUGUI _spatialPlacementStatus;
         private Button _returnToStartButton;
+        private IVirtualKeyboard _virtualKeyboard;
         private bool _initialized;
 
         public ConfigUIPresenter(IConfigUIViewModel viewModel)
@@ -52,10 +53,14 @@ namespace YummyVerse.Scripts.Presentation
             Button spatialAnchorButton,
             Button fixFoodPositionButton,
             TextMeshProUGUI spatialPlacementStatus,
-            Button returnToStartButton)
+            Button returnToStartButton,
+            IVirtualKeyboard virtualKeyboard = null)
         {
             if (_initialized) return;
             _initialized = true;
+
+            _virtualKeyboard = virtualKeyboard;
+            if (_virtualKeyboard != null) _virtualKeyboard.EditingFinished += CommitEndPointUrl;
 
             _apiEndPointUrl = apiEndPointUrl;
             _testConnectionButton = testConnectionButton;
@@ -90,6 +95,7 @@ namespace YummyVerse.Scripts.Presentation
 
         public void Dispose()
         {
+            if (_virtualKeyboard != null) _virtualKeyboard.EditingFinished -= CommitEndPointUrl;
             _visibilityTween?.Kill();
             DisableOverlayCanvas();
             _disposables.Dispose();
@@ -132,7 +138,7 @@ namespace YummyVerse.Scripts.Presentation
         {
             if (_apiEndPointUrl != null)
             {
-                _apiEndPointUrl.onEndEdit.AddListener(_viewModel.UpdateEndPointUrl);
+                _apiEndPointUrl.onEndEdit.AddListener(HandleEndPointUrlEndEdit);
             }
 
             if (_foodScaleSlider != null)
@@ -187,6 +193,27 @@ namespace YummyVerse.Scripts.Presentation
             _interactionGate?.SetEnabled(true);
         }
 
+        /// <summary>編集を確定してエンドポイントに反映する。仮想キーボードを閉じたときに呼ばれる。</summary>
+        public void CommitEndPointUrl(string url)
+        {
+            _viewModel.UpdateEndPointUrl(url);
+        }
+
+        /// <remarks>
+        /// 仮想キーボードはキーを押すたびに入力欄のフォーカスを奪う
+        /// (PointableCanvasModule.ProcessPress → DeselectIfSelectionChanged)。
+        /// TMP_InputField はフォーカスを失うと onEndEdit を飛ばすので、これをそのまま
+        /// 確定として扱うと1文字打つごとに URL 検証エラーのダイアログが出てしまう。
+        /// キーボードが開いている間は確定せず、閉じたときに
+        /// <see cref="CommitEndPointUrl"/> で一度だけ確定する。
+        /// 物理キーボードで打つ場合はキーボードが開かないので、ここがそのまま確定になる。
+        /// </remarks>
+        private void HandleEndPointUrlEndEdit(string url)
+        {
+            if (_virtualKeyboard != null && _virtualKeyboard.IsEditing) return;
+            _viewModel.UpdateEndPointUrl(url);
+        }
+
         private void Hide()
         {
             if (_canvasGroup == null) return;
@@ -194,6 +221,10 @@ namespace YummyVerse.Scripts.Presentation
             _canvasGroup.interactable = false;
             _canvasGroup.blocksRaycasts = false;
             _interactionGate?.SetEnabled(false);
+
+            // キーボードはパネルの CanvasGroup の外にいるのでフェードで消えない。
+            // フォーカスがキーの上にあると入力欄の onDeselect も飛ばないので、明示的に閉じる。
+            _virtualKeyboard?.Close();
             ReleaseInputFieldFocus();
             _visibilityTween?.Kill();
             _visibilityTween = _canvasGroup.DOFade(0f, FadeDuration);

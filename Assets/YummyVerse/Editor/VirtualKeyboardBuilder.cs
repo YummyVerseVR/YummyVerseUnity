@@ -25,7 +25,6 @@ namespace YummyVerse.Editor
         private const string PrefabPath = "Assets/YummyVerse/Prefabs/Restaurant/UI/YummyConfigUI.prefab";
         private const string BackplatePrefabGuid = "6b196de96e7d16b4297c1980179ae439"; // EmptyUIBackplateWithCanvas
         private const string FontPath = "Assets/YummyVerse/Misc/MPLUS1p-Regular SDF.asset";
-        private const string InputFieldPath = "CanvasRoot/UIBackplate/TextInputField/TextField";
         private const string KeyboardName = "VirtualKeyboard";
 
         // 設定ダイアログ中心から見た配置。パネルは縦0.39mなので下端は y=-0.195。
@@ -127,14 +126,25 @@ namespace YummyVerse.Editor
             var root = PrefabUtility.LoadPrefabContents(PrefabPath);
             try
             {
-                var inputField = root.transform.Find(InputFieldPath)?.GetComponent<TMP_InputField>();
-                if (inputField == null)
+                // 名前で引くと改名で黙って壊れるので、どれも型で辿る。入力欄は
+                // ConfigUIView が既に握っているものを使い回し、確実に同じ欄を指す。
+                var configView = root.GetComponentInChildren<ConfigUIView>(true);
+                var view = root.GetComponentInChildren<VirtualKeyboardView>(true);
+                if (configView == null || view == null)
                 {
-                    Debug.LogError($"[VirtualKeyboardBuilder] {InputFieldPath} に TMP_InputField がありません。");
+                    Debug.LogError("[VirtualKeyboardBuilder] ConfigUIView / VirtualKeyboardView が見つかりません。");
                     return;
                 }
 
-                var existing = root.transform.Find(KeyboardName);
+                var inputField = new SerializedObject(configView)
+                    .FindProperty("apiEndPointUrl").objectReferenceValue as TMP_InputField;
+                if (inputField == null)
+                {
+                    Debug.LogError("[VirtualKeyboardBuilder] ConfigUIView.apiEndPointUrl が未設定です。");
+                    return;
+                }
+
+                var existing = root.GetComponentInChildren<VirtualKeyboardPanelView>(true);
                 if (existing != null) Object.DestroyImmediate(existing.gameObject);
 
                 WarnOnMissingGlyphs(font);
@@ -151,7 +161,6 @@ namespace YummyVerse.Editor
                 });
                 keyboard.SetActive(false);
 
-                var view = root.transform.Find("View").GetComponent<VirtualKeyboardView>();
                 Apply(view, so =>
                 {
                     so.FindProperty("keyboard").objectReferenceValue = panel;
@@ -184,7 +193,7 @@ namespace YummyVerse.Editor
             t.localRotation = Quaternion.Euler(LocalEulerAngles);
             t.localScale = Vector3.one;
 
-            var canvasRoot = (RectTransform)keyboard.transform.Find("CanvasRoot");
+            var canvasRoot = (RectTransform)keyboard.GetComponentInChildren<Canvas>(true).transform;
             canvasRoot.sizeDelta = CanvasSize;
 
             // UIBackplate の大きさは CanvasRoot の HorizontalLayoutGroup が決める。
@@ -197,8 +206,8 @@ namespace YummyVerse.Editor
             canvasLayout.childForceExpandWidth = true;
             canvasLayout.childForceExpandHeight = true;
 
-            var backplate = (RectTransform)canvasRoot.Find("UIBackplate");
-            var layout = backplate.GetComponent<VerticalLayoutGroup>();
+            var layout = canvasRoot.GetComponentInChildren<VerticalLayoutGroup>(true);
+            var backplate = (RectTransform)layout.transform;
             layout.padding = new RectOffset(
                 BackplatePadding, BackplatePadding, BackplatePadding, BackplatePadding);
             layout.spacing = RowSpacing;
@@ -207,9 +216,11 @@ namespace YummyVerse.Editor
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = true;
 
-            // GradientEffect はレイアウトの1行として数えられてしまうので、行の外に出す。
-            var gradient = backplate.Find("GradientEffect");
-            if (gradient != null) gradient.GetComponent<LayoutElement>().ignoreLayout = true;
+            // 土台に元から入っている飾り (GradientEffect) を行として数えさせない。
+            foreach (Transform child in backplate)
+            {
+                if (child.TryGetComponent<LayoutElement>(out var element)) element.ignoreLayout = true;
+            }
 
             shiftGraphic = null;
             for (var r = 0; r < Rows.Length; r++)
@@ -259,12 +270,14 @@ namespace YummyVerse.Editor
             go.AddComponent<RoundedBoxUIProperties>().borderRadius =
                 new Vector4(KeyBorderRadius, KeyBorderRadius, KeyBorderRadius, KeyBorderRadius);
 
-            var button = go.AddComponent<Button>();
-            button.transition = Selectable.Transition.ColorTint;
-            button.targetGraphic = image;
+            // Button ではなく Selectable。入力は VirtualKeyboardKeyView が pointer down で
+            // 受けるので onClick は使わず、ここは押下時の色替えのためだけに置く。
+            var selectable = go.AddComponent<Selectable>();
+            selectable.transition = Selectable.Transition.ColorTint;
+            selectable.targetGraphic = image;
             // ColorTint は Image の色に乗算されるので、normal は白のままにしてテーマ色を殺さない。
             // selected を normal と同じにしておかないと、押したキーが選択色で残る。
-            button.colors = new ColorBlock
+            selectable.colors = new ColorBlock
             {
                 normalColor = Color.white,
                 highlightedColor = new Color(0.88f, 0.88f, 0.88f, 1f),
@@ -298,7 +311,7 @@ namespace YummyVerse.Editor
                 so.FindProperty("character").stringValue = key.Character;
                 so.FindProperty("shiftedCharacter").stringValue = key.Shifted;
                 so.FindProperty("label").objectReferenceValue = label;
-                so.FindProperty("button").objectReferenceValue = button;
+                so.FindProperty("selectable").objectReferenceValue = selectable;
             });
 
             return image;
@@ -332,8 +345,8 @@ namespace YummyVerse.Editor
         }
 
         /// <summary>
-        /// 記号をそのまま GameObject 名に使うと、'/' が Transform.Find のパス区切りと
-        /// 衝突して二度と引けなくなる。英数字以外は名前に置き換える。
+        /// 記号をそのまま GameObject 名に使うと、'/' がヒエラルキーのパス区切りと衝突して
+        /// 名前で辿れないノードになる。英数字以外は綴りに置き換える。
         /// </summary>
         private static readonly Dictionary<char, string> SymbolNames = new()
         {
