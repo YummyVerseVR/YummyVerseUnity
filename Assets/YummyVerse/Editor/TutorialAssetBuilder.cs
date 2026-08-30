@@ -321,6 +321,15 @@ namespace YummyVerse.Editor
             SetField(config, "foodPlacementRequiredMessage",
                 Str(table, "S0.FoodPlacementRequired",
                     "食べ物の表示位置を設定してください。\n設定画面はAとXの同時押しで表示されます。"));
+
+            // S1 の直後、S2「ようこそ」の手前に挟まる咀嚼計の較正案内。
+            SetField(config, "chewingCalibrationHoldMessage",
+                Str(table, "S1.ChewingCalibrationHold",
+                    "咀嚼計のキャリブレーションを行います。\n口を動かさないでください。"));
+            SetField(config, "chewingCalibrationChewMessage",
+                Str(table, "S1.ChewingCalibrationChew", "もぐもぐしてください。"));
+            SetField(config, "chewingCalibrationChewPromptDelaySeconds", 5f);
+
             SetField(config, "idleTimeoutSeconds", 90f);
         }
 

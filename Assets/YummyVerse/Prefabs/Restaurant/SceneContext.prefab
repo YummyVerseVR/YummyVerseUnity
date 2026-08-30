@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5111403448032081262}
   - component: {fileID: 870514901225019024}
   - component: {fileID: 6758790842088755543}
+  - component: {fileID: 1284730955603471829}
   m_Layer: 0
   m_Name: SceneContext
   m_TagString: Untagged
@@ -53,6 +54,7 @@ MonoBehaviour:
   - {fileID: 5111403448032081262}
   - {fileID: 870514901225019024}
   - {fileID: 6758790842088755543}
+  - {fileID: 1284730955603471829}
   _installerPrefabs: []
   _findSiblingMonoInstallers: 0
   _autoRun: 1
@@ -108,3 +110,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0a10e0aba70e4ea28e5b966d76f0ef2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.DI.SharedViewModelInstaller
+--- !u!114 &1284730955603471829
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5656373491961969622}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53654fff9a1e4748a1088233387429b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.DI.ChewingSensorInstaller
+  chewingSensorConfig: {fileID: 11400000, guid: 5c9e2a71f38d4c8bb0714e63a25d9f02, type: 2}

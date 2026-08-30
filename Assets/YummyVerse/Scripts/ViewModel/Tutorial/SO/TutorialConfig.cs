@@ -25,6 +25,16 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO
                  "設定画面で位置が決まるまでセッションを開始させない。")]
         [SerializeField] private LocalizedString foodPlacementRequiredMessage;
 
+        [Header("咀嚼計のキャリブレーション (スタート直後、S2 の手前)")]
+        [Tooltip("CAL_START を送ってから CAL_ACCEPTED 待ちの間に出す案内。")]
+        [SerializeField] private LocalizedString chewingCalibrationHoldMessage;
+
+        [Tooltip("CAL_ACCEPTED 受信後、下の秒数だけ待ってから出す案内。")]
+        [SerializeField] private LocalizedString chewingCalibrationChewMessage;
+
+        [Tooltip("CAL_ACCEPTED から「もぐもぐしてください」へ切り替えるまでの待ち時間。")]
+        [SerializeField, Min(0f)] private float chewingCalibrationChewPromptDelaySeconds = 5f;
+
         [Header("無操作の監視")]
         [Tooltip("この秒数だけ何も起きなければ UserAbsent としてセッションを中断する")]
         [SerializeField, Min(1f)] private float idleTimeoutSeconds = 90f;
@@ -34,6 +44,9 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO
         public LocalizedString AttractMessage => attractMessage;
         public AudioClip AttractVoiceClip => attractVoiceClip;
         public LocalizedString FoodPlacementRequiredMessage => foodPlacementRequiredMessage;
+        public LocalizedString ChewingCalibrationHoldMessage => chewingCalibrationHoldMessage;
+        public LocalizedString ChewingCalibrationChewMessage => chewingCalibrationChewMessage;
+        public float ChewingCalibrationChewPromptDelaySeconds => chewingCalibrationChewPromptDelaySeconds;
         public float IdleTimeoutSeconds => idleTimeoutSeconds;
     }
 }

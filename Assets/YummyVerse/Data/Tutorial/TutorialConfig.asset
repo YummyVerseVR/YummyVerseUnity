@@ -33,6 +33,25 @@ MonoBehaviour:
     m_FallbackState: 0
     m_WaitForCompletion: 0
     m_LocalVariables: []
+  chewingCalibrationHoldMessage:
+    m_TableReference:
+      m_TableCollectionName: TutorialStrings
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: S1.ChewingCalibrationHold
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  chewingCalibrationChewMessage:
+    m_TableReference:
+      m_TableCollectionName: TutorialStrings
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: S1.ChewingCalibrationChew
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  chewingCalibrationChewPromptDelaySeconds: 5
   idleTimeoutSeconds: 90
   references:
     version: 2

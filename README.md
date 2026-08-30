@@ -44,6 +44,31 @@ adb shell setprop debug.oculus.experimentalEnabled 1
 設定後、QRコードを見つめると、そのGUIDに対応する食べ物が保存済みの位置へ表示されます。
 QRコードは食べ物の選択にだけ使用し、表示位置と回転には使用しません。
 
+## 咀嚼計(シリアル接続)
+開口・閉口を検知するハードウェア「咀嚼計」を USB シリアルで接続すると、噛むたびに咀嚼音が鳴ります。
+通信仕様は [`YummyVerse_Serial_Protocol_v1.0.md`](./YummyVerse_Serial_Protocol_v1.0.md) (115200 8N1 / LF終端) に準拠します。
+
+- COMポート番号の設定は不要です。アプリはアクセスできるポートへ順に `HELLO,YUMMYVERSE,1` を送り、
+  `READY,YUMMYVERSE,1,CHEWING_SENSOR` を返したポートを咀嚼計として採用します。
+- 抜き差ししても自動で再探索します。咀嚼計が無くても他の機能はそのまま動作します。
+- スタートボタンを押した直後に、来場者ごとのキャリブレーションが入ります。
+  「口を動かさないでください」→ (受理から5秒後)「もぐもぐしてください」→ 完了で「YummyVerse へようこそ」へ進みます。
+  咀嚼計が繋がっていない・失敗した場合はキャリブレーションを飛ばして先へ進みます。
+- 咀嚼音は `MOUTH,OPEN` / `MOUTH,CLOSED` のどちらでも鳴ります。再生中に次の信号を受けたら頭から鳴らし直します。
+
+> [!NOTE]
+> シリアル通信は Windows / macOS / Linux のみ対応です。Quest 単体実行(Android)では咀嚼計なしとして動作します。
+
+### 設定
+`Assets/YummyVerse/Data/ChewingSensor/ChewingSensorConfig.asset` で調整します。
+
+- `Chew Sound` … 鳴らす咀嚼音。**未設定だと音が鳴りません。**
+- `Port Probe Timeout Seconds` / `Hello Retry Interval Seconds` … ポート探索の粘り強さ。
+- `Calibration Completion Timeout Seconds` … `CAL_DONE` を待つ上限。センサー側の最大処理時間に合わせてください。
+
+案内の文言と「もぐもぐしてください」への切り替え秒数は
+`Assets/YummyVerse/Data/Tutorial/TutorialConfig.asset` にあります。
+
 ## 食べ物を破壊する
 右手コントローラーの `B` ボタンを押すことで、現在シーンに存在する食べ物を破壊することができます。
 
@@ -103,6 +128,6 @@ QRコードは食べ物の選択にだけ使用し、表示位置と回転には
   - `【運営向け】管理画面` の後半のStandaloneModeの説明を読んでください。
 
 ---
-最終更新 : 2026/8/21
+最終更新 : 2026/8/30
 
 更新者 : Inoyu
