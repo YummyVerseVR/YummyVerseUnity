@@ -68,9 +68,8 @@ namespace YummyVerse.Scripts.Presentation
                     _settings.HapticAmplitude,
                     _settings.HapticSeconds);
 
-                // すくえた1回だけ、食べ物の表面から手元方向へ食べかすを飛ばす。
-                var burst = ScoopCrumbBurst.Resolve(contactPoint, probe.Position, Vector3.up);
-                _crumbEffect?.Play(burst.Position, burst.Direction);
+                // すくえた1回だけ、手が触れた食べ物の表面から食べかすを弾けさせる。
+                _crumbEffect?.Play(contactPoint);
             }
         }
     }

@@ -8,8 +8,9 @@ namespace YummyVerse.Scripts.Presentation
     /// </summary>
     public interface IScoopCrumbEffect
     {
-        /// <param name="position">噴き出す位置 (world)</param>
-        /// <param name="direction">飛び散る中心方向 (world)</param>
-        void Play(Vector3 position, Vector3 direction);
+        /// <param name="position">
+        /// インタラクションが起きた位置 (world)。ここから上へ弾ける。
+        /// </param>
+        void Play(Vector3 position);
     }
 }

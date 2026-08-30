@@ -12,6 +12,7 @@ namespace YummyVerse.Scripts.Presentation
     ///   Inspector で Material を割り当てればそれを優先する。
     /// - simulationSpace は World。食べ物の縮小や皿の追従に粒が引きずられないようにするため、
     ///   食べ物の階層ではなく独立した GameObject に置く。
+    /// - Cone は常に真上を向けたまま動かさない。すくった位置から上へ弾け、重力で落ちる。
     /// - rate 0 の loop で再生し続け、Emit だけで噴き出す。Play() の呼び直しでは
     ///   再生中のバーストが取りこぼされるため、この形にしている。
     /// </summary>
@@ -40,14 +41,11 @@ namespace YummyVerse.Scripts.Presentation
             _particles = Build();
         }
 
-        public void Play(Vector3 position, Vector3 direction)
+        public void Play(Vector3 position)
         {
             if (_disposed || _particles == null) return;
 
-            var rotation = direction.sqrMagnitude > 1e-6f
-                ? Quaternion.LookRotation(direction)
-                : Quaternion.identity;
-            _particles.transform.SetPositionAndRotation(position, rotation);
+            _particles.transform.position = position;
 
             if (!_particles.isPlaying) _particles.Play();
             _particles.Emit(UnityEngine.Random.Range(_settings.MinCount, _settings.MaxCount + 1));
@@ -68,6 +66,9 @@ namespace YummyVerse.Scripts.Presentation
         private ParticleSystem Build()
         {
             var host = new GameObject("ScoopCrumbEffect");
+
+            // Cone は transform の +Z へ広がる。上向きに固定し、位置だけを毎回動かす。
+            host.transform.rotation = Quaternion.LookRotation(Vector3.up);
             var particles = host.AddComponent<ParticleSystem>();
             particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
@@ -93,7 +94,6 @@ namespace YummyVerse.Scripts.Presentation
             emission.rateOverDistance = 0f;
             emission.SetBursts(Array.Empty<ParticleSystem.Burst>());
 
-            // Cone は transform の +Z へ向かって広がる。Play() で向きを合わせる。
             var shape = particles.shape;
             shape.enabled = true;
             shape.shapeType = ParticleSystemShapeType.Cone;

@@ -4,32 +4,32 @@ using UnityEngine;
 namespace YummyVerse.Scripts.Model.Struct
 {
     /// <summary>
-    /// すくったときに飛び散る食べかす (Particle) の見た目のチューニング値。
+    /// すくった位置から上へ弾ける食べかす (Particle) の見た目のチューニング値。
     /// ScoopDetectionSettings と同じく View に SerializeField で持たせて Inspector から調整する。
     ///
     /// 既定値は食べ物の既定スケール (FoodScaleManager の 0.2 = 実物大相当) を前提にした、
-    /// 数 mm 程度のかけらが手元から手前上方へ散る大きさになっている。
+    /// 数 mm 程度のかけらが接触点から数 cm 跳ね上がって落ちる大きさになっている。
     /// </summary>
     [Serializable]
     public class ScoopCrumbEffectSettings
     {
         [Tooltip("1回のすくいで出す食べかすの最小個数")]
-        [SerializeField, Min(1)] private int minCount = 8;
+        [SerializeField, Min(1)] private int minCount = 10;
 
         [Tooltip("1回のすくいで出す食べかすの最大個数")]
-        [SerializeField, Min(1)] private int maxCount = 16;
+        [SerializeField, Min(1)] private int maxCount = 18;
 
         [Tooltip("食べかす1粒が消えるまでの最短時間 (秒)")]
-        [SerializeField, Min(0.05f)] private float minLifetimeSeconds = 0.35f;
+        [SerializeField, Min(0.05f)] private float minLifetimeSeconds = 0.4f;
 
         [Tooltip("食べかす1粒が消えるまでの最長時間 (秒)")]
-        [SerializeField, Min(0.05f)] private float maxLifetimeSeconds = 0.9f;
+        [SerializeField, Min(0.05f)] private float maxLifetimeSeconds = 0.7f;
 
-        [Tooltip("飛び出す速さの下限 (m/s)")]
-        [SerializeField, Min(0f)] private float minSpeed = 0.25f;
+        [Tooltip("弾け上がる速さの下限 (m/s)。既定の重力なら 0.5 でおよそ 2cm 跳ね上がる")]
+        [SerializeField, Min(0f)] private float minSpeed = 0.5f;
 
-        [Tooltip("飛び出す速さの上限 (m/s)")]
-        [SerializeField, Min(0f)] private float maxSpeed = 0.8f;
+        [Tooltip("弾け上がる速さの上限 (m/s)。既定の重力なら 1.1 でおよそ 12cm 跳ね上がる")]
+        [SerializeField, Min(0f)] private float maxSpeed = 1.1f;
 
         [Tooltip("食べかす1粒の最小の大きさ (m)")]
         [SerializeField, Min(0.0005f)] private float minSize = 0.004f;
@@ -37,13 +37,13 @@ namespace YummyVerse.Scripts.Model.Struct
         [Tooltip("食べかす1粒の最大の大きさ (m)")]
         [SerializeField, Min(0.0005f)] private float maxSize = 0.012f;
 
-        [Tooltip("重力の効き方。1 で通常の重力どおりに落ちる")]
-        [SerializeField, Min(0f)] private float gravityModifier = 0.8f;
+        [Tooltip("重力の効き方。1 で通常の重力どおりに落ちる。小さいほどゆっくり舞い落ちる")]
+        [SerializeField, Min(0f)] private float gravityModifier = 0.5f;
 
-        [Tooltip("飛び散る向きの広がり (度)。0 で一直線、大きいほど放射状")]
-        [SerializeField, Range(0f, 90f)] private float spreadAngleDegrees = 35f;
+        [Tooltip("真上からの広がり (度)。0 でまっすぐ上、大きいほど横へ散りながら弾ける")]
+        [SerializeField, Range(0f, 90f)] private float spreadAngleDegrees = 45f;
 
-        [Tooltip("湧き出す位置のばらつき (m)。接触点を中心とした半径")]
+        [Tooltip("湧き出す位置のばらつき (m)。手が触れた点を中心とした半径")]
         [SerializeField, Min(0f)] private float spawnRadius = 0.012f;
 
         [Tooltip("食べかすの色 (濃い側)")]
