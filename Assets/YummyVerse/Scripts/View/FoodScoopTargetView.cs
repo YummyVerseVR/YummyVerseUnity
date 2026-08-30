@@ -11,6 +11,7 @@ namespace YummyVerse.Scripts.Presentation
         private IFoodEatingService _eatingService;
         private IScoopProbeProvider _probeProvider;
         private IScoopHaptics _haptics;
+        private IScoopCrumbEffect _crumbEffect;
         private ScoopDetectionSettings _settings;
         private ScoopContactDetector _detector;
         private BoxCollider _collider;
@@ -19,11 +20,13 @@ namespace YummyVerse.Scripts.Presentation
             IFoodEatingService eatingService,
             IScoopProbeProvider probeProvider,
             IScoopHaptics haptics,
+            IScoopCrumbEffect crumbEffect,
             ScoopDetectionSettings settings)
         {
             _eatingService = eatingService;
             _probeProvider = probeProvider;
             _haptics = haptics;
+            _crumbEffect = crumbEffect;
             _settings = settings;
             _detector = new ScoopContactDetector(settings.ReleaseMargin, settings.CooldownSeconds);
 
@@ -54,10 +57,8 @@ namespace YummyVerse.Scripts.Presentation
             for (var i = 0; i < probes.Count; i++)
             {
                 var probe = probes[i];
-                var surfaceDistance = Vector3.Distance(
-                                           _collider.ClosestPoint(probe.Position),
-                                           probe.Position)
-                                       - probe.Radius;
+                var contactPoint = _collider.ClosestPoint(probe.Position);
+                var surfaceDistance = Vector3.Distance(contactPoint, probe.Position) - probe.Radius;
 
                 if (!_detector.TryRegisterContact(probe.Hand, surfaceDistance, Time.unscaledTime)) continue;
                 if (!_eatingService.TryScoop()) continue;
@@ -66,6 +67,10 @@ namespace YummyVerse.Scripts.Presentation
                     probe.Hand,
                     _settings.HapticAmplitude,
                     _settings.HapticSeconds);
+
+                // すくえた1回だけ、食べ物の表面から手元方向へ食べかすを飛ばす。
+                var burst = ScoopCrumbBurst.Resolve(contactPoint, probe.Position, Vector3.up);
+                _crumbEffect?.Play(burst.Position, burst.Direction);
             }
         }
     }

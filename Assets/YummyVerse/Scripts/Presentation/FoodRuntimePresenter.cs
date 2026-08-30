@@ -23,6 +23,7 @@ namespace YummyVerse.Scripts.Presentation
         private readonly IScoopProbeProvider _scoopProbeProvider;
         private readonly IScoopHaptics _scoopHaptics;
         private ScoopDetectionSettings _scoopSettings;
+        private ScoopCrumbEffectController _crumbEffect;
 
         private CancellationTokenSource _displayCancellation;
         private Transform _foodAnchor;
@@ -44,7 +45,7 @@ namespace YummyVerse.Scripts.Presentation
             _scoopHaptics = scoopHaptics;
         }
 
-        public void Initialize(ScoopDetectionSettings settings)
+        public void Initialize(ScoopDetectionSettings settings, ScoopCrumbEffectSettings crumbEffectSettings)
         {
             if (_initialized) return;
 
@@ -53,6 +54,9 @@ namespace YummyVerse.Scripts.Presentation
             _foodAnchor.gameObject.SetActive(false);
             _foodRoot = CreateFoodRoot();
             _scoopSettings = settings ?? new ScoopDetectionSettings();
+
+            // 食べ物の縮小・破棄に粒が巻き込まれないよう、食べかすは食べ物の階層の外で持つ。
+            _crumbEffect = new ScoopCrumbEffectController(crumbEffectSettings);
         }
 
         public async UniTask DisplayAsync(
@@ -169,6 +173,8 @@ namespace YummyVerse.Scripts.Presentation
             _disposed = true;
             CancelDisplay();
             _eatingService.AbandonFood();
+            _crumbEffect?.Dispose();
+            _crumbEffect = null;
             DestroyObject(_foodRoot);
             DestroyObject(_foodAnchor != null ? _foodAnchor.gameObject : null);
             _foodRoot = null;
@@ -184,6 +190,7 @@ namespace YummyVerse.Scripts.Presentation
                     _eatingService,
                     _scoopProbeProvider,
                     _scoopHaptics,
+                    _crumbEffect,
                     _scoopSettings))
             {
                 DestroyObject(target);

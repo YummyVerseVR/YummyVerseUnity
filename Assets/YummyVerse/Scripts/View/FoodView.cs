@@ -18,6 +18,7 @@ namespace YummyVerse.Scripts.View
     public sealed class FoodView : MonoBehaviour
     {
         [SerializeField] private ScoopDetectionSettings _scoopSettings = new();
+        [SerializeField] private ScoopCrumbEffectSettings _crumbEffectSettings = new();
 
         private IFoodViewModel _foodViewModel;
         private IFoodEatingService _foodEatingService;
@@ -36,7 +37,7 @@ namespace YummyVerse.Scripts.View
 
         private void Start()
         {
-            _presenter.Initialize(_scoopSettings);
+            _presenter.Initialize(_scoopSettings, _crumbEffectSettings);
             _foodViewModel.foodGltf
                 .SubscribeAwait(async (gltfImport, cancellationToken) =>
                 {
