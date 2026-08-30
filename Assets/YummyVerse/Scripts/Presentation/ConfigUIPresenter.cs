@@ -111,7 +111,7 @@ namespace YummyVerse.Scripts.Presentation
             _apiDeviceToken = apiDeviceToken;
             if (_apiDeviceToken != null)
             {
-                _apiDeviceToken.contentType = TMP_InputField.ContentType.Password;
+                _apiDeviceToken.contentType = TMP_InputField.ContentType.Standard;
             }
             _testConnectionButton = testConnectionButton;
             _canvasGroup = canvasGroup;

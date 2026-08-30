@@ -10,7 +10,7 @@ namespace YummyVerse.Scripts.View.UI
     public sealed class ConfigUIView : MonoBehaviour
     {
         [SerializeField] private TMP_InputField apiEndPointUrl;
-        [Tooltip("YummyService v2 Unity Device token。Player に埋め込まず、実行時に入力する。")]
+        [Tooltip("YummyService v2 Unity Device token。入力値は persistentDataPath にキャッシュされる。")]
         [SerializeField] private TMP_InputField apiDeviceToken;
         [SerializeField] private Button testConnectionButton;
         [SerializeField] private CanvasGroup canvasGroup;

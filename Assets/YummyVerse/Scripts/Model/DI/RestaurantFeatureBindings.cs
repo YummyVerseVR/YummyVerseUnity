@@ -14,6 +14,9 @@ namespace YummyVerse.Scripts.Model.DI
     {
         public static void Install(DiContainer container)
         {
+            container.Bind<IYummyServiceV2ConfigStore>()
+                .To<PersistentYummyServiceV2ConfigStore>()
+                .AsSingle();
             container.BindInterfacesAndSelfTo<EndPointManager>().AsSingle();
             container.BindInterfacesAndSelfTo<FoodContext>().AsSingle();
             container.BindInterfacesAndSelfTo<QRDetectionService>().AsSingle();

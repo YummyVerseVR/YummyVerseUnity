@@ -5,13 +5,21 @@ namespace YummyVerse.Scripts.Model
 {
     public class EndPointManager : IEndPointManager, IYummyServiceV2Credentials
     {
+        private readonly IYummyServiceV2ConfigStore _configStore;
+        private bool _isRestoringCache;
+
         // YummyService v2 の production endpoint は未公開。旧 server を既定値として保持しない。
         public string baseEndPointUrl { get; private set; } = string.Empty;
 
-        // Device token is intentionally process-local.  It is supplied at runtime
-        // by the configuration UI and is never compiled into a player or persisted
-        // in a serialized asset/PlayerPrefs value.
+        // The token has no build-time default. It is supplied at runtime and cached
+        // alongside the endpoint in Application.persistentDataPath.
         public string DeviceAccessToken { get; private set; } = string.Empty;
+
+        public EndPointManager(IYummyServiceV2ConfigStore configStore = null)
+        {
+            _configStore = configStore;
+            RestoreCache();
+        }
 
         public bool UpdateEndPointUrl(string url)
         {
@@ -30,6 +38,7 @@ namespace YummyVerse.Scripts.Model
             if (!isHttps && !isLoopbackHttp) return false;
 
             baseEndPointUrl = uriResult.ToString();
+            SaveCache();
             return true;
         }
 
@@ -46,12 +55,40 @@ namespace YummyVerse.Scripts.Model
             }
 
             DeviceAccessToken = token;
+            SaveCache();
             return true;
         }
 
         public void ClearDeviceAccessToken()
         {
             DeviceAccessToken = string.Empty;
+            SaveCache();
+        }
+
+        private void RestoreCache()
+        {
+            if (_configStore == null
+                || !_configStore.TryLoad(out var endpointUrl, out var deviceAccessToken)) return;
+
+            _isRestoringCache = true;
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(endpointUrl)) UpdateEndPointUrl(endpointUrl);
+                if (!string.IsNullOrWhiteSpace(deviceAccessToken))
+                {
+                    UpdateDeviceAccessToken(deviceAccessToken);
+                }
+            }
+            finally
+            {
+                _isRestoringCache = false;
+            }
+        }
+
+        private void SaveCache()
+        {
+            if (_isRestoringCache) return;
+            _configStore?.Save(baseEndPointUrl, DeviceAccessToken);
         }
     }
 }

@@ -5,7 +5,7 @@ namespace YummyVerse.Scripts.Model.Interface
     ///
     /// A device token is deliberately kept outside <see cref="IEndPointManager"/>
     /// so existing endpoint consumers do not accidentally start treating a secret
-    /// as part of a URL.  Implementations must not provide a build-time default.
+    /// as part of a URL. Implementations must not provide a build-time default.
     /// </summary>
     public interface IYummyServiceV2Credentials
     {
@@ -18,7 +18,7 @@ namespace YummyVerse.Scripts.Model.Interface
         /// </summary>
         bool UpdateDeviceAccessToken(string token);
 
-        /// <summary>Removes the token from the current process.</summary>
+        /// <summary>Removes the token from the current process and persistent cache.</summary>
         void ClearDeviceAccessToken();
     }
 }
