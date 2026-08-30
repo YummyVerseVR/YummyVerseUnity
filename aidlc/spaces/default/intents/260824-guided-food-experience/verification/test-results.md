@@ -42,7 +42,7 @@
 - Empty menu identity は load を開始しない
 - QR detection は food load を開始しない
 - Endpoint default は空、HTTP endpoint は拒否、HTTPS だけを設定値として受理
-- v2 transport 未公開中の connection test は request を送らず `ServiceUnavailable`
+- v2 transport 未公開だった 2026-08-24 時点の connection test は request を送らず `ServiceUnavailable`。2026-08-30 の `ru322/main` route 公開後も、local Unity adapter は未移行である
 - Runtime scan で `FoodDownloader`、`TestFoodDBHandler` binding、`NotifyFoodGuid`、QR→DB request、旧 server host、`UnityWebRequest` を READY Unit 対象から検出しなかった
 - `/v1` 文字列は local negative rejection fixture/guard に限定された。`YummyVerse.FoodPlacement.v1` は API route ではなく既存 PlayerPrefs schema key である
 - `OnChangeGUID` の残存購読は config diagnostics だけで、food load には接続されていない
@@ -64,6 +64,13 @@
 - AABB、scoop、scale、crumb、disappear、DishCleared event wiring
 - Network request trace と YummyService v2 API integration
 - Performance、10 session endurance、selection-to-visible latency
+
+## 2026-08-30 API Contract Refresh
+
+- External source snapshot: YummyService `ru322/main@97c9ed75980ec398fe75159bd4e011b489112433`。
+- OpenAPI: 104 paths、124 schemas。Unity Device の history/status/artifact/payload/ACK route と `deviceBearerAuth` を確認した。
+- Unity-specific schema summary and remaining gaps: `knowledge/aidlc-shared/yummy-service-v2-unity-api.md`。
+- この refresh は external contract の読取り記録であり、Unity runtime の API migration、deployment host/TLS、実機通信を実行した結果ではない。
 
 Active `Restaurant.unity` scene は検証終了時も dirty であり、保存された `YummyTutorialUI` layout override は本 Unit の scene wiring 検証対象から除外した。
 

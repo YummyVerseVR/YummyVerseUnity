@@ -7,21 +7,23 @@ using System.Text;
 namespace YummyVerse.Scripts.Model.YummyServiceV2
 {
     /// <summary>
-    /// Constants for the reviewed YummyService v2 contract snapshot.
+    /// Constants for the reviewed YummyService v2 contract snapshot (ru322/main).
     ///
-    /// This class deliberately contains no endpoint or authentication information. The
-    /// v2 OpenAPI snapshot has no callable paths yet, so those concerns belong to a later
-    /// transport contract and must not be inferred here.
+    /// The snapshot this pins supersedes the earlier main@546b455 snapshot, whose
+    /// OpenAPI had no callable paths. Endpoint construction lives in
+    /// <see cref="YummyServiceV2Url"/>; authentication and token handling stay out of
+    /// this class so a token can never be pinned as a contract constant.
     /// </summary>
     public static class YummyServiceV2Contract
     {
         public const string Repository = "YummyVerseVR/YummyService";
-        public const string RepositoryCommit = "546b455fedd205fb686ca7b93d6af596bced7879";
+        public const string RepositoryBranch = "ru322/main";
+        public const string RepositoryCommit = "97c9ed75980ec398fe75159bd4e011b489112433";
         public const string OpenApiPath = "contracts/v2/openapi.yaml";
         public const string OpenApiVersion = "2.0.0-draft";
-        public const string OpenApiSha256 = "73a21a380d23a136f92ddea7bc45cfcc9556aac040f5aa9a9e1c58d34ac0f5f0";
+        public const string OpenApiSha256 = "18462aa900a6b031438635fd46ddc997746c9782d6476247b1cb82c011409616";
         public const string ReadmePath = "contracts/v2/README.md";
-        public const string ReadmeSha256 = "e3f6635bf215b2e96b6005d8946fe5c6b0549f8db995efa11b2ac9139d91e46a";
+        public const string ReadmeSha256 = "0a0ec28cae5a1607df8ff4b6dab379324d5d1b18255ed52b6feb3c79c94f199d";
     }
 
     /// <summary>

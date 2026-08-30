@@ -16,6 +16,7 @@ namespace YummyVerse.Scripts.ViewModel
         
 
         public ReactiveProperty<GltfImport> foodGltf { get; } = new(new());
+        public ReactiveProperty<AudioClip> chewSound { get; } = new();
         public ReactiveProperty<Transform> foodTransform { get; } = new();
         
         public ReactiveProperty<float> foodScale { get; } = new();
@@ -36,6 +37,13 @@ namespace YummyVerse.Scripts.ViewModel
             _foodContext.downloadResult.Where(v => v.success).Subscribe(v =>
             {
                 foodGltf.Value = v.Food.GltfImport;
+            }).AddTo(_disposables);
+
+            // 咀嚼音は食品ごとに差し替える。失敗時とセッションリセット時は null に戻し、
+            // 次の来場者へ前の食品の音を持ち越さない。
+            _foodContext.downloadResult.Subscribe(v =>
+            {
+                chewSound.Value = v.success ? v.Food.ChewSound : null;
             }).AddTo(_disposables);
             
             // 保存済みSpatial Anchorに対する食べ物表示位置が更新されたらtransformを更新
@@ -63,6 +71,7 @@ namespace YummyVerse.Scripts.ViewModel
         {
             _disposables?.Dispose();
             foodGltf?.Dispose();
+            chewSound?.Dispose();
             foodTransform?.Dispose();
             foodScale?.Dispose();
         }

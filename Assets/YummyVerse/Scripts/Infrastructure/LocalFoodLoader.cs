@@ -73,7 +73,10 @@ namespace YummyVerse.Scripts.Infrastructure
                 result.StatusCode = loaded ? HttpStatusCode.OK : HttpStatusCode.InternalServerError;
                 if (loaded)
                 {
-                    result.Food = new Food { GltfImport = gltfImport };
+                    // 咀嚼音はモデルと同じフォルダの audio ファイル。無ければ null のままで、
+                    // 既定の咀嚼音が使われる。
+                    var chewSound = await ChewSoundLoader.LoadFromFileAsync(item.AudioLocation, ct);
+                    result.Food = new Food { GltfImport = gltfImport, ChewSound = chewSound };
                 }
             }
             catch (IOException)

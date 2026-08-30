@@ -200,77 +200,81 @@
 ### YummyService v2 API Integration
 
 - **FR25: YummyService v2 契約だけを新しい Network mode の API 境界として使用すること** (`MUST`)
-  - Target contract は YummyService `contracts/v2/openapi.yaml` の `2.0.0-draft` と `contracts/v2/README.md` とする。
+  - Target contract は YummyService `ru322/main@97c9ed75980ec398fe75159bd4e011b489112433` の `contracts/v2/openapi.yaml`（`2.0.0-draft`）と `contracts/v2/README.md` とする。採用 snapshot の OpenAPI は104 paths、124 schemasである。
   - **YummyVerseUnity における v1 API は廃止済みであり、今後一切使用しない。** Production、development、test、demo、障害時 fallback、migration compatibility、Standalone の代替を含む全 runtime から `/v1/...` への outbound request を禁止する。
   - 旧 Yummy Control Server の `/{guid}/model` と QR GUID download trigger も v2 integration の fallback として使用しない。
   - v1 client/DTO/configuration/mock を新しい runtime dependency として追加・維持しない。例外は「v1 response/URL を確実に拒否する」negative compatibility fixture だけで、v1 server へ実 request を送らない。
-  - Client は接続先の v2 compatibility/version を検証でき、非互換 server を成功扱いにしない。
-  - v2 endpoint が未定義の間は URL/path を推測して production request を実装しない。
-  - 検証条件: Source/config/build/request trace に runtime v1 route/旧 GUID model route がなく、v1 URL/response fixture と v2 compatibility が確認できない接続先で明示 error になる。全 test 環境でも v1 server への outbound request は0件である。
-  - 出典: 2026-08-24 利用者指定、YummyService v2 OpenAPI/README、`ADR-006`。
+  - Unity の正式な v2 operation は history `GET /v2/devices/unity/orders`、status `GET /v2/devices/unity/orders/{order_id}`、selected artifact download、Hardware Payload、Payload ACK とする。`/v2/menu` は公開 sample menu であり、生成 order の代用にしない。
+  - Client は接続先の v2 compatibility/version を検証でき、非互換 server を成功扱いにしない。現行 contract には deployed server の runtime negotiation がないため、これは未達 gap として扱う。
+  - `servers.url` は placeholder のため、実 deployment host、TLS、Device token が確定するまで本番接続を成功扱いにしない。
+  - 検証条件: Source/config/build/request trace に runtime v1 route、旧 GUID model route、Admin static token がなく、正式な Unity route/auth と snapshot が確認できない接続先で明示 error になる。全 test 環境でも v1 server への outbound request は0件である。
+  - 出典: 2026-08-30 YummyService `ru322/main` OpenAPI/README、`ADR-006`。
 
 - **FR26: v2 の order/stage workflow state を欠落なく解釈すること** (`MUST`)
   - OrderState `DRAFT`, `QUEUED`, `PROCESSING`, `AWAITING_ADMIN_REVIEW`, `COMPLETED`, `REJECTED`, `FAILED`, `CANCELED` を区別する。
-  - StageState `PENDING`, `QUEUED`, `PROCESSING`, `COMPLETED`, `COMPLETED_WITH_WARNING`, `FAILED`, `CANCELED` と5 stage の状態を order state と別に保持する。
+  - Domain mapping は StageState `PENDING`, `QUEUED`, `PROCESSING`, `COMPLETED`, `COMPLETED_WITH_WARNING`, `FAILED`, `CANCELED` と5 stageを order state と別に保持する。ただし現行 Unity Device の `CustomerOrderStatus` projection は `analysis`、GLB、WAV の状態だけを返し、全5 stage、moderation、retrieval、I23D の個別状態は返さない。欠落した state を client が推測してはならず、全 stage 表示は contract gap とする。
   - `AWAITING_ADMIN_REVIEW` を全 branch 停止と表示せず、`IMAGE_TO_3D` が独立して進行し得ることを表現する。
   - `COMPLETED_WITH_WARNING` は許可された Example Retrieval/Zero Shot outcome として扱い、任意 failure を warning success に変換しない。
   - 未知 enum 値を `COMPLETED` または menu-ready に推測変換しない。
-  - 検証条件: 全既知 state と未知 state fixture に対して menu/status UI と selectable 判定が期待どおりである。
-  - 出典: YummyService v2 workflow contract。
+  - 検証条件: domain fixture では全既知 state/未知 stateを確認し、Device fixture では未提供の stage/detail を捏造せず、menu-ready 判定を `COMPLETED` と downloadable artifact に限定する。
+  - 出典: YummyService v2 workflow contract、`CustomerOrderStatus` device projection。
 
 - **FR27: 生成履歴を取得する v2 API capability を要求すること** (`MUST`)
   - Quest/Physical Viewer は customer-visible な generated order/item を列挙できる必要がある。
-  - Response は stable order/item identity、表示 metadata、OrderState、preview/model readiness、cursor pagination、安定した sort/filter semantics を持つ。
+  - `GET /v2/devices/unity/orders` は `DeviceOrderListResponse` を返し、stable `order_id`、`food_name`、OrderState、analysis/GLB/WAV readiness、cursor pagination、安定した sort/filter semantics を持つ。query は `state`、`q`、`food_name`、`limit`（1〜100、default 50）、opaque signed `cursor` である。
+  - 現行 response に preview image reference/metadata はなく、history から preview を提供する要件は未達である。
   - Terminal failure/rejection/cancel と processing/review を Ready item から区別できる。
-  - Contract に history operation が追加されるまで、v1 admin/customer list endpoint を代用しない。
-  - 検証条件: 複数 page、同時追加、重複 page、空履歴、各 terminal/non-terminal state で重複のない履歴を構成できる。
-  - 出典: `FR12`〜`FR15` から導出した必要 capability `API-CAP-01`。現行 v2 OpenAPI に path/response schema は未定義。
+  - `has_more=false` では `next_cursor=null` とし、cursor を decode/編集/再生成したり filter の異なる request へ流用したりしない。
+  - 検証条件: 複数 page、同時追加、重複 page、空履歴、各 terminal/non-terminal state で重複のない履歴を構成でき、preview がないことを GLB/WAV sample で補完しない。
+  - 出典: `FR12`〜`FR15`、`API-CAP-01`、`DeviceOrderListResponse`。
 
 - **FR28: 一つの order と全 stage の状態・選択 revision を取得できること** (`MUST`)
-  - API は order detail/status として OrderState、全5 stage の StageState、warning/review/failure 情報、selected revision pointer を返せる必要がある。
+  - API は `GET /v2/devices/unity/orders/{order_id}` で `CustomerOrderStatus` を返す。OrderState、`analysis`、GLB、WAV の customer-safe projection は利用できるが、全5 stage の StageState、warning/review/failure detail、selected revision pointer は現行 Device response に含まれない。
   - Client は order-level review と Food Analysis approval/status を混同しない。
-  - polling/event の更新順が前後しても、古い response で terminal/newer state を巻き戻さない識別子または version が必要である。
-  - 検証条件: moderation review、Food Analysis review、I23D 独立進行、warning retrieval、terminal outcome を UI/log で区別できる。
-  - 出典: YummyService v2 workflow contract、必要 capability `API-CAP-02`。
+  - response には `updated_at` があるが、order status の ETag、event、明示的な monotonic version は定義されていない。古い response の巻き戻し防止と全 stage/detail の公開は未解決である。
+  - 検証条件: 利用可能な response では terminal/downloadable を巻き戻さず、未提供の review/detail/I23D state を推測しない。全 stage fixture は domain/admin contract 側で確認する。
+  - 出典: YummyService v2 workflow contract、`CustomerOrderStatus`、`API-CAP-02`。
 
 - **FR29: 選択された immutable artifact revision の metadata を取得できること** (`MUST`)
   - Preview 候補の `SOURCE_IMAGE_NORMALIZED`、model の `GLB`、将来利用する場合の `WAV` について、`artifact_id`, `artifact_type`, `revision`, `sha256`, `verified` を取得する。
   - selected/current pointer と immutable revision を分離し、new revision が存在するだけで自動的に current とみなさない。
-  - GLB は `verified=true` かつ正しい `artifact_type` の selected revision だけを model load candidate にする。
+  - Domain/Admin の `ArtifactRevision` は上記 metadata を持つ。Unity Device の `CustomerOutputStatus` は downloadable なときの `artifact_id` だけを返し、`artifact_type`、`revision`、`sha256`、`verified`、`size_bytes` は返さない。selected verified GLB/WAV の download gate は server 側で適用される。
+  - GLB は `COMPLETED` order の `downloadable=true` かつ `artifact_id` がある場合だけ model load candidate にする。metadata 不足を guessed URL で補完しない。
   - customer-visible artifact の範囲は API auth/visibility contract に従い、admin-only artifact を client から取得しない。
-  - 検証条件: wrong type、unverified、missing selection、older/newer unselected revision を拒否できる。
-  - 出典: YummyService v2 `ArtifactRevision`、必要 capability `API-CAP-03`。
+  - 検証条件: wrong type、unverified、missing selection、older/newer unselected revision を server/client boundary で拒否できる。Unity に checksum metadata が公開されるまで FR31 の client-side byte gate は未達とする。
+  - 出典: YummyService v2 `ArtifactRevision`、`CustomerOutputStatus`、`API-CAP-03`。
 
 - **FR30: Preview image と選択 GLB を別 operation/lifecycle で download できること** (`MUST`)
-  - History/menu は customer-visible preview image のみを先行 download し、GLB download を開始しない。
-  - Food selection 後、selected verified GLB revision だけを authorized binary response として取得する。
-  - Download contract は media type、content length/size limit、redirect、range/resume、cache validation の有無を定義する必要がある。
-  - Preview failure は item placeholder/retry に留め、選択 GLB failure は item-level error/retry/menu return とする。
-  - 検証条件: menu open 時の request trace に未選択 GLB がなく、selection 後は一つの selected GLB だけが取得される。
-  - 出典: `FR14`、YummyService v2 ArtifactType、必要 capability `API-CAP-04`/`API-CAP-05`。
+  - 現行 Unity Device API に `SOURCE_IMAGE_NORMALIZED` の preview operation はない。`/v2/menu/{menu_item_id}/glb` と `/wav` は published sample であり、order preview の代用にしない。
+  - Food selection 後は `GET /v2/devices/unity/orders/{order_id}/artifacts/{artifact_id}/download` で selected GLB/WAV を取得する。成功 content type は `model/gltf-binary` または `audio/wav`、`Content-Disposition` に suggested filename がある。
+  - Download contract の size limit、redirect、range/resume、cache validation、retry policy は未定義であり、preview failure の UI policy とともに contract gap とする。
+  - 検証条件: menu open 時の request trace に未選択 GLB/WAV がなく、selection 後は status が返した selected artifact だけを取得する。preview が必要な acceptance は preview operation 公開まで未達とする。
+  - 出典: `FR14`、YummyService v2 `ArtifactType`、`API-CAP-04`/`API-CAP-05`、Unity Device routes。
 
 - **FR31: Artifact の identity と SHA-256 integrity を検証してから利用すること** (`MUST`)
   - Download bytes の SHA-256 を metadata と比較し、一致前に preview decode、glTF load、共有 cache publish を完了扱いにしない。
   - Cache key は少なくとも artifact ID、revision、SHA-256 を含み、固定 filename や order ID だけで immutable revision を上書きしない。
   - Mismatch、途中 download、破損 cache は削除/隔離して再取得可能にし、verified flag だけを client-side byte verification の代替にしない。
-  - 検証条件: byte 改変、truncated response、同一 artifact の revision change、並行 download で誤った model を load しない。
-  - 出典: YummyService v2 immutable artifact/SHA-256 contract、`ADR-007`。
+  - `ArtifactRevision.sha256` は domain/Admin schema に存在するが、Unity Device status/download response に GLB/WAV digest、revision、checksum header は定義されていない。`HardwarePayload.payload_sha256` は payload digest であり、GLB/WAV の代用にしない。
+  - 検証条件: byte 改変、truncated response、同一 artifact の revision change、並行 download で誤った model を load しない。Unity 側の SHA-256 gate は server metadata/header が追加されるまで `NOT-READY` とする。
+  - 出典: YummyService v2 immutable artifact/SHA-256 contract、Unity Device artifact response、`ADR-007`。
 
 - **FR32: Quest と Physical Viewer が同じ認可された v2 catalog を参照すること** (`MUST`)
   - Quest と iPad 等の viewer は同じ order/item/artifact identity と state semantics を使用する。
-  - Client へ admin/worker credential を埋め込まず、customer/device 向け scope、token lifetime、refresh/revocation、history visibility を API contract で定義する。
-  - v2 OpenAPI の `security: []` を production anonymous access の承認と解釈しない。
+  - Unity Device には `deviceBearerAuth` と `device_type=UNITY` の token issue/rotate/revoke contract が定義されている。Client へ admin/worker credential、Mock static token を埋め込まず、token plaintext をログへ出さない。
+  - Customer/Viewer の scope、token lifetime/refresh、同一 catalog visibility は別途確定する。Unity Device route の all-order scope を customer visibility と同一視しない。
   - Viewer が unauthorized/offline の場合は private artifact を表示せず、VR session の進行とは独立した error を示す。
-  - 検証条件: 異なる role/order scope の token で403/visibility isolation が働き、Quest と viewer の同一 item が同じ artifact revision を指す。
-  - 出典: `FR15`、YummyService v2 で deferred の authentication/device token、必要 capability `API-CAP-06`。
+  - 検証条件: Unity token の401/403、revoke、role boundary を確認し、Quest と viewer の同一 item identity/artifact revision 共有は viewer contract 公開後に確認する。
+  - 出典: `FR15`、YummyService v2 `deviceBearerAuth`/device lifecycle、`API-CAP-06`。
 
 - **FR33: v2 ProblemDetails と operation-specific error/retry contract を扱うこと** (`MUST`)
   - `application/problem+json` の `type`, `title`, `status` と任意の `detail`, `instance`, extension fields を解析できる。
+  - 現行 operation の主要 status は、history `400/401/403`、status/download `401/403/404`、payload `202/304/503` と `401/403/404`、ACK `400/401/403/404/409` である。rate limit、timeout/cancellation を含む retryability の全 operation mapping は未確定である。
   - Client は401/403、not found、conflict、rate limit、validation、server/unavailable、timeout/cancellation を同一の generic failure に潰さない。
   - Retryable operation だけを cancellation-aware backoff で再試行し、session reset 後の response を次 session へ反映しない。
   - ProblemDetails の未知 extension field を理由に response 全体を拒否しない。
   - 検証条件: operation ごとの problem fixture、malformed response、timeout、cancel、late response で UI/state/cache が汚染されない。
-  - 出典: YummyService v2 `ProblemDetails`、必要 capability `API-CAP-07`〜`API-CAP-09`。
+  - 出典: YummyService v2 `ProblemDetails`、Unity Device route status、必要 capability `API-CAP-07`〜`API-CAP-09`。
 
 ### Unified Food Selection UI and Standalone Continuity
 
@@ -398,9 +402,9 @@
 - **AC10 v2-only adapter**: Network mode の request trace/source review に `/v1/`、`/{guid}/model`、QR GUID download trigger がなく、v2 compatibility を確認できない server では明示 error になる。
 - **AC11 Workflow mapping**: 全 OrderState/StageState fixture を入力し、review/warning/failure/cancel と I23D 独立進行を誤って Ready/全停止として表示しない。
 - **AC12 Artifact integrity**: `COMPLETED` order の selected verified GLB を download し、SHA-256 一致後だけ glTF load/cache publish する。改変・truncated・wrong type・unselected revision は拒否する。
-- **AC13 API-driven menu**: History response から複数 page の item を重複なく一覧化し、preview だけを先行取得する。選択前の GLB download は0件である。
-- **AC14 Cross-device identity**: Quest と iPad viewer が同じ認可 scope で同一 order/item と selected artifact revision を表示し、wrong-scope client は private item/artifact を取得できない。
-- **AC15 Contract gate**: v2 normative OpenAPI に `API-CAP-01`〜`API-CAP-09` の implementable paths/security/responses がない現状では、domain mapping を `READY`、production HTTP integration を `NOT-READY` と判定する。
+- **AC13 API-driven menu**: `GET /v2/devices/unity/orders` の複数 page を opaque cursor で重複なく一覧化し、選択前の order GLB/WAV download は0件である。現行 API に preview operation がないため、public sample を preview として補完しない。
+- **AC14 Cross-device identity**: Unity Device route では認可された token で同一 order と `artifact_id` を参照し、wrong-role/device token は拒否される。iPad viewer との同一 selected revision、artifact checksum、visibility isolation は viewer contract 公開後の追加検証とする。
+- **AC15 Contract gate**: `ru322/main@97c9ed7...` には Unity Device の history/status/artifact/payload/ACK paths と schemas があるため、v2 route/schema を `READY` とする。ただし preview、全 stage/detail、Unity artifact checksum、production host/TLS/secret delivery、runtime compatibility negotiation が未解決のため、full consumer/production HTTP integration は `PARTIAL`/`NOT-READY` と判定する。
 - **AC16 Unified post-tutorial menu**: S14 完了後、scene transition なしで一つの食品選択 UI が開き、Network item と Standalone item が source を識別可能な状態で同時表示される。各 source から一件ずつ選択し、正しい loader/food data が同じ anchor/eating flow へ渡る。
 - **AC17 Offline Standalone continuity**: API endpoint を未設定または network unavailable にしても、食品選択 UI は Standalone item を表示し、local model の選択・表示・完食を完了できる。Network error が local flow を block しない。
 
@@ -441,8 +445,8 @@
 - **SRC-2 — 移管元チュートリアル利用ガイド**: 現行 event/command bus、DI scope、asset editing、reset responsibilities、debug/test flow、既存実装との差分、anti-pattern を説明していた。移管元パスは `docs/tutorial-usage.md` だが、本 intent の requirements/domain design と shared knowledge に必要内容を再記載済み。
 - **SRC-3 — 2026-08-24 利用者追加要求**: VR 内 start、基本食品→注文食品、QR を anchor 指定のみに変更、生成履歴メニュー、画像 preview、iPad 等の物理 menu、AABB、scoop reaction/任意 haptic、段階縮小、crumb、最終消滅。
 - **SRC-4 — 2026-08-24 文書統合要求**: 将来 `docs` を削除しても `aidlc` 単体で要件が分かること。
-- **SRC-5 — YummyService v2 contract**: `https://github.com/YummyVerseVR/YummyService` の `main@546b455fedd205fb686ca7b93d6af596bced7879`、`contracts/v2/openapi.yaml` (`2.0.0-draft`) と `contracts/v2/README.md`。Workflow DAG、state、completion、immutable artifact、schema は規範的だが、HTTP paths、deployment URL、authentication、artifact lookup/download は未定義/deferred。
-- **SRC-6 — Current Unity integration evidence**: `FoodDownloader.cs` は旧 `/{guid}/model`、`FoodContext.cs` は QR GUID trigger、`IFoodFetchable.Download(Guid)` は GUID identity、`EndPointManager.cs` は旧 endpoint を使用しており、v2 order/artifact contract への migration が必要。
+- **SRC-5 — YummyService v2 contract**: `https://github.com/YummyVerseVR/YummyService` の `ru322/main@97c9ed75980ec398fe75159bd4e011b489112433`、`contracts/v2/openapi.yaml` (`2.0.0-draft`) と `contracts/v2/README.md`。OpenAPI は104 paths/124 schemasで、Unity Device の history/status/artifact/payload/ACK、deviceBearerAuth、PublicMenu、ProblemDetails が定義されている。一方、deployment URL、Unity preview、全 stage customer projection、artifact checksum exposure、runtime compatibility negotiation は未解決である。
+- **SRC-6 — Current Unity integration evidence**: `NetworkFoodCatalogSource.cs`、`NetworkFoodLoader.cs`、`NetworkConnectionTester.cs` は開発用 `/v2/admin/menu` と固定 `admin-demo-token`、menu URL を使っており、正式な `/v2/devices/unity` order/artifact contract への migration が必要である。`YummyServiceV2Contract.cs` の snapshot constant も更新対象である。
 - **SRC-7 — 2026-08-24 Standalone/UI clarification**: Standalone Mode は今後も使用する。Tutorial 完了後に食品一覧 UI が存在し、その UI は YummyService v2 API 由来の食品と端末保存済み Standalone 食品を同時に表示する。
 - 詳細なセクション単位の移管対応は `source-migration-map.md` を参照する。そこにも source requirement の要約を持たせ、`docs` の存在を前提にしない。
 - v2 API の自己完結した snapshot と required capability は `knowledge/aidlc-shared/yummy-service-v2-api.md`、consumer mapping は `inception/contract-design/contract-summary.md` を参照する。
@@ -454,12 +458,12 @@
 - **Q3 (Resolved 2026-08-28)**: 「最も離れている2点」は、食品ルートのローカル座標系へ変換した全メッシュ頂点集合の最小コーナーと最大コーナーとする。この2点は箱の対角線を張り、各軸 extent はその差で決まる。結果は当該座標系での通常の AABB と同義であり、形状によらず必ず1つ求まる。頂点を読み出せないメッシュは、そのメッシュ自身の bounds の8隅で代用する。
 - **Q4 (Non-blocking)**: Haptic を展示版の必須受け入れに昇格するか。現時点は `SHOULD`。
 - **Q5 (Blocking for anchor Unit)**: QR designation を既存の運営者設定済み Meta Spatial Anchor の選択に使うのか、QR pose から新規/一時 anchor を作るのか。既存 Cube/UUID/relative pose flow との優先関係は何か。
-- **Q6 (Blocking for API Unit)**: `API-CAP-01`〜`API-CAP-09` の v2 path、method、request/response schema、status code は何か。現行 OpenAPI の `paths` は空である。
-- **Q7 (Blocking for API/Viewer Unit)**: Quest と iPad viewer の authentication/token issue/refresh/revoke/order scope は何か。v2 contract では auth/device token が deferred である。
-- **Q8 (Blocking for Preview Unit)**: Customer-visible preview は selected `SOURCE_IMAGE_NORMALIZED` で確定か。Preview selection、media type、download visibility はどう表現するか。
-- **Q9 (Blocking for Catalog Unit)**: History の pagination/sort/filter、change detection、rate limit、cache validation contract は何か。
-- **Q10 (Blocking for Model Delivery Unit)**: GLB/image download の media type、max bytes、redirect、range/resume、signed URL、timeout/retry guidance は何か。
-- **Q11 (Blocking product/API decision)**: Verified GLB が `IMAGE_TO_3D` 完了時点で存在しても、order 全体が WAV/Analysis を含め `COMPLETED` になる前に customer menu へ公開してよいか。現 baseline は安全側に `COMPLETED` 後だけ Ready とする。
+- **Q6 (Partially resolved 2026-08-30)**: Unity Device の history/status/artifact/payload/ACK path、method、schema、主要 status は `ru322/main` で確定した。全 consumer capability、preview、全 stage/detail、production host は未確定である。
+- **Q7 (Partially resolved 2026-08-30)**: Unity は `deviceBearerAuth` と `device_type=UNITY` の issue/rotate/revoke を使う。Customer/Physical Viewer の auth、visibility scope、secret delivery は未確定である。
+- **Q8 (Blocking for Preview Unit)**: Customer-visible preview が selected `SOURCE_IMAGE_NORMALIZED` か、selection/media type/download visibility をどう公開するか。現行 Unity Device API に preview operation はない。
+- **Q9 (Partially resolved 2026-08-30)**: History の state/q/food_name/limit/cursor、sort semantics は確定した。order change detection、rate limit、cache validation、polling interval は未確定である。
+- **Q10 (Partially resolved 2026-08-30)**: GLB/WAV device download の path、selected/completed/verified gate、media type、Content-Disposition、auth/status は確定した。checksum、max bytes、redirect、range/resume、timeout/retry guidance は未確定である。
+- **Q11 (Resolved 2026-08-30)**: Device `downloadable=true` は selected verified output of a `COMPLETED` order に限定される。Unity は GLB が I23D で先に生成されても、order 全体が `COMPLETED` になる前に customer menu へ公開しない。
 - 仮定: リンゴは例であり、同程度に認知しやすい固定の前菜へ差し替え可能である。
 - 仮定: 生成履歴は来場者セッションより長く保持されるが、永続期間と削除 policy は別途決定する。
 
@@ -467,7 +471,9 @@
 
 - Requirements capture status: `READY`
 - v2 domain contract mapping: `READY`
+- v2 Unity Device route/schema contract: `READY`
+- v2 full consumer contract: `PARTIAL`
 - v2 production HTTP contract: `NOT-READY`
 - Construction readiness: `NOT-READY`
-- Approval basis: 2026-08-24 の明示要求、移管元2文書、YummyService v2 normative contract snapshot。
-- Reviewed at: 2026-08-24
+- Approval basis: 2026-08-24 の明示要求、移管元2文書、YummyService `ru322/main` normative contract snapshot。詳細は `yummy-service-v2-unity-api.md` と API contract review を参照する。
+- Reviewed at: 2026-08-30

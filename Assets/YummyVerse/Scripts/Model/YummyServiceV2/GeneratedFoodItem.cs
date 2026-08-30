@@ -110,6 +110,16 @@ namespace YummyVerse.Scripts.Model.YummyServiceV2
         }
 
         /// <summary>
+        /// 咀嚼音に使う selected WAV。
+        /// Device の status projection では <c>wav.downloadable</c> が true のときだけ
+        /// <c>artifact_id</c> が返るため、false のときにここへ artifact を詰めてはならない。
+        /// </summary>
+        public bool TryGetSelectedWav(out ArtifactRef artifact)
+        {
+            return TryGetSelectedArtifact(ArtifactType.Wav, out artifact);
+        }
+
+        /// <summary>
         /// The minimum ready gate from the consumer contract. This overload is useful
         /// at an adapter boundary before the complete order snapshot is assembled.
         /// </summary>

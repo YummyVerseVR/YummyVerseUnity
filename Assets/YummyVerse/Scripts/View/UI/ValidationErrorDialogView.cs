@@ -27,6 +27,13 @@ namespace YummyVerse.Scripts.ViewModel
                     h => _configUIViewModel.OnAPIEndPointValidationError += h,
                     h => _configUIViewModel.OnAPIEndPointValidationError -= h)
                 .Subscribe(_ => ShowAPIEndPointValidationError()).AddTo(this);
+            if (_configUIViewModel is IYummyServiceV2ConfigViewModel v2ViewModel)
+            {
+                Observable.FromEvent(
+                        h => v2ViewModel.OnAPIDeviceTokenValidationError += h,
+                        h => v2ViewModel.OnAPIDeviceTokenValidationError -= h)
+                    .Subscribe(_ => ShowAPIEndPointValidationError()).AddTo(this);
+            }
             _okButton.onClick.AddListener(OnClickOk);
         }
         

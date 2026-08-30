@@ -4,7 +4,7 @@
 
 - 利用者指示: 2026-08-24 に、現行 `aidlc` で決定済みの要件だけを実装するよう明示された。
 - Delegation: 利用者指定に従い、`UNIT-01` のコード作成を Luna/max subagent へ部分委譲し、primary agent が統合 review と検証を担当する。
-- Scope gate: `Q1`〜`Q11`、未公開 v2 HTTP operation、scene/device 固有の未確定事項は実装しない。
+- Scope gate: `Q1`〜`Q11`、当時未公開だった v2 HTTP operation、scene/device 固有の未確定事項は実装しない。2026-08-30 refresh 後は公開された Unity Device schema だけを根拠に後続 Unit を再計画する。
 
 ## Sequence
 
@@ -16,7 +16,7 @@
 ## Delivery Boundary
 
 - この delivery は application/domain foundation と禁止経路の撤去であり、YummyService v2 production integration の提供ではない。
-- Unified Virtual Menu、Network catalog、artifact download/cache、Anchor designation integration、AABB/scoop/effect、Physical Viewer は提供対象外。
+- Unified Virtual Menu、Network catalog、artifact download/cache、Anchor designation integration、AABB/scoop/effect、Physical Viewer は提供対象外。今回の refresh は contract documentation のみで、runtime adapter は変更しない。
 - Scene wiring、Quest build、deployment は行わない。
 
 ## Risk and Rollback

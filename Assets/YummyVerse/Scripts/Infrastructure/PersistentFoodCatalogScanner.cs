@@ -18,6 +18,14 @@ namespace YummyVerse.Scripts.Infrastructure
             "preview.webp"
         };
 
+        /// <summary>咀嚼音。model.glb と同じフォルダに置く規約。無い食品もある。</summary>
+        private static readonly string[] AudioFileNames =
+        {
+            "audio.mp3",
+            "audio.wav",
+            "audio.ogg"
+        };
+
         public static IReadOnlyList<FoodCatalogItem> Scan(string foodsDirectory)
         {
             var items = new List<FoodCatalogItem>();
@@ -46,7 +54,8 @@ namespace YummyVerse.Scripts.Infrastructure
                 var modelPath = Path.Combine(directory, "model.glb");
                 if (!File.Exists(modelPath)) continue;
 
-                var previewPath = FindPreview(directory);
+                var previewPath = FindFirstExisting(directory, PreviewFileNames);
+                var audioPath = FindFirstExisting(directory, AudioFileNames);
                 var foodName = new DirectoryInfo(directory).Name;
                 if (string.IsNullOrWhiteSpace(foodName)) continue;
 
@@ -55,6 +64,7 @@ namespace YummyVerse.Scripts.Infrastructure
                     foodName,
                     previewPath,
                     modelPath,
+                    audioPath,
                     MenuItemSource.PersistentData));
             }
 
@@ -76,9 +86,9 @@ namespace YummyVerse.Scripts.Infrastructure
             return true;
         }
 
-        private static string FindPreview(string directory)
+        private static string FindFirstExisting(string directory, string[] fileNames)
         {
-            foreach (var fileName in PreviewFileNames)
+            foreach (var fileName in fileNames)
             {
                 var path = Path.Combine(directory, fileName);
                 if (File.Exists(path)) return path;

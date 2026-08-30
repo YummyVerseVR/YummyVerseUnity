@@ -10,6 +10,8 @@ namespace YummyVerse.Scripts.View.UI
     public sealed class ConfigUIView : MonoBehaviour
     {
         [SerializeField] private TMP_InputField apiEndPointUrl;
+        [Tooltip("YummyService v2 Unity Device token。Player に埋め込まず、実行時に入力する。")]
+        [SerializeField] private TMP_InputField apiDeviceToken;
         [SerializeField] private Button testConnectionButton;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private OVROverlayCanvas overlayCanvas;
@@ -36,6 +38,7 @@ namespace YummyVerse.Scripts.View.UI
         {
             _presenter.Initialize(
                 apiEndPointUrl,
+                apiDeviceToken,
                 testConnectionButton,
                 canvasGroup,
                 overlayCanvas,

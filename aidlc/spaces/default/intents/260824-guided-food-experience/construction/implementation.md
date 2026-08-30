@@ -7,7 +7,7 @@
 - Full intent Construction: `NOT-READY`
 - 実装日: 2026-08-24、2026-08-28
 
-利用者が「現行 `aidlc` で決定済みの要件だけ」を実装するよう明示したため、`Q1`〜`Q11` と未公開の YummyService v2 HTTP contract に依存しない3 Unit だけを実装した。後続 Unit の仕様を推測していない。
+利用者が「現行 `aidlc` で決定済みの要件だけ」を実装するよう明示したため、当時の `Q1`〜`Q11` と未公開だった YummyService v2 HTTP contract に依存しない3 Unit だけを実装した。後続 Unit の仕様を推測していない。この記録は 2026-08-24/28 時点の partial construction であり、2026-08-30 に公開された `ru322/main` contract による migration 完了を意味しない。
 
 ## Delegation and Review
 
@@ -36,7 +36,7 @@ Traceability: `FR25`, `FR26`, `FR29`, `FR31`, `NFR10`, `NFR11`
 - FoodDB の旧 test handler と QR→handler request を runtime から外し、QR ViewModel は designation 用 Transform 更新だけを行うようにした。
 - `FoodContext` の load trigger を `OnMenuItemSelected` に変更し、既存 Standalone menu selection を game event 経由で local loader へ接続した。
 - `NotifyFoodGuid` を QR detection interface/service から削除し、Standalone selection が QR state を変更しないようにした。
-- v2 transport 未公開中は factory が Network loader を生成せず、connection test も outbound request を送らず `ServiceUnavailable` で fail closed にした。
+- v2 transport 未公開だった時点では factory が Network loader を生成せず、connection test も outbound request を送らず `ServiceUnavailable` で fail closed にした。2026-08-30 の route 公開後も local adapter は未移行である。
 - Legacy endpoint の既定値を空にし、設定値は HTTPS だけを受け入れるようにした。設定しても現時点では transport request を行わない。
 - Local catalog ID と file 欠落、破損、未対応形式を item-level failure として返し、キャンセルだけは成功扱いにせず再送出するようにした。
 
@@ -83,10 +83,14 @@ Traceability: `FR18`, `FR19`, `FR20`, `FR21`, `FR22` (部分), `FR23`, `NFR6`, `
 - `UNIT-06`: QR anchor designation integration
 - `FR22` の crumb (食べカス) effect
 - `UNIT-08`: Physical Menu Viewer
-- YummyService v2 production HTTP path/auth/history/status/metadata/download
+- YummyService v2 Unity Device production HTTP migration（route/schema は 2026-08-30 に公開されたが、local adapter は未移行）
 - Scene wiring の追加、Quest/PCVR build、実機検証、deployment
 
-これらは `Q1`〜`Q11` または normative v2 transport contract に依存するため、本実装を根拠に完成扱いにしない。
+これらは `Q1`〜`Q10`、公開された normative v2 transport contract の未達 projection/preview/checksum/deployment、または scene/device integration に依存するため、本実装を根拠に完成扱いにしない。Unity 向け schema は `knowledge/aidlc-shared/yummy-service-v2-unity-api.md` を参照する。
+
+## 2026-08-30 Contract Refresh
+
+YummyService `ru322/main@97c9ed75980ec398fe75159bd4e011b489112433` の v2 OpenAPI は Unity Device の history/status/selected artifact/payload/ACK operation を提供する。これは次の Construction Unit で正式 adapter を設計できる状態になったことを示すが、現在の `NetworkFoodCatalogSource`/`NetworkFoodLoader`/`NetworkConnectionTester` はまだ Admin menu/sample API と固定 demo token を参照している。production host、Device token 配布、preview operation、全 stage/detail、GLB/WAV checksum metadata は別途解決する。
 
 ## Changed Runtime Boundary
 

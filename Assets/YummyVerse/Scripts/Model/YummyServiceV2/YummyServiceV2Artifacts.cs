@@ -164,6 +164,12 @@ namespace YummyVerse.Scripts.Model.YummyServiceV2
 
         public bool IsVerifiedGlb => IsVerifiedArtifact && ArtifactType == ArtifactType.Glb;
 
+        /// <summary>
+        /// 咀嚼音として使える WAV かどうか。GLB と同じく、selected かつ verified な
+        /// artifact revision だけを再生候補にする。
+        /// </summary>
+        public bool IsVerifiedWav => IsVerifiedArtifact && ArtifactType == ArtifactType.Wav;
+
         public ArtifactCacheIdentity CacheIdentity => new ArtifactCacheIdentity(ArtifactId, Revision, Sha256);
 
         public static bool TryCreate(

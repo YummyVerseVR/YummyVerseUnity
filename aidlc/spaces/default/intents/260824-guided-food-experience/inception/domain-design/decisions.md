@@ -109,18 +109,22 @@ Session reset は selected item、Food Instance/portion/collider/effect、UI/loa
 
 ### Context
 
-利用 API version は v2 と指定された。YummyService の normative v2 OpenAPI/README は workflow/state/schema を定義する一方、OpenAPI `paths` は空、server URL は placeholder、authentication と artifact lookup/download は deferred である。Current Unity client は QR GUID から旧 `/{guid}/model` を呼び、v2 order/artifact vocabulary と互換性がない。
+2026-08-24 時点で利用 API version は v2 と指定された。YummyService の normative v2 OpenAPI/README は workflow/state/schema を定義する一方、OpenAPI `paths` は空、server URL は placeholder、authentication と artifact lookup/download は deferred であった。Current Unity client は QR GUID から旧 `/{guid}/model` を呼び、v2 order/artifact vocabulary と互換性がなかった。
 
 ### Decision
 
-YummyService v2 の HTTP/DTO は専用 `YummyService v2 Client` と Contract Guard に隔離する。New Network mode は v2 compatibility を確認し、v1 route/response や旧 GUID endpoint へ fallback しない。v2 domain mapping/fixture は先行できるが、production transport adapter は normative OpenAPI に required capabilities の paths/security/responses が追加されるまで `NOT-READY` とする。
+YummyService v2 の HTTP/DTO は専用 `YummyService v2 Client` と Contract Guard に隔離する。New Network mode は v2 compatibility を確認し、v1 route/response や旧 GUID endpoint へ fallback しない。v2 domain mapping/fixture は先行できるが、production transport adapter は normative OpenAPI と実 deployment の paths/security/responses が確認できるまで `NOT-READY` とする。
 
 ### Consequences
 
 - Positive: v2 と v1/legacy の identity/state/transport が混在しない。
 - Positive: Draft contract の変更を一つの adapter と compatibility test に閉じ込められる。
-- Negative: YummyService v2 の transport contract 公開までは end-to-end Network mode を実装完了できない。
-- Follow-up: `API-CAP-01`〜`API-CAP-09` を YummyService 側の normative OpenAPI と mock/server へ追加し、`Q6`〜`Q10` を解決する。
+- Negative: YummyService v2 の transport contract が公開されても、preview、全 stage/detail、artifact checksum、deployment/TLS/secret delivery が未確定なら end-to-end Network mode を実装完了できない。
+- Follow-up: `ru322/main` の Unity Device routes/schema を adapter fixture へ反映し、未達の `API-CAP-01`〜`API-CAP-09`、`Q6`〜`Q10` を route ごとに解決する。
+
+### 2026-08-30 Amendment
+
+`ru322/main@97c9ed7...` で Unity Device の history/status/selected artifact/payload/ACK と `deviceBearerAuth` が公開されたため、route/schema を推測せず正式 operation として採用できる状態になった。ただし `servers.url` は placeholder のままで、Unity Device status は全5 stage/detail と artifact revision/SHA-256 を返さず、preview operation もない。したがって ADR-006 の fail-closed、専用 client、v1/legacy fallback 禁止は継続し、production adapter の合格判定は保留する。
 
 ### Alternatives Rejected
 
@@ -139,7 +143,7 @@ YummyService v2 の HTTP/DTO は専用 `YummyService v2 Client` と Contract Gua
 
 ### Context
 
-YummyService v2 の artifact revision は immutable で、artifact ID/type/revision/SHA-256/verified を持ち、current selection は別 pointer である。Current Unity downloader は response bytes を base64 往復し、全 request で固定名 `test.glb` を使うため、revision identity、integrity、並行 download safety を満たさない。
+2026-08-24 時点の YummyService v2 artifact revision は immutable で、artifact ID/type/revision/SHA-256/verified を持ち、current selection は別 pointer であった。Current Unity downloader は response bytes を base64 往復し、全 request で固定名 `test.glb` を使うため、revision identity、integrity、並行 download safety を満たさなかった。
 
 ### Decision
 
@@ -151,7 +155,7 @@ Preview/GLB は selected `ArtifactRef` を解決した後、artifact ID + revisi
 - Positive: Immutable revision の再利用、並行 request、cross-device identity を正しく扱える。
 - Positive: Base64 往復による余分な memory copy を除去できる。
 - Negative: Artifact metadata lookup、file lifecycle、cache eviction、hash cost の実装が必要になる。
-- Follow-up: `Q8`/`Q10` と cache/SLA の `Q1` を解決する。
+- Follow-up: preview operation、Unity 側 artifact checksum exposure、`Q8`/`Q10` と cache/SLA の `Q1` を解決する。
 
 ### Alternatives Rejected
 
@@ -200,4 +204,4 @@ Network Catalog Adapter と Standalone Catalog/Loader Adapter を独立 source �
 ## Review
 
 - Status: `NOT-READY`
-- Basis: 要件を支える主要な責務と判断は定義済み。`Q1`〜`Q11` の該当項目を Unit ごとに解決し、YummyService v2 の transport contract が公開されるまで Construction 全体の設計確定とは扱わない。
+- Basis: 要件を支える主要な責務と判断は定義済み。`ru322/main` で Unity Device の route/schema は公開されたが、`Q1`〜`Q10`、preview/full-stage/checksum/deployment gap、scene/device-specific decisions を Unit ごとに解決するまで Construction 全体の設計確定とは扱わない。

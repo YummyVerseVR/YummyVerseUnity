@@ -126,8 +126,8 @@ Reset 対象:
 ## Known Migration Work
 
 - QR GUID → food selection/download trigger を Catalog/Menu item selection へ置き換える。
-- Network mode を YummyService v2 order/artifact client へ置き換え、廃止済み v1 API と旧 `/{guid}/model` を全 runtime/fallback から除去する。
-- History/status/selected artifact metadata/preview/GLB/auth/problem/compatibility の v2 transport contract 公開を待ち、未定義 path を推測しない。
+- Network mode を YummyService v2 Unity Device order/artifact client へ置き換え、廃止済み v1 API と旧 `/{guid}/model` を全 runtime/fallback から除去する。正式 route は `/v2/devices/unity/orders`、status、selected artifact、payload、ACK である。
+- `yummy-service-v2-unity-api.md` の schema に従う。preview operation、全5 stage/status detail、Unity artifact checksum、deployment host/auth delivery、order change policy は未解決なので未定義 path を推測しない。
 - S3 の紙皿注視案内・QR 検出待ちは現行 TutorialSequence から削除済み。旧 step/condition asset を再接続しない。
 - Generated Food Catalog、Preview Repository、Virtual Menu、Physical Viewer contract を追加する。
 - 実 model geometry から AABB を作り、Scoop Detector、Consumption State、crumb/disappear を Game event へ接続する。

@@ -12,17 +12,26 @@ namespace YummyVerse.Scripts.Infrastructure
     public class NetworkConnectionTester : INetworkConnectionTester
     {
         private readonly IEndPointManager _endPointManager;
+        private readonly IYummyServiceV2Credentials _credentials;
 
         public NetworkConnectionTester(IEndPointManager endPointManager)
         {
-            _endPointManager = endPointManager;
+            _endPointManager = endPointManager ?? throw new System.ArgumentNullException(nameof(endPointManager));
+            _credentials = endPointManager as IYummyServiceV2Credentials;
         }
 
         public async UniTask<TestConnectionResult> TestConnection(CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
 
-            if (!YummyServiceV2Url.TryBuildMenuUrl(_endPointManager.baseEndPointUrl, out var menuUrl))
+            if (!YummyServiceV2Url.TryBuildUnityDeviceOrdersUrl(
+                    _endPointManager.baseEndPointUrl,
+                    "COMPLETED",
+                    string.Empty,
+                    string.Empty,
+                    1,
+                    string.Empty,
+                    out var ordersUrl))
             {
                 return new TestConnectionResult
                 {
@@ -31,10 +40,19 @@ namespace YummyVerse.Scripts.Infrastructure
                 };
             }
 
-            using var request = UnityWebRequest.Get(menuUrl);
+            if (string.IsNullOrWhiteSpace(_credentials?.DeviceAccessToken))
+            {
+                return new TestConnectionResult
+                {
+                    success = false,
+                    StatusCode = HttpStatusCode.BadRequest
+                };
+            }
+
+            using var request = UnityWebRequest.Get(ordersUrl);
             request.timeout = 10;
             request.SetRequestHeader("Accept", "application/json");
-            request.SetRequestHeader("Authorization", $"Bearer {YummyServiceV2Url.DevelopmentAdminToken}");
+            request.SetRequestHeader("Authorization", $"Bearer {_credentials.DeviceAccessToken}");
 
             try
             {

@@ -56,6 +56,37 @@ namespace YummyVerse.Editor.Tests
         }
 
         [Test]
+        public void ScannerPicksChewAudioFromTheFoodFolder()
+        {
+            var folder = Path.Combine(_temporaryRoot, "curry");
+            Directory.CreateDirectory(folder);
+            File.WriteAllBytes(Path.Combine(folder, "model.glb"), new byte[] { 1 });
+            File.WriteAllBytes(Path.Combine(folder, "audio.ogg"), new byte[] { 1 });
+            File.WriteAllBytes(Path.Combine(folder, "audio.mp3"), new byte[] { 1 });
+
+            var items = PersistentFoodCatalogScanner.Scan(_temporaryRoot);
+
+            Assert.That(items, Has.Count.EqualTo(1));
+            Assert.That(items[0].AudioLocation, Is.EqualTo(Path.Combine(folder, "audio.mp3")));
+        }
+
+        [Test]
+        public void ScannerLeavesChewAudioEmptyWhenTheFolderHasNone()
+        {
+            var folder = Path.Combine(_temporaryRoot, "curry");
+            Directory.CreateDirectory(folder);
+            File.WriteAllBytes(Path.Combine(folder, "model.glb"), new byte[] { 1 });
+
+            var items = PersistentFoodCatalogScanner.Scan(_temporaryRoot);
+
+            Assert.That(items, Has.Count.EqualTo(1));
+            Assert.That(items[0].AudioLocation, Is.Empty);
+
+            // 咀嚼音が無くても食品としては選べる。既定の咀嚼音へフォールバックするだけ。
+            Assert.That(items[0].IsSelectable, Is.True);
+        }
+
+        [Test]
         public void ScannerSkipsFoldersWithoutModel()
         {
             var folder = Path.Combine(_temporaryRoot, "画像だけ");
@@ -190,30 +221,14 @@ namespace YummyVerse.Editor.Tests
             }
         }
 
-        [TestCase("https://example.test", "https://example.test/v2/admin/menu")]
-        [TestCase("https://example.test/v2/", "https://example.test/v2/admin/menu")]
-        public void MenuUrlAcceptsServerRootOrV2Root(string configuredUrl, string expected)
-        {
-            Assert.That(YummyServiceV2Url.TryBuildMenuUrl(configuredUrl, out var actual), Is.True);
-            Assert.That(actual, Is.EqualTo(expected));
-        }
-
-        [TestCase("")]
-        [TestCase("not-a-url")]
-        [TestCase("file:///tmp/yummy-service")]
-        public void MenuUrlRejectsNonHttpBaseUrls(string configuredUrl)
-        {
-            Assert.That(YummyServiceV2Url.TryBuildMenuUrl(configuredUrl, out _), Is.False);
-        }
-
         [Test]
         public void AbsolutePathFromApiResponseUsesConfiguredAuthority()
         {
             Assert.That(YummyServiceV2Url.TryResolveLocation(
                 "https://example.test/custom/v2",
-                "/v2/admin/menu/sushi/glb",
+                "/v2/menu/sushi/glb",
                 out var actual), Is.True);
-            Assert.That(actual, Is.EqualTo("https://example.test/v2/admin/menu/sushi/glb"));
+            Assert.That(actual, Is.EqualTo("https://example.test/v2/menu/sushi/glb"));
         }
     }
 }

@@ -15,9 +15,9 @@ namespace YummyVerse.Editor.Tests
         public void CombinesRemoteThenPersistentItemsAndRetainsBothErrors()
         {
             var remoteItem = new FoodCatalogItem(
-                "api-v2:ramen", "Ramen", "preview", "model", MenuItemSource.ApiV2);
+                "api-v2:ramen", "Ramen", "preview", "model", "", MenuItemSource.ApiV2);
             var localItem = new FoodCatalogItem(
-                "local:curry", "Curry", "", "curry.glb", MenuItemSource.PersistentData);
+                "local:curry", "Curry", "", "curry.glb", "", MenuItemSource.PersistentData);
             var service = new FoodCatalogService(
                 new FakeSource(new[] { remoteItem }, "remote failed"),
                 new FakeSource(new[] { localItem }, "local failed"));
@@ -29,6 +29,56 @@ namespace YummyVerse.Editor.Tests
             Assert.That(result.Items[1], Is.SameAs(localItem));
             Assert.That(result.ApiError, Does.Contain("remote failed"));
             Assert.That(result.ApiError, Does.Contain("local failed"));
+        }
+
+        [Test]
+        public void TransportMapperReadsTheChewingSoundFromSampleWavUrl()
+        {
+            // v2 の PublicMenuItem で規範化されている音声フィールドは sample_wav_url だけ。
+            // 拡張子の付かない /wav route もそのまま咀嚼音のURLとして扱う。
+            var response = new MenuResponseDto
+            {
+                items = new[]
+                {
+                    new MenuItemDto
+                    {
+                        id = "sushi",
+                        display_name = "寿司",
+                        available = true,
+                        sample_glb_url = "/v2/menu/sushi/glb",
+                        sample_wav_url = "/v2/menu/sushi/wav"
+                    }
+                }
+            };
+
+            var items = FoodCatalogTransportMapper.ToCatalogItems(response, "https://example.test/v2");
+
+            Assert.That(items, Has.Count.EqualTo(1));
+            Assert.That(items[0].AudioLocation, Is.EqualTo("https://example.test/v2/menu/sushi/wav"));
+        }
+
+        [Test]
+        public void TransportMapperLeavesAudioEmptyWhenTheMenuOmitsIt()
+        {
+            var response = new MenuResponseDto
+            {
+                items = new[]
+                {
+                    new MenuItemDto
+                    {
+                        id = "ramen",
+                        display_name = "Ramen",
+                        available = true,
+                        sample_glb_url = "/model.glb"
+                    }
+                }
+            };
+
+            var items = FoodCatalogTransportMapper.ToCatalogItems(response, "https://example.test/v2");
+
+            Assert.That(items, Has.Count.EqualTo(1));
+            Assert.That(items[0].AudioLocation, Is.Empty);
+            Assert.That(items[0].IsSelectable, Is.True);
         }
 
         [Test]
@@ -45,7 +95,8 @@ namespace YummyVerse.Editor.Tests
                         id = "ramen",
                         display_name = "Ramen",
                         available = false,
-                        sample_glb_url = "/v2/menu/ramen/model.glb"
+                        sample_glb_url = "/v2/menu/ramen/model.glb",
+                        sample_wav_url = "/v2/menu/ramen/wav"
                     }
                 }
             };
@@ -57,6 +108,7 @@ namespace YummyVerse.Editor.Tests
             Assert.That(items, Has.Count.EqualTo(1));
             Assert.That(items[0].Id, Is.EqualTo("api-v2:ramen"));
             Assert.That(items[0].ModelLocation, Is.EqualTo("https://example.test/v2/menu/ramen/model.glb"));
+            Assert.That(items[0].AudioLocation, Is.EqualTo("https://example.test/v2/menu/ramen/wav"));
             Assert.That(items[0].IsSelectable, Is.False);
         }
 

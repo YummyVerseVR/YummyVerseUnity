@@ -6,7 +6,7 @@
 - Scope decision: Inception の `UNIT-01`〜`UNIT-03` だけを READY とし、`UNIT-04`〜`UNIT-08` は開始しない。
 - Delegation: `UNIT-01` の YummyService v2 domain foundation と tests の review・補強を Luna/max subagent へ委譲した。
 - Integration finding: Primary agent の Editor 内 test で operation sanitizer の相対 URL 誤解釈を検出し、同 subagent へ局所修正を戻した。
-- Decision: v1/legacy GUID outbound code を削除し、v2 transport 未公開中は Network boundary を fail closed とする。Standalone local selection/load は API 非依存で維持する。
+- Decision (2026-08-24 時点): v1/legacy GUID outbound code を削除し、v2 transport 未公開中は Network boundary を fail closed とする。Standalone local selection/load は API 非依存で維持する。2026-08-30 の route 公開後も、local adapter は未移行である。
 - Decision: 食事 interaction は未決の AABB/scoop/effect へ接続せず、portion monotonic decrease と DishCleared one-shot の pure state だけを先行する。
 - Verification: Editor 内 test 20件、C# build、script validation、Prefab/catalog load、runtime source scan を実施した。
 - Result: `UNIT-01`〜`UNIT-03` は `IMPLEMENTED-VERIFIED`。Intent 全体は `NOT-READY` のまま維持する。

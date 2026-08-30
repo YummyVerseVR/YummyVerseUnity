@@ -294,6 +294,115 @@ namespace YummyVerse.Editor.Tests
             Assert.That(glb.ArtifactId, Is.EqualTo("glb-1"));
         }
 
+        [Test]
+        public void SelectedWavIsAcceptedOnlyWhenTheOrderIsCompletedAndTheArtifactIsVerified()
+        {
+            var wav = new ArtifactRef("wav-1", ArtifactType.Wav, "r1", EmptySha256, true);
+
+            Assert.That(YummyServiceV2ContractGuard.TryAcceptSelectedWav(
+                OrderState.Completed, wav, "https://example.test/v2", "chew-sound", out var noFailure), Is.True);
+            Assert.That(noFailure, Is.Null);
+
+            // 未完了の order からは咀嚼音を取りに行かない。
+            Assert.That(YummyServiceV2ContractGuard.TryAcceptSelectedWav(
+                OrderState.Processing, wav, "https://example.test/v2", "chew-sound", out var stateFailure), Is.False);
+            Assert.That(stateFailure.Code, Is.EqualTo(ContractGuardFailureCode.NotSelectable));
+
+            // verified=false は fail closed。
+            var unverified = new ArtifactRef("wav-1", ArtifactType.Wav, "r1", EmptySha256, false);
+            Assert.That(YummyServiceV2ContractGuard.TryAcceptSelectedWav(
+                OrderState.Completed, unverified, "https://example.test/v2", "chew-sound", out var verifyFailure), Is.False);
+            Assert.That(verifyFailure.Code, Is.EqualTo(ContractGuardFailureCode.ArtifactNotVerified));
+
+            // GLB を咀嚼音として受け入れない。
+            var glb = new ArtifactRef("glb-1", ArtifactType.Glb, "r1", EmptySha256, true);
+            Assert.That(YummyServiceV2ContractGuard.TryAcceptSelectedWav(
+                OrderState.Completed, glb, "https://example.test/v2", "chew-sound", out var typeFailure), Is.False);
+            Assert.That(typeFailure.Code, Is.EqualTo(ContractGuardFailureCode.WrongArtifactType));
+
+            // downloadable=false 相当 (selected artifact が無い) も fail closed。
+            Assert.That(YummyServiceV2ContractGuard.TryAcceptSelectedWav(
+                OrderState.Completed, null, "https://example.test/v2", "chew-sound", out var missingFailure), Is.False);
+            Assert.That(missingFailure.Code, Is.EqualTo(ContractGuardFailureCode.InvalidArtifact));
+        }
+
+        [Test]
+        public void DownloadedWavMustMatchTheSelectedArtifactChecksum()
+        {
+            var wav = new ArtifactRef("wav-1", ArtifactType.Wav, "r1", EmptySha256, true);
+
+            Assert.That(YummyServiceV2ContractGuard.TryAcceptDownloadedWav(
+                OrderState.Completed, wav, Array.Empty<byte>(), "https://example.test/v2", "chew-sound",
+                out var noFailure), Is.True);
+            Assert.That(noFailure, Is.Null);
+
+            Assert.That(YummyServiceV2ContractGuard.TryAcceptDownloadedWav(
+                OrderState.Completed, wav, new byte[] { 1, 2, 3 }, "https://example.test/v2", "chew-sound",
+                out var failure), Is.False);
+            Assert.That(failure.Code, Is.EqualTo(ContractGuardFailureCode.ArtifactIntegrityMismatch));
+        }
+
+        [Test]
+        public void SelectedWavIsReadBackFromTheGeneratedFoodItem()
+        {
+            var item = new GeneratedFoodItem(
+                GeneratedFoodItemId.Create("order-1"),
+                OrderState.Completed,
+                AllStages(StageState.Completed),
+                new Dictionary<ArtifactType, ArtifactRef>
+                {
+                    { ArtifactType.Glb, new ArtifactRef("glb-1", ArtifactType.Glb, "r1", EmptySha256, true) },
+                    { ArtifactType.Wav, new ArtifactRef("wav-1", ArtifactType.Wav, "r1", EmptySha256, true) }
+                });
+
+            Assert.That(item.TryGetSelectedWav(out var wav), Is.True);
+            Assert.That(wav.ArtifactId, Is.EqualTo("wav-1"));
+            Assert.That(wav.IsVerifiedWav, Is.True);
+            Assert.That(YummyServiceV2ContractGuard.TryAcceptSelectedWav(
+                item, "https://example.test/v2", "chew-sound", out _), Is.True);
+
+            // WAV が selected されていない order では、咀嚼音の取得を試みない。
+            var withoutWav = new GeneratedFoodItem(
+                GeneratedFoodItemId.Create("order-2"),
+                OrderState.Completed,
+                AllStages(StageState.Completed),
+                new Dictionary<ArtifactType, ArtifactRef>
+                {
+                    { ArtifactType.Glb, new ArtifactRef("glb-1", ArtifactType.Glb, "r1", EmptySha256, true) }
+                });
+
+            Assert.That(withoutWav.TryGetSelectedWav(out _), Is.False);
+            Assert.That(YummyServiceV2ContractGuard.TryAcceptSelectedWav(
+                withoutWav, "https://example.test/v2", "chew-sound", out var failure), Is.False);
+            Assert.That(failure.Code, Is.EqualTo(ContractGuardFailureCode.InvalidArtifact));
+        }
+
+        [Test]
+        public void UnityDeviceArtifactDownloadUrlIsBuiltFromOpaqueOrderAndArtifactIds()
+        {
+            Assert.That(YummyServiceV2Url.TryBuildUnityDeviceArtifactDownloadUrl(
+                "https://example.test/v2", "order-1", "wav-1", out var url), Is.True);
+            Assert.That(url, Is.EqualTo(
+                "https://example.test/v2/devices/unity/orders/order-1/artifacts/wav-1/download"));
+
+            // base URL に /v2 が無い設定でも、二重に付けずに1回だけ挟む。
+            Assert.That(YummyServiceV2Url.TryBuildUnityDeviceArtifactDownloadUrl(
+                "https://example.test/", "order-1", "wav-1", out var withoutV2), Is.True);
+            Assert.That(withoutV2, Is.EqualTo(
+                "https://example.test/v2/devices/unity/orders/order-1/artifacts/wav-1/download"));
+
+            // opaque な ID は解釈せずエスケープする。
+            Assert.That(YummyServiceV2Url.TryBuildUnityDeviceArtifactDownloadUrl(
+                "https://example.test/v2", "order/1", "wav 1", out var escaped), Is.True);
+            Assert.That(escaped, Is.EqualTo(
+                "https://example.test/v2/devices/unity/orders/order%2F1/artifacts/wav%201/download"));
+
+            Assert.That(YummyServiceV2Url.TryBuildUnityDeviceArtifactDownloadUrl(
+                "https://example.test/v2", "order-1", "", out _), Is.False);
+            Assert.That(YummyServiceV2Url.TryBuildUnityDeviceArtifactDownloadUrl(
+                "not-a-url", "order-1", "wav-1", out _), Is.False);
+        }
+
         private static Dictionary<StageType, StageState> AllStages(StageState state)
         {
             return new Dictionary<StageType, StageState>

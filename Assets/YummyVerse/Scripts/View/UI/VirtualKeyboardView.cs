@@ -21,7 +21,7 @@ namespace YummyVerse.Scripts.View.UI
     /// 同じ SDK でも OVROverlay や OVRSpatialAnchor は ToTrackingSpacePose() を通しているのに、
     /// キーボードだけ変換がなく、こちら側では直しようがない。
     /// </remarks>
-    public sealed class VirtualKeyboardView : MonoBehaviour, IVirtualKeyboard
+    public sealed class VirtualKeyboardView : MonoBehaviour, IVirtualKeyboard, IMultiFieldVirtualKeyboard
     {
         /// <summary>設定ダイアログのプレハブに組み込んであるキーボード。</summary>
         [SerializeField] private VirtualKeyboardPanelView keyboard;
@@ -29,12 +29,22 @@ namespace YummyVerse.Scripts.View.UI
         /// <summary>キーボードを出す対象の入力欄。</summary>
         [SerializeField] private TMP_InputField inputField;
 
+        /// <summary>
+        /// 任意の2つ目の入力欄。設定画面では YummyService v2 device token を
+        /// endpoint と同じキーボードで入力する。
+        /// </summary>
+        [Tooltip("任意。YummyService v2 の Device token 入力欄を指定する。")]
+        [SerializeField] private TMP_InputField secondaryInputField;
+
         private Coroutine _pendingHide;
+        private TMP_InputField _activeInputField;
 
         /// <summary>
         /// キーボードを閉じたとき、そのときの入力欄の中身を渡す。編集の確定はここ一本。
         /// </summary>
         public event Action<string> EditingFinished;
+
+        public event Action<TMP_InputField, string> EditingFinishedForField;
 
         /// <summary>キーボードが開いている=まだ打鍵の途中かどうか。</summary>
         public bool IsEditing => keyboard != null && keyboard.gameObject.activeSelf;
@@ -55,6 +65,11 @@ namespace YummyVerse.Scripts.View.UI
             // キーを押すたびにフォーカスを入力欄へ戻す(HandleDeselect)ので、
             // 戻すたびに全選択されると打った文字が消えたように見える。
             inputField.onFocusSelectAll = false;
+            if (secondaryInputField != null)
+            {
+                secondaryInputField.shouldHideSoftKeyboard = true;
+                secondaryInputField.onFocusSelectAll = false;
+            }
 
             keyboard.Initialize(inputField);
             keyboard.gameObject.SetActive(false);
@@ -63,8 +78,13 @@ namespace YummyVerse.Scripts.View.UI
         private void OnEnable()
         {
             if (inputField == null || keyboard == null) return;
-            inputField.onSelect.AddListener(HandleSelect);
-            inputField.onDeselect.AddListener(HandleDeselect);
+            inputField.onSelect.AddListener(HandlePrimarySelect);
+            inputField.onDeselect.AddListener(HandlePrimaryDeselect);
+            if (secondaryInputField != null)
+            {
+                secondaryInputField.onSelect.AddListener(HandleSecondarySelect);
+                secondaryInputField.onDeselect.AddListener(HandleSecondaryDeselect);
+            }
             keyboard.Submitted += HandleSubmitted;
         }
 
@@ -72,8 +92,14 @@ namespace YummyVerse.Scripts.View.UI
         {
             if (inputField != null)
             {
-                inputField.onSelect.RemoveListener(HandleSelect);
-                inputField.onDeselect.RemoveListener(HandleDeselect);
+                inputField.onSelect.RemoveListener(HandlePrimarySelect);
+                inputField.onDeselect.RemoveListener(HandlePrimaryDeselect);
+            }
+
+            if (secondaryInputField != null)
+            {
+                secondaryInputField.onSelect.RemoveListener(HandleSecondarySelect);
+                secondaryInputField.onDeselect.RemoveListener(HandleSecondaryDeselect);
             }
 
             if (keyboard != null) keyboard.Submitted -= HandleSubmitted;
@@ -87,6 +113,8 @@ namespace YummyVerse.Scripts.View.UI
             if (!enabled || keyboard == null) return;
 
             CancelPendingHide();
+            _activeInputField ??= inputField;
+            keyboard.Initialize(_activeInputField);
             keyboard.gameObject.SetActive(true);
         }
 
@@ -101,17 +129,45 @@ namespace YummyVerse.Scripts.View.UI
             var wasEditing = keyboard.gameObject.activeSelf;
             keyboard.gameObject.SetActive(false);
 
-            if (wasEditing && inputField != null) EditingFinished?.Invoke(inputField.text);
+            if (wasEditing && _activeInputField != null)
+            {
+                var editedField = _activeInputField;
+                var value = editedField.text;
+                EditingFinishedForField?.Invoke(editedField, value);
+                if (editedField == inputField) EditingFinished?.Invoke(value);
+            }
+
+            _activeInputField = null;
         }
 
-        private void HandleSelect(string _) => Show();
+        private void HandlePrimarySelect(string _)
+        {
+            _activeInputField = inputField;
+            Show();
+        }
+
+        private void HandleSecondarySelect(string _)
+        {
+            _activeInputField = secondaryInputField;
+            Show();
+        }
 
         /// <remarks>
         /// キーも Selectable なので、押した瞬間に入力欄からフォーカスが外れて onDeselect が飛ぶ。
         /// そこで即座には閉じず、1フレーム待ってから行き先を見る。フォーカスがキーボードの中へ
         /// 移っただけなら入力欄に戻して開いたままにし、それ以外なら閉じる。
         /// </remarks>
-        private void HandleDeselect(string _)
+        private void HandlePrimaryDeselect(string _)
+        {
+            HandleDeselect();
+        }
+
+        private void HandleSecondaryDeselect(string _)
+        {
+            HandleDeselect();
+        }
+
+        private void HandleDeselect()
         {
             CancelPendingHide();
 
@@ -134,7 +190,17 @@ namespace YummyVerse.Scripts.View.UI
 
             if (keyboard != null && keyboard.Contains(selected))
             {
-                inputField.ActivateInputField();
+                _activeInputField?.ActivateInputField();
+                yield break;
+            }
+
+            if (selected == inputField?.gameObject
+                || selected == secondaryInputField?.gameObject)
+            {
+                _activeInputField = selected == secondaryInputField?.gameObject
+                    ? secondaryInputField
+                    : inputField;
+                keyboard?.Initialize(_activeInputField);
                 yield break;
             }
 

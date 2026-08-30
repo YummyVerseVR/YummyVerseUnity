@@ -10,9 +10,10 @@ using Zenject;
 
 namespace YummyVerse.Scripts.ViewModel
 {
-    public class ConfigUIViewModel : IConfigUIViewModel, IInitializable, IDisposable
+    public class ConfigUIViewModel : IConfigUIViewModel, IYummyServiceV2ConfigViewModel, IInitializable, IDisposable
     {
         private readonly IEndPointManager _endPointManager;
+        private readonly IYummyServiceV2Credentials _credentials;
         private readonly IFoodContext _foodContext;
         private readonly IFoodScaleManager _foodScaleManager;
         private readonly IInputLayer _inputLayer;
@@ -26,6 +27,7 @@ namespace YummyVerse.Scripts.ViewModel
         
         public ReactiveProperty<bool> IsVisible { get; } = new(false);
         public ReactiveProperty<string> APIEndPointUrl { get; }  = new();
+        public ReactiveProperty<string> APIDeviceToken { get; } = new();
         public ReactiveProperty<string> LastRequestHTTPStatus { get; } = new();
         public ReactiveProperty<string> LastDetectedGuid { get; }  = new();
         public ReactiveProperty<float> FoodScale { get; } = new();
@@ -35,6 +37,7 @@ namespace YummyVerse.Scripts.ViewModel
         public ReactiveProperty<bool> IsSpatialPlacementBusy { get; } = new();
         
         public event Action OnAPIEndPointValidationError = delegate { };
+        public event Action OnAPIDeviceTokenValidationError = delegate { };
         
         // StatusCodeの初期値は未使用の値を設定
         public ReactiveProperty<TestConnectionResult> ConnectionTestResult { get; } = 
@@ -54,6 +57,7 @@ namespace YummyVerse.Scripts.ViewModel
             )
         {
             _endPointManager = endPointManager;
+            _credentials = endPointManager as IYummyServiceV2Credentials;
             _foodContext = foodContext;
             _foodScaleManager = foodScaleManager;
             _inputLayer = inputLayer;
@@ -109,6 +113,7 @@ namespace YummyVerse.Scripts.ViewModel
 
             FoodScale.Value = _foodScaleManager.FoodScale.Value;
             APIEndPointUrl.Value = _endPointManager.baseEndPointUrl;
+            APIDeviceToken.Value = _credentials?.DeviceAccessToken ?? string.Empty;
         }
         
         public void Dispose()
@@ -119,6 +124,7 @@ namespace YummyVerse.Scripts.ViewModel
             _disposables?.Dispose();
             IsVisible?.Dispose();
             APIEndPointUrl?.Dispose();
+            APIDeviceToken?.Dispose();
             LastRequestHTTPStatus?.Dispose();
             LastDetectedGuid?.Dispose();
             SpatialPlacementStatus?.Dispose();
@@ -160,6 +166,21 @@ namespace YummyVerse.Scripts.ViewModel
                 return;
             }
             OnAPIEndPointValidationError.Invoke();
+        }
+
+        public void UpdateDeviceAccessToken(string token)
+        {
+            if (_credentials != null && _credentials.UpdateDeviceAccessToken(token))
+            {
+                APIDeviceToken.Value = _credentials.DeviceAccessToken;
+                return;
+            }
+
+            // Force the bound input field back to the last accepted value.  This is
+            // especially important for a token field because leaving malformed text
+            // visible would make the next connection test ambiguous.
+            APIDeviceToken.OnNext(APIDeviceToken.Value);
+            OnAPIDeviceTokenValidationError.Invoke();
         }
 
         public void SetFoodScale(float scale)

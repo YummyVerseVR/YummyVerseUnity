@@ -5,7 +5,6 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
-using YummyVerse.Scripts.Model.YummyServiceV2;
 using YummyVerse.Scripts.View.UI;
 
 namespace YummyVerse.Scripts.Presentation
@@ -20,13 +19,6 @@ namespace YummyVerse.Scripts.Presentation
 
             using var request = UnityWebRequest.Get(requestLocation);
             request.timeout = 15;
-            if (Uri.TryCreate(requestLocation, UriKind.Absolute, out var uri)
-                && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp))
-            {
-                request.SetRequestHeader(
-                    "Authorization",
-                    $"Bearer {YummyServiceV2Url.DevelopmentAdminToken}");
-            }
 
             try
             {

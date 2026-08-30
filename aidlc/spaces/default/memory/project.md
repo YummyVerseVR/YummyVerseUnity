@@ -42,7 +42,7 @@
 - Menu 表示時に未選択 3D model が load されないこと、scoop event の one-shot、visual/collider の段階縮小、crumb/disappear、DishCleared one-shot を回帰確認する。
 - VR menu と physical viewer の item identity/状態整合性を、対象 device/transport が確定した後に確認する。
 - YummyService v2 の全 OrderState/StageState/ArtifactType/ProblemDetails mapping、unknown enum、v1 rejection、SHA mismatch、stale response を contract test する。
-- Contract test と production API integration を分け、v2 OpenAPI に paths/security/responses がない状態を integration 合格にしない。
+- Contract test と production API integration を分け、v2 route/schema が公開済みでも placeholder deployment、preview/full-stage、artifact checksum、secret/TLS、runtime compatibility が未確認の状態を integration 合格にしない。
 - active runtime roots、DI activation、Unity callback、serialized reference の到達性を、削除候補ごとに記録する。到達性監査をしていない削除は合格としない。
 - Domain と Application の pure core/use case は EditMode unit test を基本とし、adapter の mapping、failure、timeout、cancellation は contract test で確認する。Scene/Prefab/ScriptableObject の変更は Unity Editor の load/参照検証を別に行う。
 - Quest/Android/OpenXR、PCVR、Editor/Standalone の結果を一つにまとめない。未実行は `NOT-RUN` と記録し、成功扱いにしない。
@@ -94,7 +94,7 @@
 - ALWAYS QR、menu item、preview、model data、anchor placement の各 identity/lifecycle を混同せず、変換境界を明示する。
 - ALWAYS session reset 対象と session をまたいで保持する catalog/cache/placement を区別する。
 - NEVER v1 API route/client/DTO/configuration/mock を runtime dependency として追加・維持する。`/v1/...` への outbound request と、v1/legacy への fallback を全面禁止する。Local negative fixture は v1 rejection test だけに限定する。
-- ALWAYS v2 draft contract を更新するときは source commit/version/checksum と schema/path/security diff を review する。
+- ALWAYS v2 draft contract を更新するときは source commit/version/checksum と schema/path/security diff を review し、Unity Device の projection（status/artifact/payload/ACK）と public sample menu を区別する。
 - ALWAYS downloaded artifact bytes の SHA-256 を確認してから decode/load/shared cache publish する。
 - ALWAYS Network と Standalone の identity namespace、loading、error、availability を分離し、一方の失敗で他方を利用不能にしない。
 - ALWAYS 新しい feature ごとに Domain/Application の責務、role-specific port、Infrastructure adapter、Presentation boundary、composition root の登録箇所を記録する。

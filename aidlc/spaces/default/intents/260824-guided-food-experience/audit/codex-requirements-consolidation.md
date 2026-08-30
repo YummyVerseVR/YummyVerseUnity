@@ -37,3 +37,13 @@
 - Gap: `YummyService v2/Standalone catalog` という表記は存在したが、一つの UI への同時統合、source 識別、API failure 時の local 継続が独立した acceptance として不足していた。
 - Decision: `FR34` に unified post-tutorial food selection UI、`FR35` に API 非依存 Standalone continuity を追加する。
 - Decision: Standalone は v1 fallback ではなく、API request を行わない第一級 local source とする。
+
+## 2026-08-30 — YummyService v2 `ru322/main` Contract Refresh
+
+- Input: 利用者指定の `https://github.com/YummyVerseVR/YummyService/tree/ru322/main`、branch commit `97c9ed75980ec398fe75159bd4e011b489112433`。
+- Evidence: `contracts/v2/openapi.yaml`（SHA-256 `18462aa900a6b031438635fd46ddc997746c9782d6476247b1cb82c011409616`）、`contracts/v2/README.md`（SHA-256 `0a0ec28cae5a1607df8ff4b6dab379324d5d1b18255ed52b6feb3c79c94f199d`）、`YummyApiMock`/`YummyOrderServer` の Unity/device tests。
+- Finding: OpenAPI は104 paths/124 schemasとなり、Unity Device の history/status/artifact download/Hardware Payload/ACK と `deviceBearerAuth` が公開された。旧 2026-08-24 review の `paths: {}` は superseded である。
+- Decision: Unity の規範 route は `/v2/devices/unity/...` とし、`/v2/menu` public sample、`/v2/admin/menu`、旧 `/v1`/`/{guid}/model` を生成 order API の代用にしない。
+- Decision: `DeviceOrderListResponse`、`CustomerOrderStatus`、`HardwarePayload`、ACK、ProblemDetails など Unity 関連 schema を shared knowledge に記録し、未提供の preview、全5 stage/detail、artifact checksum、deployment host/TLS/secret delivery は未解決として残す。
+- Finding: 現行 Unity adapter はまだ Admin menu と固定 demo token を使用しているため、本更新は documentation/contract refresh であり、runtime migration の完了ではない。
+- Result: v2 domain mapping は `READY`、Unity Device route/schema は `READY`、full consumer contract は `PARTIAL`、production HTTP integration は `NOT-READY`。

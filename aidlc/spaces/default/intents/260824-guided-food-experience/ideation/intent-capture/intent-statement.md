@@ -42,7 +42,7 @@ YummyVerse のチュートリアル仕様は `docs/` に分散し、既存の `a
 - iPad ビューアーの配布方式、認証方式、表示を画像だけにするか 3D まで含めるかの未確定事項を、この intent で無断に決定すること。
 - 「即座」の数値目標、キャッシュ容量、履歴保持件数を根拠なく固定すること。
 - 既存コードが要件を満たすと未検証のまま宣言すること。
-- v2 OpenAPI に定義されていない endpoint/auth/download contract を推測し、v1 route を v2 として暫定利用すること。
+- v2 OpenAPI に定義されていない endpoint/auth/download contract を推測し、v1 route、Admin menu、public sample route を v2 generated-order API として暫定利用すること。
 
 ## Success Criteria
 
@@ -50,5 +50,5 @@ YummyVerse のチュートリアル仕様は `docs/` に分散し、既存の `a
 2. スタートから前菜体験、生成食品選択、提供、完食、Attract 復帰までのフローと中断/救済経路が定義されている。
 3. QR が食品 identity source ではなく anchor designation source であることが明記され、旧 intent との優先関係が明確である。
 4. AABB、すくい、縮小、食べカス、消滅について検証可能な受け入れ条件がある。
-5. 未指定の性能値・外部ビューアー方式・AABB 算出詳細・haptic 必須度・既存 Spatial Anchor との統合方式・v2 transport/auth/artifact operation が未解決事項として残されている。
-6. YummyService v2 の確定 domain vocabulary と未定義 transport contract を区別し、実装に必要な API capability と blocker を説明できる。
+5. 未指定の性能値・外部ビューアー方式・AABB 算出詳細・haptic 必須度・既存 Spatial Anchor との統合方式に加え、v2 の preview/full-stage/checksum/deployment/runtime compatibility が未解決事項として残されている。
+6. YummyService v2 の確定 domain vocabulary と、公開済み Unity Device transport contract の範囲・残る blocker を区別し、実装に必要な API capability を説明できる。

@@ -39,9 +39,9 @@ YummyVerse は、食感再現を目的とした展示型 VR/MR アプリケー�
 - Meta XR Spatial Anchor と永続化された Anchor UUID
 - XR Interaction Toolkit によるコントローラー操作と設定用 Cube の grab interaction
 - 出現 anchor designation 用の QR trackable と MRUK（食品 identity には不使用）
-- Legacy current-code boundary: Yummy Control Server endpoint。v2 migration 後の target runtime/fallback では使用しない。
-- YummyService v2 order/artifact API。現行 target は v2 のみで、v1 は廃止済み・利用禁止。
-- HTTP による preview image/selected immutable GLB download と SHA-256 integrity verification
+- Current Unity network boundary: 開発用 `/v2/admin/menu` adapter。target runtime は YummyService v2 Unity Device の `/v2/devices/unity` order/artifact API へ移行する。
+- YummyService v2 は `ru322/main@97c9ed7...` の contract を根拠とし、v1 と旧 `/{guid}/model` は廃止済み・利用禁止。
+- HTTP による selected GLB/WAV download、Hardware Payload/ACK。normalized preview image と Unity 側の artifact SHA-256 verification metadata は contract gap。
 - Android `Application.persistentDataPath` 配下の Standalone food files
 - Unity Localization、Addressables、glTFast
 - 生成食品 catalog、preview image cache、選択 model data cache/source
@@ -53,6 +53,7 @@ YummyVerse は、食感再現を目的とした展示型 VR/MR アプリケー�
 - 移管元との coverage: 同 intent の `source-migration-map.md`。
 - Tutorial の共有実装/運用知識: `aidlc/spaces/default/knowledge/aidlc-shared/tutorial-system.md`。
 - YummyService v2 の契約 snapshot、必要 API capability、v1 廃止方針: `aidlc/spaces/default/knowledge/aidlc-shared/yummy-service-v2-api.md`。
+- Unity Device の route/schema、auth、status/artifact/payload/ACK の実装記録: `aidlc/spaces/default/knowledge/aidlc-shared/yummy-service-v2-unity-api.md`。
 - Spatial Anchor 実装履歴: `aidlc/spaces/default/intents/260821-spatial-anchor-food-placement/`。ただし QR GUID 継続方針は新 intent により superseded。
 - `docs/` は移管 provenance として残っていても規範的な参照先にしない。削除されても要件判断に影響しない。
 
@@ -64,8 +65,8 @@ Standalone policy: Standalone Mode は今後も維持する。Standalone は API
 
 - `README.md` の推奨 Unity 版と `ProjectSettings/ProjectVersion.txt` の実版が一致していない。
 - 自動テストの網羅性、CI、Quest/PCVR の再現可能な実機テスト手順は、今後の intent で確認・補強が必要。
-- YummyService v2 の domain contract は確認済みだが、production HTTP paths/auth/artifact operation は規範 OpenAPI に未定義。
-- 現行 implementation の QR GUID food selection は target requirement と一致せず、migration が必要。
-- 現行 `FoodDownloader`/`FoodContext`/`IFoodFetchable` は旧 GUID model download で、YummyService v2 order/artifact contract と不一致。
-- YummyService v2 normative OpenAPI は現時点で `2.0.0-draft`、`paths: {}`、placeholder server URL で、auth/artifact lookup/download が deferred。Production HTTP integration は未準備。
-- Model selection-to-visible SLA、physical viewer、AABB、haptic、QR/Anchor、v2 transport/auth/history/artifact visibility/download は `260824-guided-food-experience` の `Q1`〜`Q11`。
+- YummyService v2 Unity Device の domain/HTTP route/schema は確認済みだが、production deployment host/TLS/secret delivery は未準備。
+- 現行 implementation は `/v2/admin/menu`、固定 Admin demo token、menu URL download のままで、Unity Device order/artifact identity への migration が必要。
+- Device status は全5 stage/review/failure detail と artifact revision/SHA-256 を返さず、Unity Device preview operation もない。
+- History の order change detection、rate limit、cache/retry、deployed compatibility negotiation、Physical Viewer/customer scope は未確定。
+- Model selection-to-visible SLA、physical viewer、AABB、haptic、QR/Anchor、v2 の残課題は `260824-guided-food-experience` の `Q1`〜`Q10` と API contract 文書を参照する。

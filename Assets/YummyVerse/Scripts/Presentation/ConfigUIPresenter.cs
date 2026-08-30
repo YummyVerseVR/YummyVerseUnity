@@ -20,11 +20,13 @@ namespace YummyVerse.Scripts.Presentation
         private const float DisplayDistance = 0.6f;
 
         private readonly IConfigUIViewModel _viewModel;
+        private readonly IYummyServiceV2ConfigViewModel _v2ViewModel;
         private readonly CompositeDisposable _disposables = new();
         private Tween _visibilityTween;
         private PointableCanvasInteractionGate _interactionGate;
         private CanvasGroup _canvasGroup;
         private TMP_InputField _apiEndPointUrl;
+        private TMP_InputField _apiDeviceToken;
         private Button _testConnectionButton;
         private OVROverlayCanvas _overlayCanvas;
         private Slider _foodScaleSlider;
@@ -35,15 +37,53 @@ namespace YummyVerse.Scripts.Presentation
         private TextMeshProUGUI _spatialPlacementStatus;
         private Button _returnToStartButton;
         private IVirtualKeyboard _virtualKeyboard;
+        private IMultiFieldVirtualKeyboard _multiFieldKeyboard;
         private bool _initialized;
 
         public ConfigUIPresenter(IConfigUIViewModel viewModel)
         {
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _v2ViewModel = viewModel as IYummyServiceV2ConfigViewModel;
+        }
+
+        /// <summary>
+        /// Backward-compatible initializer for scenes that have not added the v2
+        /// token field yet.  The new overload below is used by the updated settings
+        /// view when its serialized token reference is available.
+        /// </summary>
+        public void Initialize(
+            TMP_InputField apiEndPointUrl,
+            Button testConnectionButton,
+            CanvasGroup canvasGroup,
+            OVROverlayCanvas overlayCanvas,
+            Slider foodScaleSlider,
+            Camera targetCamera,
+            Transform uiTransform,
+            Button spatialAnchorButton,
+            Button fixFoodPositionButton,
+            TextMeshProUGUI spatialPlacementStatus,
+            Button returnToStartButton,
+            IVirtualKeyboard virtualKeyboard = null)
+        {
+            Initialize(
+                apiEndPointUrl,
+                null,
+                testConnectionButton,
+                canvasGroup,
+                overlayCanvas,
+                foodScaleSlider,
+                targetCamera,
+                uiTransform,
+                spatialAnchorButton,
+                fixFoodPositionButton,
+                spatialPlacementStatus,
+                returnToStartButton,
+                virtualKeyboard);
         }
 
         public void Initialize(
             TMP_InputField apiEndPointUrl,
+            TMP_InputField apiDeviceToken,
             Button testConnectionButton,
             CanvasGroup canvasGroup,
             OVROverlayCanvas overlayCanvas,
@@ -61,8 +101,18 @@ namespace YummyVerse.Scripts.Presentation
 
             _virtualKeyboard = virtualKeyboard;
             if (_virtualKeyboard != null) _virtualKeyboard.EditingFinished += CommitEndPointUrl;
+            _multiFieldKeyboard = virtualKeyboard as IMultiFieldVirtualKeyboard;
+            if (_multiFieldKeyboard != null)
+            {
+                _multiFieldKeyboard.EditingFinishedForField += HandleVirtualKeyboardFinished;
+            }
 
             _apiEndPointUrl = apiEndPointUrl;
+            _apiDeviceToken = apiDeviceToken;
+            if (_apiDeviceToken != null)
+            {
+                _apiDeviceToken.contentType = TMP_InputField.ContentType.Password;
+            }
             _testConnectionButton = testConnectionButton;
             _canvasGroup = canvasGroup;
             _overlayCanvas = overlayCanvas;
@@ -96,6 +146,18 @@ namespace YummyVerse.Scripts.Presentation
         public void Dispose()
         {
             if (_virtualKeyboard != null) _virtualKeyboard.EditingFinished -= CommitEndPointUrl;
+            if (_multiFieldKeyboard != null)
+            {
+                _multiFieldKeyboard.EditingFinishedForField -= HandleVirtualKeyboardFinished;
+            }
+            if (_apiEndPointUrl != null)
+            {
+                _apiEndPointUrl.onEndEdit.RemoveListener(HandleEndPointUrlEndEdit);
+            }
+            if (_apiDeviceToken != null)
+            {
+                _apiDeviceToken.onEndEdit.RemoveListener(HandleDeviceTokenEndEdit);
+            }
             _visibilityTween?.Kill();
             DisableOverlayCanvas();
             _disposables.Dispose();
@@ -109,6 +171,12 @@ namespace YummyVerse.Scripts.Presentation
             _viewModel.APIEndPointUrl
                 .Subscribe(value => _apiEndPointUrl?.SetTextWithoutNotify(value))
                 .AddTo(_disposables);
+            if (_v2ViewModel != null)
+            {
+                _v2ViewModel.APIDeviceToken
+                    .Subscribe(value => _apiDeviceToken?.SetTextWithoutNotify(value))
+                    .AddTo(_disposables);
+            }
             _viewModel.FoodScale
                 .Subscribe(value => _foodScaleSlider?.SetValueWithoutNotify(value))
                 .AddTo(_disposables);
@@ -139,6 +207,11 @@ namespace YummyVerse.Scripts.Presentation
             if (_apiEndPointUrl != null)
             {
                 _apiEndPointUrl.onEndEdit.AddListener(HandleEndPointUrlEndEdit);
+            }
+
+            if (_apiDeviceToken != null && _v2ViewModel != null)
+            {
+                _apiDeviceToken.onEndEdit.AddListener(HandleDeviceTokenEndEdit);
             }
 
             if (_foodScaleSlider != null)
@@ -199,6 +272,21 @@ namespace YummyVerse.Scripts.Presentation
             _viewModel.UpdateEndPointUrl(url);
         }
 
+        private void HandleDeviceTokenEndEdit(string token)
+        {
+            // A shared VirtualKeyboardView emits its field-aware event when the
+            // keyboard closes.  Ignore the intermediate TMP onEndEdit notification
+            // so validation happens exactly once after virtual typing is complete.
+            if (_virtualKeyboard != null && _virtualKeyboard.IsEditing) return;
+            _v2ViewModel?.UpdateDeviceAccessToken(token);
+        }
+
+        private void HandleVirtualKeyboardFinished(TMP_InputField field, string value)
+        {
+            if (_v2ViewModel == null || field != _apiDeviceToken) return;
+            _v2ViewModel.UpdateDeviceAccessToken(value);
+        }
+
         /// <remarks>
         /// 仮想キーボードはキーを押すたびに入力欄のフォーカスを奪う
         /// (PointableCanvasModule.ProcessPress → DeselectIfSelectionChanged)。
@@ -247,7 +335,9 @@ namespace YummyVerse.Scripts.Presentation
         {
             var eventSystem = EventSystem.current;
             if (eventSystem == null || _apiEndPointUrl == null) return;
-            if (eventSystem.currentSelectedGameObject != _apiEndPointUrl.gameObject) return;
+            if (eventSystem.currentSelectedGameObject != _apiEndPointUrl.gameObject
+                && (_apiDeviceToken == null
+                    || eventSystem.currentSelectedGameObject != _apiDeviceToken.gameObject)) return;
             eventSystem.SetSelectedGameObject(null);
         }
 

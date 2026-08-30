@@ -76,20 +76,25 @@
 
 | Contract topic | Self-contained contract fact | Destination |
 |---|---|---|
-| Version/authority | OpenAPI 3.1、`2.0.0-draft`、YummyService `main@546b455...` | `FR25`, `NFR10`, contract summary |
-| HTTP readiness | `paths: {}`、`.invalid` server、auth/artifact lookup/download deferred | `FR25`, `AC15`, `Q6`〜`Q10` |
+| Version/authority | OpenAPI 3.1、`2.0.0-draft`、YummyService `ru322/main@97c9ed7...`、104 paths/124 schemas | `FR25`, `NFR10`, contract summary |
+| HTTP readiness | Unity Device の history/status/artifact/payload/ACK paths と schemas、device bearer auth が定義済み。server は `.invalid` placeholder | `FR25`, `AC15`, `Q6`〜`Q10` |
+| Unity history/status | `GET /devices/unity/orders` → `DeviceOrderListResponse`、`GET /devices/unity/orders/{order_id}` → `CustomerOrderStatus`。Device status は sanitized projection | `FR27`, `FR28`, `AC13`, `Q6`, `Q9` |
+| Unity artifact delivery | selected completed verified GLB/WAV の `/artifacts/{artifact_id}/download`。media type/Content-Disposition は定義済み、checksum/revision metadata は Unity response にない | `FR29`〜`FR31`, `AC12`, `Q10` |
+| Unity payload | `/payload` の `200/202/304/503`、ETag/Retry-After、`/payload/ack` の Idempotency-Key/201/200/409 | `FR25`, `FR33`, contract summary |
+| Device authentication | `deviceBearerAuth` と `UNITY` device token の issue/rotate/revoke。Mock static token は dev only | `FR25`, `FR32`, `Q7` |
+| Public menu boundary | `/menu` は published sample の `PublicMenuItem` と GLB/WAV。generated order history/artifact/preview の代替ではない | `FR13`, `FR27`, `FR30`, `SRC-6` |
 | Workflow DAG | Moderation→Retrieval→Analysis→Audio と moderation→I23D。I23D は analysis/audio branch から独立 | `FR26`, contract summary |
 | Order/Stage states | 8 OrderState、7 StageState、review/warning semantics | `FR26`, `FR28`, `AC11` |
 | Completion | Approved moderation/analysis、retrieval success/warning、verified JSON/GLB/WAV が必要 | `FR28`, `FR29`, `Q11` |
 | Artifact immutability | Artifact ID/type/revision/SHA-256/verified。current selection は別 pointer | `FR29`, `FR31`, `ADR-007` |
 | Preview/model types | `SOURCE_IMAGE_NORMALIZED` と `GLB` は別 immutable artifact type | `FR29`, `FR30` |
 | ProblemDetails | `type/title/status` required、extension allowed | `FR33` |
-| Security | OpenAPI は `security: []` だが v2 README は auth/device token を deferred | `FR32`, `NFR13`, `Q7` |
+| Security | Unity Device route は `deviceBearerAuth`。Customer/Viewer scope と deployed secret delivery は未確定 | `FR32`, `NFR13`, `Q7` |
 | Food Analysis | Food properties only、confidence は制御 threshold に使用不可 | Constraints、shared API knowledge |
-| Current Unity gap | QR GUID→`/{guid}/model`、Guid-only interface、固定 temp file/base64 roundtrip | `FR25`, `FR31`, `NFR14`, `ADR-006`/`ADR-007` |
+| Current Unity gap | `/v2/admin/menu`、固定 `admin-demo-token`、menu URL download、artifact identity/checksum 非保持 | `FR25`, `FR29`〜`FR31`, `NFR14`, `ADR-006`/`ADR-007` |
 | V1 retirement | YummyVerseUnity では v1 API を廃止し、全 runtime/environment/fallback から恒久的に利用禁止 | `FR25`, project memory, shared API knowledge |
 | Standalone continuity | Standalone Mode は API 非依存の端末内食品 source として継続する | `FR35`, `ADR-008`, project memory |
 | Unified post-tutorial menu | S14 後の一つの UI に v2 API 食品と Standalone 食品を同時表示し、source に応じて load する | `FR34`, S16/S17, `AC16`, `ADR-008` |
 
-- YummyService v2 の unmapped normative domain rule: None for the current read-only catalog/model-consumer scope.
+- YummyService v2 の unmapped normative domain rule: None for the current read-only catalog/model-consumer scope. Transport の未達は preview、全 stage/status detail、Unity artifact checksum、deployment/compatibility policy として明示済み。
 - Unity から order intake/upload/submit、Admin/worker operation を行う要求は現 scope にないため Out of Scope とした。

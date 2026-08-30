@@ -48,6 +48,7 @@ namespace YummyVerse.Editor.Tests
                 "Test Food",
                 "/tmp/test-food/preview.png",
                 "/tmp/test-food/model.glb",
+                "/tmp/test-food/audio.mp3",
                 MenuItemSource.PersistentData);
             using var fixture = new Fixture(selected);
             fixture.Handler.Initialize();
@@ -231,6 +232,7 @@ namespace YummyVerse.Editor.Tests
         private sealed class StubFoodViewModel : IFoodViewModel, IDisposable
         {
             public ReactiveProperty<GltfImport> foodGltf { get; } = new();
+            public ReactiveProperty<AudioClip> chewSound { get; } = new();
             public ReactiveProperty<Transform> foodTransform { get; } = new();
             public ReactiveProperty<float> foodScale { get; } = new();
 
@@ -247,6 +249,7 @@ namespace YummyVerse.Editor.Tests
             public void Dispose()
             {
                 foodGltf.Dispose();
+                chewSound.Dispose();
                 foodTransform.Dispose();
                 foodScale.Dispose();
             }

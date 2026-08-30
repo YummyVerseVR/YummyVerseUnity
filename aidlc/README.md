@@ -57,6 +57,7 @@ aidlc/spaces/default/intents/<YYMMDD>-<short-kebab-label>/
 - コアロジック、依存方向、薄い View、DI、lifecycle、未使用コード判定、review gate の恒久規約は `spaces/default/knowledge/aidlc-shared/architecture-and-code-quality.md` を参照する。今回の適用計画・初期監査は `spaces/default/intents/260828-architecture-redesign/` に記録する。
 - Tutorial の共有実装・運用知識は `spaces/default/knowledge/aidlc-shared/tutorial-system.md` を参照する。
 - YummyService v2 の契約 snapshot と API policy は `spaces/default/knowledge/aidlc-shared/yummy-service-v2-api.md` を参照する。v1 API は廃止済みで、YummyVerseUnity から今後一切利用しない。
+- Unity Device の v2 endpoint/schema（history、status、selected artifact、Hardware Payload/ACK、認証、残課題）は `spaces/default/knowledge/aidlc-shared/yummy-service-v2-unity-api.md` を参照する。
 - `spaces/default/intents/260821-spatial-anchor-food-placement/` は Spatial Anchor 実装時の履歴である。その中の QR GUID による食品選択方針は 2026-08-24 intent により superseded されている。
 
 ## 公式ランタイムとの境界

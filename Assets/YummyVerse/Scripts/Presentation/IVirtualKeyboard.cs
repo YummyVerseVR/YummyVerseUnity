@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 
 namespace YummyVerse.Scripts.Presentation
 {
@@ -19,5 +20,15 @@ namespace YummyVerse.Scripts.Presentation
 
         /// <summary>キーボードを閉じる。開いていなければ何も起きない。</summary>
         void Close();
+    }
+
+    /// <summary>
+    /// Optional extension used when one keyboard is shared by multiple settings
+    /// fields (the endpoint and the v2 device token).  Existing keyboard adapters
+    /// implementing only <see cref="IVirtualKeyboard"/> remain valid.
+    /// </summary>
+    public interface IMultiFieldVirtualKeyboard
+    {
+        event Action<TMP_InputField, string> EditingFinishedForField;
     }
 }

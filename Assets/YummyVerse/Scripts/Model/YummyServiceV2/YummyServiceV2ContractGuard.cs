@@ -177,6 +177,140 @@ namespace YummyVerse.Scripts.Model.YummyServiceV2
             return true;
         }
 
+        /// <summary>
+        /// 咀嚼音として selected WAV を受け入れてよいかを判定する。
+        ///
+        /// Device の status projection は <c>wav.downloadable</c> が true のときだけ
+        /// <c>artifact_id</c> を返す。false のときに ID を推測して download してはならないため、
+        /// GLB と同じく COMPLETED / 型一致 / verified の3点で fail closed にする。
+        /// </summary>
+        public static bool TryAcceptSelectedWav(
+            OrderState orderState,
+            ArtifactRef? selectedWav,
+            string serverUrl,
+            string operation,
+            out ContractGuardFailure failure)
+        {
+            if (orderState != OrderState.Completed)
+            {
+                failure = Failure(
+                    ContractGuardFailureCode.NotSelectable,
+                    serverUrl,
+                    string.Empty,
+                    operation,
+                    orderState.ToString(),
+                    "only a COMPLETED order can provide a chewing sound.");
+                return false;
+            }
+
+            if (!selectedWav.HasValue || !selectedWav.Value.IsValid)
+            {
+                failure = Failure(
+                    ContractGuardFailureCode.InvalidArtifact,
+                    serverUrl,
+                    string.Empty,
+                    operation,
+                    ArtifactType.Wav.ToString(),
+                    "a selected valid WAV artifact is required.");
+                return false;
+            }
+
+            if (selectedWav.Value.ArtifactType != ArtifactType.Wav)
+            {
+                failure = Failure(
+                    ContractGuardFailureCode.WrongArtifactType,
+                    serverUrl,
+                    string.Empty,
+                    operation,
+                    selectedWav.Value.ArtifactType.ToString(),
+                    "the selected chewing sound artifact must have type WAV.");
+                return false;
+            }
+
+            if (!selectedWav.Value.Verified)
+            {
+                failure = Failure(
+                    ContractGuardFailureCode.ArtifactNotVerified,
+                    serverUrl,
+                    string.Empty,
+                    operation,
+                    ArtifactType.Wav.ToString(),
+                    "an unverified WAV artifact is not playable.");
+                return false;
+            }
+
+            failure = null;
+            return true;
+        }
+
+        /// <summary>
+        /// 受信した咀嚼音 bytes の整合性まで確かめる。
+        ///
+        /// 現行の Unity Device contract では status も download response も sha256 を返さない
+        /// (contract gap)。checksum を得られるようになるまで、このゲートは通せない。
+        /// </summary>
+        public static bool TryAcceptDownloadedWav(
+            OrderState orderState,
+            ArtifactRef? selectedWav,
+            byte[] downloadedBytes,
+            string serverUrl,
+            string operation,
+            out ContractGuardFailure failure)
+        {
+            if (!TryAcceptSelectedWav(orderState, selectedWav, serverUrl, operation, out failure))
+            {
+                return false;
+            }
+
+            if (!selectedWav.Value.VerifyBytes(downloadedBytes))
+            {
+                failure = Failure(
+                    ContractGuardFailureCode.ArtifactIntegrityMismatch,
+                    serverUrl,
+                    string.Empty,
+                    operation,
+                    ArtifactType.Wav.ToString(),
+                    "downloaded bytes did not match the selected artifact SHA-256.");
+                return false;
+            }
+
+            failure = null;
+            return true;
+        }
+
+        public static bool TryAcceptSelectedWav(
+            GeneratedFoodItem item,
+            string serverUrl,
+            string operation,
+            out ContractGuardFailure failure)
+        {
+            if (item == null || !item.IsValid)
+            {
+                failure = Failure(
+                    ContractGuardFailureCode.NotSelectable,
+                    serverUrl,
+                    string.Empty,
+                    operation,
+                    ArtifactType.Wav.ToString(),
+                    "the generated food item is invalid or incomplete.");
+                return false;
+            }
+
+            if (!item.TryGetSelectedWav(out var wav))
+            {
+                failure = Failure(
+                    ContractGuardFailureCode.InvalidArtifact,
+                    serverUrl,
+                    string.Empty,
+                    operation,
+                    ArtifactType.Wav.ToString(),
+                    "the generated food item has no selected WAV artifact.");
+                return false;
+            }
+
+            return TryAcceptSelectedWav(item.OrderState, wav, serverUrl, operation, out failure);
+        }
+
         public static bool TryAcceptSelectedGlb(
             GeneratedFoodItem item,
             string serverUrl,

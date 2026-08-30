@@ -47,8 +47,10 @@ namespace YummyVerse.Scripts.Model.Struct.SO
         [SerializeField, Min(0f)] private float connectionWaitSeconds = 10f;
 
         [Header("咀嚼音")]
-        [Tooltip("MOUTH イベントごとに鳴らす音。再生中に次のイベントが来たら頭から鳴らし直す。")]
-        [SerializeField] private AudioClip chewSound;
+        [Tooltip("食品ごとの咀嚼音が無いときに鳴らす音。" +
+                 "ローカル食品はフォルダ内の audio.[mp3/wav/ogg]、API v2 食品はエンドポイントの音声を優先する。" +
+                 "未設定のまま音を持たない食品を出すと、その食品では咀嚼音が鳴らない。")]
+        [SerializeField] private AudioClip fallbackChewSound;
 
         [SerializeField, Range(0f, 1f)] private float chewSoundVolume = 1f;
 
@@ -62,7 +64,7 @@ namespace YummyVerse.Scripts.Model.Struct.SO
         public int CalibrationStartAttempts => calibrationStartAttempts;
         public float CalibrationCompletionTimeoutSeconds => calibrationCompletionTimeoutSeconds;
         public float ConnectionWaitSeconds => connectionWaitSeconds;
-        public AudioClip ChewSound => chewSound;
+        public AudioClip FallbackChewSound => fallbackChewSound;
         public float ChewSoundVolume => chewSoundVolume;
 
         public SerialPortSettings ToSerialPortSettings() =>

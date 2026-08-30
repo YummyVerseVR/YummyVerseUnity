@@ -59,10 +59,63 @@ QRコードは食べ物の選択にだけ使用し、表示位置と回転には
 > [!NOTE]
 > シリアル通信は Windows / macOS / Linux のみ対応です。Quest 単体実行(Android)では咀嚼計なしとして動作します。
 
+### 咀嚼音のデータ
+咀嚼音は食品ごとに切り替わります。取得元は食品の種類で決まります。
+
+| 食品の種類 | 咀嚼音の取得元 |
+|---|---|
+| `PersistentDataPath/Foods/<食品名>/` のローカル食品 | 同じフォルダ内の `audio.mp3` / `audio.wav` / `audio.ogg` (この優先順で最初に見つかったもの) |
+| API v2 から取得した食品 | generated order の status にある `wav.artifact_id` に対応する音声 artifact |
+| StandaloneMode の built-in food (`TestData/*.glb`) | 音声を置く場所の規約が無いため、既定の咀嚼音 |
+
+音声が用意されていない、あるいは取得・デコードに失敗した食品では、
+`ChewingSensorConfig` の `Fallback Chew Sound` を鳴らします。
+どちらも無い場合は無音になります(食品の表示自体は続きます)。
+
+> [!NOTE]
+> generated order の咀嚼音は `AUDIO_GENERATION` が作る WAV artifact です。正式な取得経路は
+> `GET /v2/devices/unity/orders/{order_id}/artifacts/{artifact_id}/download` (`audio/wav`) で、
+> order status の `wav.downloadable` が true のときだけ `wav.artifact_id` が返ります。
+> URL 生成 (`YummyServiceV2Url.TryBuildUnityDeviceArtifactDownloadUrl`) と
+> 受け入れ判定 (`YummyServiceV2ContractGuard.TryAcceptSelectedWav` / `TryAcceptDownloadedWav`) は
+> 実装済みで、Unity adapter はこの Device API 経路だけを使います。`/v2/menu` の公開 sample は
+> generated order の代替として読み込みません。
+
+### YummyService v2 API
+API contract の snapshot と Unity 側で利用する schema は [`aidlc/spaces/default/knowledge/aidlc-shared/yummy-service-v2-unity-api.md`](./aidlc/spaces/default/knowledge/aidlc-shared/yummy-service-v2-unity-api.md) に記録しています。
+
+- generated food の履歴は `/v2/devices/unity/orders`、選択した GLB/WAV は order の `artifact_id` を使う Device API を利用します。
+- `/v2/menu` は公開された開発用 sample menu で、generated order の履歴・artifact revision・preview の代用ではありません。
+- Unity adapter は `UNITY` Device token を `Authorization: Bearer ...` で送信します。token は build や設定 asset に埋め込まず、設定画面の `YummyService v2 Device Token` 欄へ実行時に入力してください。
+
+#### ローカル Mock での接続確認
+
+正式な production URL はまだ契約で公開されていません。手元で確認できる
+`YummyService/YummyApiMock` を起動する場合は、Mock のディレクトリで次を実行します。
+
+```sh
+uv sync
+uv run python -m src.entry
+```
+
+Mock は `http://127.0.0.1:8010` で待ち受けます。アプリの設定画面で次を入力してから
+`Test Connection` を押してください。
+
+| 項目 | ローカル Mock の値 |
+|---|---|
+| `YummyService Endpoint` | `http://127.0.0.1:8010` |
+| `YummyService v2 Device Token` | `v2-unity-device-token` |
+
+この token は Mock 専用の公開テスト資格情報です。production では Admin の device lifecycle
+で発行した `device_type=UNITY` token を使用してください。`127.0.0.1` は Mock とアプリを同じ
+マシンで動かす場合だけ有効で、Quest から別マシンの Mock へ接続する場合は到達可能な HTTPS
+endpoint を設定します。
+
 ### 設定
 `Assets/YummyVerse/Data/ChewingSensor/ChewingSensorConfig.asset` で調整します。
 
-- `Chew Sound` … 鳴らす咀嚼音。**未設定だと音が鳴りません。**
+- `Fallback Chew Sound` … 食品ごとの咀嚼音が無いときに鳴らす音。
+- `Chew Sound Volume` … 咀嚼音の音量。
 - `Port Probe Timeout Seconds` / `Hello Retry Interval Seconds` … ポート探索の粘り強さ。
 - `Calibration Completion Timeout Seconds` … `CAL_DONE` を待つ上限。センサー側の最大処理時間に合わせてください。
 
@@ -77,7 +130,7 @@ QRコードは食べ物の選択にだけ使用し、表示位置と回転には
 
 ![Config UI](./docs_image/configui.png)
 
-- `YummyControlServer Endpoint` には、Yummy Control ServerのエンドポイントのURLを入力します。URLの末尾に `/` を入れるのを忘れないようにしてください。また、` Test Connection` ボタンを押すと、エンドポイントの直下に `GET` リクエストを送信し、10秒以内にアクセス結果が表示されます。
+- `YummyService Endpoint` には、YummyService の server root または `/v2` root の URLを入力します。`/` の有無は問いません。`YummyService v2 Device Token` には運営から発行された `device_type=UNITY` token を入力してください。`Test Connection` は認証付きで `GET /v2/devices/unity/orders?state=COMPLETED&limit=1` を送り、10秒以内に結果を表示します。
 
 - `Food Scale`は食べ物の大きさを調整できます。食べ物が大きすぎる、小さすぎる場合に利用してください。
 

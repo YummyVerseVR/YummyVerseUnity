@@ -26,5 +26,5 @@ MonoBehaviour:
   calibrationStartAttempts: 5
   calibrationCompletionTimeoutSeconds: 30
   connectionWaitSeconds: 10
-  chewSound: {fileID: 0}
+  fallbackChewSound: {fileID: 0}
   chewSoundVolume: 1

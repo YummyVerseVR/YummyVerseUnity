@@ -34,7 +34,7 @@ namespace YummyVerse.Editor.Tests
             var router = new FoodLoaderRouter(local, network);
 
             var item = new MenuItem(new FoodCatalogItem(
-                "api-v2:sushi", "Sushi", "", "https://example.test/sushi.glb", MenuItemSource.ApiV2));
+                "api-v2:sushi", "Sushi", "", "https://example.test/sushi.glb", "", MenuItemSource.ApiV2));
             router.LoadAsync(item, CancellationToken.None).GetAwaiter().GetResult();
 
             Assert.That(local.LoadCount, Is.Zero);

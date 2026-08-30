@@ -14,8 +14,8 @@
 - Presentation: Message/Hint/Feedback/Choice/Voice Presenter と対応 View、`TutorialDebugHudView`。
 - Reset: `GameResetter` と session cancellation。
 - Placement: `FoodPlacementService`、`PlayerPrefsFoodPlacementStore`、Meta Spatial Anchor backend、設定用 Cube。
-- Current API: `FoodDownloader` が旧 `/{guid}/model` を GET し、`FoodContext` が QR GUID 変更で download を開始する。`IFoodFetchable`/`FoodDownloadResult` も Guid identity に固定されている。
-- 現行差分: QR GUID を食品選択へ使う経路、YummyService v2 order/artifact adapter、生成履歴/画像 preview/外部 viewer、実 AABB scoop detector、縮小/crumb/消滅は本 intent の Construction 前に適合確認が必要である。
+- 2026-08-24 時点の旧 API baseline: `FoodDownloader` が旧 `/{guid}/model` を GET し、`FoodContext` が QR GUID 変更で download を開始していた。`IFoodFetchable`/`FoodDownloadResult` も Guid identity に固定されていた。この経路は部分 Construction で削除済みである。
+- Current network gap: `NetworkFoodCatalogSource`/`NetworkFoodLoader`/`NetworkConnectionTester` は開発用 `/v2/admin/menu`、固定 `admin-demo-token`、menu URL download を使う。正式な v2 Device order/artifact adapter、生成履歴、画像 preview、外部 viewer、実 AABB scoop detector、縮小/crumb/消滅は未完了である。
 
 ## Target Component Responsibilities
 
@@ -52,7 +52,7 @@
 - session より長い履歴の列挙、lookup、利用可能性、削除/無効化を提供する。
 - preview image reference と model data reference を別フィールド/資源として扱う。
 - VR menu と Physical Menu Viewer が同じ item contract を読む。
-- Network adapter は YummyService v2 order identity/state を catalog item へ変換し、Standalone adapter は local item を同じ application model へ変換する。
+- Network adapter は YummyService v2 Device の `CustomerOrderStatus`/`DeviceOrderListResponse` と opaque order/artifact identity を catalog item へ変換し、Standalone adapter は local item を同じ application model へ変換する。
 - Network/Standalone の両 source を一つの snapshot/list へ集約するが、source-specific identity と availability を保持する。
 
 ```text
@@ -70,7 +70,7 @@ GeneratedFoodItem
 - menu 一覧用 image/metadata の取得、cache、placeholder、retry を担当する。
 - model data の download/parse/instantiate を行わない。
 - item ごとの失敗を隔離し、一覧全体を止めない。
-- Network mode は customer-visible selected `SOURCE_IMAGE_NORMALIZED` artifact revision を候補とし、SHA-256 検証後に cache publish する。正確な API response/visibility は contract publication を待つ。
+- Network mode は customer-visible selected `SOURCE_IMAGE_NORMALIZED` artifact revision を候補とする。ただし現行 Unity Device API に preview operation/URL と artifact checksum metadata がないため、preview/byte verification は contract gap として扱う。public sample を preview の代用にしない。
 
 ### Virtual Menu
 
@@ -96,17 +96,17 @@ GeneratedFoodItem
 
 ### YummyService v2 Contract Guard
 
-- Adopted repository commit、OpenAPI version/checksum、deployed API compatibility を照合する。
+- Adopted repository commit、OpenAPI version/checksum、deployed API compatibility、Unity Device token configuration を照合する。
 - v1 response、未知 enum、missing required field、wrong artifact type を application success へ変換せず fail closed にする。
-- `security: []` を anonymous production permission と解釈せず、published auth contract がない環境を production-ready にしない。
+- `deviceBearerAuth` のない Unity endpoint、placeholder deployment host、development static token を production-ready にしない。
 - Contract mismatch を secret を含まない診断 event として公開する。
 
 ### YummyService v2 Client
 
-- History、order detail/status、selected artifact metadata、preview/GLB download、ProblemDetails を専用 transport boundary に隔離する。
-- HTTP DTO を `GeneratedFoodItem`、Order/Stage status、`ArtifactRef` へ mapping し、UI/loader が raw JSON/route を知らないようにする。
+- History、order detail/status、selected artifact download、Hardware Payload/ACK、ProblemDetails を専用 transport boundary に隔離する。Preview operation は公開後に追加する。
+- HTTP DTO（`DeviceOrderListResponse`、`CustomerOrderStatus`、`HardwarePayload` 等）を `GeneratedFoodItem`、Order/Stage status、`ArtifactRef` へ mapping し、UI/loader が raw JSON/route を知らないようにする。
 - Cancellation、timeout、retry/backoff、stale response suppression を request ごとに適用する。
-- v2 normative OpenAPI に path/security/response が追加されるまで production implementation を placeholder URL や v1 route へ接続しない。
+- `ru322/main` に公開された path/security/response だけを使用し、placeholder URL、`/v2/menu` sample、v1 route へ生成 order API を接続しない。
 
 ```text
 ArtifactRef
@@ -119,9 +119,9 @@ ArtifactRef
 
 ### YummyService v2 Artifact Store Adapter
 
-- Selected immutable artifact metadata と binary transfer を分離する。
+- Selected immutable artifact metadata と binary transfer を分離する。現行 Unity Device projection に revision/SHA-256 がないため、metadata gap を success とみなさない。
 - Artifact ID/revision/SHA-256 を cache identity にし、一意 temp path へ stream download/incremental hash 後、atomic に cache publish する。
-- Preview と GLB の queue/cache/budget を分離し、menu open が GLB fetch を開始しないことを保証する。
+- Preview operation が追加された場合は preview と GLB の queue/cache/budget を分離し、menu open が GLB fetch を開始しないことを保証する。現行 `/v2/menu` sample は generated order preview として扱わない。
 - SHA mismatch、truncation、cancel、wrong media/type を隔離して retry 可能にする。
 
 ### Anchor Designation and Placement
@@ -136,7 +136,7 @@ ArtifactRef
 - Menu selection の item ID を Catalog で解決し、その item の model data だけを cache または source から取得する。
 - download、parse、instantiate の状態と cancellation/error/retry を公開する。
 - model ready と anchor ready の両方が揃ったときだけ Food Instance を表示する。
-- Network mode は order readiness、selected verified GLB metadata、downloaded byte SHA-256 の gate を通過してから glTF load する。
+- Network mode は order readiness、selected verified GLB、取得可能な integrity metadata、downloaded byte SHA-256 の gate を通過してから glTF load する。現行 contract で checksum metadata がない間は production-ready としない。
 
 ### Food Interaction Bounds
 
@@ -179,11 +179,11 @@ ArtifactRef
 
 ### Menu and Model Loading
 
-1. Contract Guard が接続先の v2 compatibility を確認する。
-2. v2 Client が history/order state を Network catalog item へ変換し、Standalone Adapter が端末内 catalog を local item へ変換する。
+1. Contract Guard が採用 snapshot、接続先の v2 compatibility、Device token configuration を確認する。
+2. v2 Client が `GET /v2/devices/unity/orders` の history と `CustomerOrderStatus` を Network catalog item へ変換し、Standalone Adapter が端末内 catalog を local item へ変換する。
 3. Catalog は source namespace を保持したまま両 item set を集約する。一方の source failure で他方を捨てない。
 4. Virtual Menu は一つの UI で両 source の metadata/preview/placeholder を一覧表示する。
-5. Network preview は Preview Repository が selected/visible artifact を取得し、SHA-256 検証後に image cache へ publish する。Standalone preview は local reference/placeholder を用いる。
+5. Network preview は current contract に取得 operation がないため placeholder/未提供を扱う。preview operation が追加された場合だけ selected normalized image を取得し、SHA-256 検証後に image cache へ publish する。Standalone preview は local reference/placeholder を用いる。
 6. 選択された item の source に応じて、Network item は Selected Model Loader、Standalone item は local loader へ dispatch する。
 7. Network loader は selected verified GLB revision の cache を確認し、必要な場合だけ Artifact Adapter から download/verify して parse する。Standalone loader は API request を行わず local model を parse する。
 8. Anchor ready と model ready の両方が揃ったときに Food Instance を作る。
@@ -192,9 +192,9 @@ ArtifactRef
 ### API State Refresh
 
 1. History query で stable order/item identity と pagination cursor を取得する。
-2. Processing/review item は order detail/status から order state と全 stage state を更新する。
-3. Response version/revision が古い場合は newer local state を巻き戻さない。
-4. `COMPLETED` かつ selected verified GLB が利用可能な item だけを model-ready candidate にする。GLB 早期公開は `Q11` 解決後に変更できる。
+2. Processing/review item は order detail/status から order state と、公開されている `analysis`/GLB/WAV projection を更新する。未提供の全 stage/detail を推測しない。
+3. response の `updated_at` を用い、明示 version/ETag/event がない現行 contract では古い response で terminal/newer state を巻き戻さない。
+4. `COMPLETED` かつ `glb.downloadable=true` で `artifact_id` がある item だけを model-ready candidate にする。GLB 早期公開は行わない。
 5. API/session cancel 後の late response は破棄する。
 
 ### Eating
@@ -239,6 +239,6 @@ ArtifactRef
 - PlayMode: Tutorial→FreePlay、menu image-only loading、selected model gate、AABB/collider tracking、scoop debounce、shrink/crumb/disappear、abort cleanup。
 - PlayMode/Offline: Tutorial 完了後の unified menu、Network/Standalone 同時表示、source dispatch、API failure 中の local selection/load、local file error isolation。
 - Contract test: reviewed v2 schema fixture、全 enum、ProblemDetails、unknown enum、immutable artifact selection、SHA-256、v1 rejection。
-- API integration: normative v2 OpenAPI に path/security/response が追加された後、mock/server と history/status/metadata/download/auth/compatibility contract test。
+- API integration: `ru322/main` の Unity Device paths/schema を根拠に、mock/server と history/status/artifact/payload/ACK/auth contract test を行う。preview、全 stage/detail、checksum、deployment/compatibility は公開・確定後に追加検証する。
 - Quest 3: Start/controller/QR designation、Spatial Anchor、spoon interaction、haptic、performance、連続 session。
 - iPad 等: catalog/preview/status consistency、対象表示形式、同期、offline/error。対象方式は `Q2` 解決後に確定する。
