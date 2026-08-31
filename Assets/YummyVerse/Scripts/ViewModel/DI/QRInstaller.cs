@@ -1,3 +1,4 @@
+using YummyVerse.Scripts.Infrastructure;
 using YummyVerse.Scripts.Model;
 using Zenject;
 

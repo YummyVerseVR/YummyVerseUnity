@@ -104,9 +104,18 @@ namespace YummyVerse.Scripts.InputActions
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""DestroyFood"",
+                    ""name"": ""Start"",
                     ""type"": ""Button"",
-                    ""id"": ""dda5c1cb-a758-4e8b-bb3f-ee8d9377b3f0"",
+                    ""id"": ""5c1f0d0e-2c1a-4c6b-9a3e-6b7d1f2a8c40"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""StaffReset"",
+                    ""type"": ""Button"",
+                    ""id"": ""9d2b7a41-6e58-4f13-bb90-3a45c8e1d772"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -115,52 +124,79 @@ namespace YummyVerse.Scripts.InputActions
             ],
             ""bindings"": [
                 {
-                    ""name"": """",
+                    ""name"": ""A + X"",
                     ""id"": ""3a2101fc-8096-495e-b68f-c24315ae7577"",
+                    ""path"": ""OneModifier(modifiersOrder=2)"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""TurnOnMenu"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""modifier"",
+                    ""id"": ""ca57bab4-4e19-48f4-a5b8-b3505f5ea4a1"",
+                    ""path"": ""<XRController>{LeftHand}/primaryButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""TurnOnMenu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""binding"",
+                    ""id"": ""546566df-ff33-45aa-9448-070710ba58e3"",
                     ""path"": ""<XRController>{RightHand}/primaryButton"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""TurnOnMenu"",
                     ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""A Button"",
+                    ""id"": ""1f6c0b22-4d31-4a58-8f0c-52e9a7b6d011"",
+                    ""path"": ""<XRController>{RightHand}/primaryButton"",
+                    ""interactions"": ""Press(behavior=1)"",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Start"",
+                    ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
                 {
-                    ""name"": """",
+                    ""name"": ""B Button"",
                     ""id"": ""4a7e3cfc-2019-4e44-9ab4-d2df043db647"",
                     ""path"": ""<XRController>{RightHand}/secondaryButton"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""DestroyFood"",
+                    ""action"": ""Start"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
-                }
-            ]
-        },
-        {
-            ""name"": ""Menu"",
-            ""id"": ""90cd608d-7121-4023-9024-95927c3ee093"",
-            ""actions"": [
-                {
-                    ""name"": ""TurnOffMenu"",
-                    ""type"": ""Button"",
-                    ""id"": ""e62da4ed-c2c4-4c87-adf0-340c9fdb1383"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                }
-            ],
-            ""bindings"": [
+                },
                 {
                     ""name"": """",
-                    ""id"": ""beffcd68-fd70-446a-a867-d27f56a8b2de"",
-                    ""path"": ""<XRController>{RightHand}/primaryButton"",
+                    ""id"": ""7a4e5d93-8c02-41bf-95d6-0b1e3f7c9a28"",
+                    ""path"": ""<Keyboard>/space"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""TurnOffMenu"",
+                    ""action"": ""Start"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c05b1e77-3f49-4d2a-a6b8-84c1d5e0f933"",
+                    ""path"": ""<Keyboard>/f5"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""StaffReset"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -172,16 +208,13 @@ namespace YummyVerse.Scripts.InputActions
             // Eating
             m_Eating = asset.FindActionMap("Eating", throwIfNotFound: true);
             m_Eating_TurnOnMenu = m_Eating.FindAction("TurnOnMenu", throwIfNotFound: true);
-            m_Eating_DestroyFood = m_Eating.FindAction("DestroyFood", throwIfNotFound: true);
-            // Menu
-            m_Menu = asset.FindActionMap("Menu", throwIfNotFound: true);
-            m_Menu_TurnOffMenu = m_Menu.FindAction("TurnOffMenu", throwIfNotFound: true);
+            m_Eating_Start = m_Eating.FindAction("Start", throwIfNotFound: true);
+            m_Eating_StaffReset = m_Eating.FindAction("StaffReset", throwIfNotFound: true);
         }
 
         ~@RestaurantInput()
         {
             UnityEngine.Debug.Assert(!m_Eating.enabled, "This will cause a leak and performance issues, RestaurantInput.Eating.Disable() has not been called.");
-            UnityEngine.Debug.Assert(!m_Menu.enabled, "This will cause a leak and performance issues, RestaurantInput.Menu.Disable() has not been called.");
         }
 
         /// <summary>
@@ -258,7 +291,8 @@ namespace YummyVerse.Scripts.InputActions
         private readonly InputActionMap m_Eating;
         private List<IEatingActions> m_EatingActionsCallbackInterfaces = new List<IEatingActions>();
         private readonly InputAction m_Eating_TurnOnMenu;
-        private readonly InputAction m_Eating_DestroyFood;
+        private readonly InputAction m_Eating_Start;
+        private readonly InputAction m_Eating_StaffReset;
         /// <summary>
         /// Provides access to input actions defined in input action map "Eating".
         /// </summary>
@@ -275,9 +309,13 @@ namespace YummyVerse.Scripts.InputActions
             /// </summary>
             public InputAction @TurnOnMenu => m_Wrapper.m_Eating_TurnOnMenu;
             /// <summary>
-            /// Provides access to the underlying input action "Eating/DestroyFood".
+            /// Provides access to the underlying input action "Eating/Start".
             /// </summary>
-            public InputAction @DestroyFood => m_Wrapper.m_Eating_DestroyFood;
+            public InputAction @Start => m_Wrapper.m_Eating_Start;
+            /// <summary>
+            /// Provides access to the underlying input action "Eating/StaffReset".
+            /// </summary>
+            public InputAction @StaffReset => m_Wrapper.m_Eating_StaffReset;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -307,9 +345,12 @@ namespace YummyVerse.Scripts.InputActions
                 @TurnOnMenu.started += instance.OnTurnOnMenu;
                 @TurnOnMenu.performed += instance.OnTurnOnMenu;
                 @TurnOnMenu.canceled += instance.OnTurnOnMenu;
-                @DestroyFood.started += instance.OnDestroyFood;
-                @DestroyFood.performed += instance.OnDestroyFood;
-                @DestroyFood.canceled += instance.OnDestroyFood;
+                @Start.started += instance.OnStart;
+                @Start.performed += instance.OnStart;
+                @Start.canceled += instance.OnStart;
+                @StaffReset.started += instance.OnStaffReset;
+                @StaffReset.performed += instance.OnStaffReset;
+                @StaffReset.canceled += instance.OnStaffReset;
             }
 
             /// <summary>
@@ -324,9 +365,12 @@ namespace YummyVerse.Scripts.InputActions
                 @TurnOnMenu.started -= instance.OnTurnOnMenu;
                 @TurnOnMenu.performed -= instance.OnTurnOnMenu;
                 @TurnOnMenu.canceled -= instance.OnTurnOnMenu;
-                @DestroyFood.started -= instance.OnDestroyFood;
-                @DestroyFood.performed -= instance.OnDestroyFood;
-                @DestroyFood.canceled -= instance.OnDestroyFood;
+                @Start.started -= instance.OnStart;
+                @Start.performed -= instance.OnStart;
+                @Start.canceled -= instance.OnStart;
+                @StaffReset.started -= instance.OnStaffReset;
+                @StaffReset.performed -= instance.OnStaffReset;
+                @StaffReset.canceled -= instance.OnStaffReset;
             }
 
             /// <summary>
@@ -361,101 +405,6 @@ namespace YummyVerse.Scripts.InputActions
         /// </summary>
         public EatingActions @Eating => new EatingActions(this);
 
-        // Menu
-        private readonly InputActionMap m_Menu;
-        private List<IMenuActions> m_MenuActionsCallbackInterfaces = new List<IMenuActions>();
-        private readonly InputAction m_Menu_TurnOffMenu;
-        /// <summary>
-        /// Provides access to input actions defined in input action map "Menu".
-        /// </summary>
-        public struct MenuActions
-        {
-            private @RestaurantInput m_Wrapper;
-
-            /// <summary>
-            /// Construct a new instance of the input action map wrapper class.
-            /// </summary>
-            public MenuActions(@RestaurantInput wrapper) { m_Wrapper = wrapper; }
-            /// <summary>
-            /// Provides access to the underlying input action "Menu/TurnOffMenu".
-            /// </summary>
-            public InputAction @TurnOffMenu => m_Wrapper.m_Menu_TurnOffMenu;
-            /// <summary>
-            /// Provides access to the underlying input action map instance.
-            /// </summary>
-            public InputActionMap Get() { return m_Wrapper.m_Menu; }
-            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
-            public void Enable() { Get().Enable(); }
-            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
-            public void Disable() { Get().Disable(); }
-            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
-            public bool enabled => Get().enabled;
-            /// <summary>
-            /// Implicitly converts an <see ref="MenuActions" /> to an <see ref="InputActionMap" /> instance.
-            /// </summary>
-            public static implicit operator InputActionMap(MenuActions set) { return set.Get(); }
-            /// <summary>
-            /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
-            /// </summary>
-            /// <param name="instance">Callback instance.</param>
-            /// <remarks>
-            /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
-            /// </remarks>
-            /// <seealso cref="MenuActions" />
-            public void AddCallbacks(IMenuActions instance)
-            {
-                if (instance == null || m_Wrapper.m_MenuActionsCallbackInterfaces.Contains(instance)) return;
-                m_Wrapper.m_MenuActionsCallbackInterfaces.Add(instance);
-                @TurnOffMenu.started += instance.OnTurnOffMenu;
-                @TurnOffMenu.performed += instance.OnTurnOffMenu;
-                @TurnOffMenu.canceled += instance.OnTurnOffMenu;
-            }
-
-            /// <summary>
-            /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
-            /// </summary>
-            /// <remarks>
-            /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
-            /// </remarks>
-            /// <seealso cref="MenuActions" />
-            private void UnregisterCallbacks(IMenuActions instance)
-            {
-                @TurnOffMenu.started -= instance.OnTurnOffMenu;
-                @TurnOffMenu.performed -= instance.OnTurnOffMenu;
-                @TurnOffMenu.canceled -= instance.OnTurnOffMenu;
-            }
-
-            /// <summary>
-            /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="MenuActions.UnregisterCallbacks(IMenuActions)" />.
-            /// </summary>
-            /// <seealso cref="MenuActions.UnregisterCallbacks(IMenuActions)" />
-            public void RemoveCallbacks(IMenuActions instance)
-            {
-                if (m_Wrapper.m_MenuActionsCallbackInterfaces.Remove(instance))
-                    UnregisterCallbacks(instance);
-            }
-
-            /// <summary>
-            /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
-            /// </summary>
-            /// <remarks>
-            /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
-            /// </remarks>
-            /// <seealso cref="MenuActions.AddCallbacks(IMenuActions)" />
-            /// <seealso cref="MenuActions.RemoveCallbacks(IMenuActions)" />
-            /// <seealso cref="MenuActions.UnregisterCallbacks(IMenuActions)" />
-            public void SetCallbacks(IMenuActions instance)
-            {
-                foreach (var item in m_Wrapper.m_MenuActionsCallbackInterfaces)
-                    UnregisterCallbacks(item);
-                m_Wrapper.m_MenuActionsCallbackInterfaces.Clear();
-                AddCallbacks(instance);
-            }
-        }
-        /// <summary>
-        /// Provides a new <see cref="MenuActions" /> instance referencing this action map.
-        /// </summary>
-        public MenuActions @Menu => new MenuActions(this);
         /// <summary>
         /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Eating" which allows adding and removing callbacks.
         /// </summary>
@@ -471,27 +420,19 @@ namespace YummyVerse.Scripts.InputActions
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnTurnOnMenu(InputAction.CallbackContext context);
             /// <summary>
-            /// Method invoked when associated input action "DestroyFood" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// Method invoked when associated input action "Start" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
             /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnDestroyFood(InputAction.CallbackContext context);
-        }
-        /// <summary>
-        /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Menu" which allows adding and removing callbacks.
-        /// </summary>
-        /// <seealso cref="MenuActions.AddCallbacks(IMenuActions)" />
-        /// <seealso cref="MenuActions.RemoveCallbacks(IMenuActions)" />
-        public interface IMenuActions
-        {
+            void OnStart(InputAction.CallbackContext context);
             /// <summary>
-            /// Method invoked when associated input action "TurnOffMenu" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// Method invoked when associated input action "StaffReset" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
             /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnTurnOffMenu(InputAction.CallbackContext context);
+            void OnStaffReset(InputAction.CallbackContext context);
         }
     }
 }

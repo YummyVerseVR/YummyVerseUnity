@@ -1,4 +1,5 @@
 using Zenject;
+using YummyVerse.Scripts.Presentation;
 
 namespace YummyVerse.Scripts.ViewModel.DI
 {
@@ -7,7 +8,9 @@ namespace YummyVerse.Scripts.ViewModel.DI
         public override void InstallBindings()
         {
             Container.BindInterfacesAndSelfTo<ConfigUIViewModel>().AsSingle();
-            Container.BindInterfacesAndSelfTo<StandaloneWindowViewModel>().AsSingle();
+            Container.Bind<ConfigUIPresenter>().AsTransient();
+            // StandaloneWindowViewModel はチュートリアル層からも参照するため
+            // SharedViewModelInstaller でシーンスコープにバインドしている。
         }
     }
 }

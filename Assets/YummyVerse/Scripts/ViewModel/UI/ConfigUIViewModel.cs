@@ -10,26 +10,34 @@ using Zenject;
 
 namespace YummyVerse.Scripts.ViewModel
 {
-    public class ConfigUIViewModel : IConfigUIViewModel, IInitializable, IDisposable
+    public class ConfigUIViewModel : IConfigUIViewModel, IYummyServiceV2ConfigViewModel, IInitializable, IDisposable
     {
         private readonly IEndPointManager _endPointManager;
+        private readonly IYummyServiceV2Credentials _credentials;
         private readonly IFoodContext _foodContext;
-        private readonly ISettingManager _settingManager;
         private readonly IFoodScaleManager _foodScaleManager;
         private readonly IInputLayer _inputLayer;
         private readonly IQRDetectionService _qrDetectionService;
+        private readonly IFoodPlacementService _foodPlacementService;
         private readonly INetworkConnectionTester _networkConnectionTester;
+        private readonly ISessionController _sessionController;
         
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
+        private bool _isDisposed;
         
         public ReactiveProperty<bool> IsVisible { get; } = new(false);
         public ReactiveProperty<string> APIEndPointUrl { get; }  = new();
+        public ReactiveProperty<string> APIDeviceToken { get; } = new();
         public ReactiveProperty<string> LastRequestHTTPStatus { get; } = new();
         public ReactiveProperty<string> LastDetectedGuid { get; }  = new();
-        public ReactiveProperty<bool> IsStandaloneMode { get; }  = new();
         public ReactiveProperty<float> FoodScale { get; } = new();
+        public ReactiveProperty<string> SpatialPlacementStatus { get; } = new();
+        public ReactiveProperty<bool> IsSpatialAnchorReady { get; } = new();
+        public ReactiveProperty<bool> IsFoodPositionFixed { get; } = new();
+        public ReactiveProperty<bool> IsSpatialPlacementBusy { get; } = new();
         
         public event Action OnAPIEndPointValidationError = delegate { };
+        public event Action OnAPIDeviceTokenValidationError = delegate { };
         
         // StatusCodeの初期値は未使用の値を設定
         public ReactiveProperty<TestConnectionResult> ConnectionTestResult { get; } = 
@@ -40,20 +48,23 @@ namespace YummyVerse.Scripts.ViewModel
 
         public ConfigUIViewModel(IEndPointManager endPointManager, 
             IFoodContext foodContext, 
-            ISettingManager settingManager,  
             IFoodScaleManager foodScaleManager,
             IInputLayer inputLayer,
             IQRDetectionService qrDetectionService,
-            INetworkConnectionTester networkConnectionTester
+            IFoodPlacementService foodPlacementService,
+            INetworkConnectionTester networkConnectionTester,
+            ISessionController sessionController
             )
         {
             _endPointManager = endPointManager;
+            _credentials = endPointManager as IYummyServiceV2Credentials;
             _foodContext = foodContext;
-            _settingManager = settingManager;
             _foodScaleManager = foodScaleManager;
             _inputLayer = inputLayer;
             _qrDetectionService = qrDetectionService;
+            _foodPlacementService = foodPlacementService;
             _networkConnectionTester = networkConnectionTester;
+            _sessionController = sessionController;
         }
 
         public void Initialize()
@@ -70,26 +81,80 @@ namespace YummyVerse.Scripts.ViewModel
             {
                 LastDetectedGuid.Value = v.ToString();
             }).AddTo(_disposables);
+
+            _foodPlacementService.StatusMessage
+                .Subscribe(v => SpatialPlacementStatus.Value = v)
+                .AddTo(_disposables);
+            _foodPlacementService.IsAnchorReady
+                .Subscribe(v => IsSpatialAnchorReady.Value = v)
+                .AddTo(_disposables);
+            _foodPlacementService.IsFoodPositionFixed
+                .Subscribe(v => IsFoodPositionFixed.Value = v)
+                .AddTo(_disposables);
+            _foodPlacementService.IsBusy
+                .Subscribe(v => IsSpatialPlacementBusy.Value = v)
+                .AddTo(_disposables);
+
+            // 設定画面の表示状態を唯一の入口にして、配置プレビューの表示状態と同期する。
+            // UIの開閉処理以外から IsVisible が変更された場合や、UIが無効化された場合でも
+            // 配置サービス側に閉じる通知が届くようにする。
+            IsVisible
+                .Subscribe(_foodPlacementService.SetConfigurationVisible)
+                .AddTo(_disposables);
             
             // コントローラーのボタンが押されたら表示状態を反転
             Observable.FromEvent(
                     h => _inputLayer.OnConfigUIButtonClicked += h,
                     h => _inputLayer.OnConfigUIButtonClicked -= h)
-                .Subscribe(_ => IsVisible.Value = !IsVisible.Value).AddTo(_disposables);
+                .Subscribe(_ =>
+                {
+                    SetVisible(!IsVisible.Value);
+                }).AddTo(_disposables);
 
             FoodScale.Value = _foodScaleManager.FoodScale.Value;
             APIEndPointUrl.Value = _endPointManager.baseEndPointUrl;
+            APIDeviceToken.Value = _credentials?.DeviceAccessToken ?? string.Empty;
         }
         
         public void Dispose()
         {
+            if (_isDisposed) return;
+            _isDisposed = true;
+            _foodPlacementService.SetConfigurationVisible(false);
             _disposables?.Dispose();
             IsVisible?.Dispose();
             APIEndPointUrl?.Dispose();
+            APIDeviceToken?.Dispose();
             LastRequestHTTPStatus?.Dispose();
             LastDetectedGuid?.Dispose();
-            IsStandaloneMode?.Dispose();
+            SpatialPlacementStatus?.Dispose();
+            IsSpatialAnchorReady?.Dispose();
+            IsFoodPositionFixed?.Dispose();
+            IsSpatialPlacementBusy?.Dispose();
             ConnectionTestResult?.Dispose();
+        }
+
+        public void SetVisible(bool isVisible)
+        {
+            if (_isDisposed) return;
+
+            // 同じ値の場合はReactivePropertyが通知しないため、状態が一時的に
+            // ずれていても閉じる操作で配置サービスを確実に同期させる。
+            if (IsVisible.Value == isVisible)
+            {
+                _foodPlacementService.SetConfigurationVisible(isVisible);
+                return;
+            }
+
+            IsVisible.Value = isVisible;
+        }
+
+        public void ResetToStart()
+        {
+            // UIを先に閉じ、SessionController の既存の finally 経路へ中断を流す。
+            // これにより食品モデル・残量・注文・QR認識をまとめて初期化して Attract へ戻る。
+            SetVisible(false);
+            _sessionController.AbortSession();
         }
         
         public void UpdateEndPointUrl(string url)
@@ -103,10 +168,19 @@ namespace YummyVerse.Scripts.ViewModel
             OnAPIEndPointValidationError.Invoke();
         }
 
-        public void SetStandaloneMode(bool isStandalone)
+        public void UpdateDeviceAccessToken(string token)
         {
-            IsStandaloneMode.Value = isStandalone;
-            _settingManager.isStandaloneMode.Value = isStandalone;
+            if (_credentials != null && _credentials.UpdateDeviceAccessToken(token))
+            {
+                APIDeviceToken.Value = _credentials.DeviceAccessToken;
+                return;
+            }
+
+            // Force the bound input field back to the last accepted value.  This is
+            // especially important for a token field because leaving malformed text
+            // visible would make the next connection test ambiguous.
+            APIDeviceToken.OnNext(APIDeviceToken.Value);
+            OnAPIDeviceTokenValidationError.Invoke();
         }
 
         public void SetFoodScale(float scale)
@@ -114,6 +188,16 @@ namespace YummyVerse.Scripts.ViewModel
             var success = _foodScaleManager.UpdateFoodScale(scale);
             if(!success) return;
             FoodScale.Value = scale;
+        }
+
+        public async UniTask SetSpatialAnchor(CancellationToken ct)
+        {
+            await _foodPlacementService.SetAnchorAtDraftAsync(ct);
+        }
+
+        public async UniTask FixFoodPosition(CancellationToken ct)
+        {
+            await _foodPlacementService.FixFoodPositionAtDraftAsync(ct);
         }
 
         public async UniTask ConnectionTest(CancellationToken ct)

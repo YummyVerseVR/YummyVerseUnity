@@ -155,3 +155,12 @@ sysinfo.txt
 # End of https://www.toptal.com/developers/gitignore/api/unity,rider
 
 .DS_Store
+
+# AI-DLC Workflow V2: commit shared records, ignore machine-local cursors/runtime.
+/aidlc/active-space
+/aidlc/.aidlc-clone-id
+/aidlc/.aidlc-sessions/
+/aidlc/spaces/*/intents/active-intent
+/aidlc/spaces/*/intents/.aidlc-*
+/aidlc/spaces/*/intents/*/runtime-graph.json
+/aidlc/spaces/*/intents/*/.aidlc-*

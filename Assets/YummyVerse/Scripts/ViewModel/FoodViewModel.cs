@@ -11,25 +11,24 @@ namespace YummyVerse.Scripts.ViewModel
     public class FoodViewModel : IFoodViewModel , IInitializable, IDisposable
     {
         private readonly IFoodContext _foodContext;
-        private readonly IQRDetectionService _qrDetectionService;
+        private readonly IFoodPlacementService _foodPlacementService;
         private readonly IFoodScaleManager _foodScaleManager;
-        private readonly IInputLayer _inputLayer;
         
 
         public ReactiveProperty<GltfImport> foodGltf { get; } = new(new());
+        public ReactiveProperty<AudioClip> chewSound { get; } = new();
         public ReactiveProperty<Transform> foodTransform { get; } = new();
         
         public ReactiveProperty<float> foodScale { get; } = new();
-        public event Action OnFoodDestroy;
+        public event Action OnFoodResetRequested;
         
         private CompositeDisposable _disposables = new CompositeDisposable();
 
-        public FoodViewModel(IFoodContext foodContext, IQRDetectionService qrDetectionService,  IFoodScaleManager foodScaleManager, IInputLayer inputLayer)
+        public FoodViewModel(IFoodContext foodContext, IFoodPlacementService foodPlacementService, IFoodScaleManager foodScaleManager)
         {
             _foodContext = foodContext;
-            _qrDetectionService = qrDetectionService;
+            _foodPlacementService = foodPlacementService;
             _foodScaleManager = foodScaleManager;
-            _inputLayer = inputLayer;
         }
 
         public void Initialize()
@@ -39,9 +38,16 @@ namespace YummyVerse.Scripts.ViewModel
             {
                 foodGltf.Value = v.Food.GltfImport;
             }).AddTo(_disposables);
+
+            // 咀嚼音は食品ごとに差し替える。失敗時とセッションリセット時は null に戻し、
+            // 次の来場者へ前の食品の音を持ち越さない。
+            _foodContext.downloadResult.Subscribe(v =>
+            {
+                chewSound.Value = v.success ? v.Food.ChewSound : null;
+            }).AddTo(_disposables);
             
-            // QRの位置情報が更新されたらtransformを更新
-            _qrDetectionService.OnChangeTransform.Subscribe(v =>
+            // 保存済みSpatial Anchorに対する食べ物表示位置が更新されたらtransformを更新
+            _foodPlacementService.FoodTransform.Subscribe(v =>
             {
                 var previous = foodTransform.Value;
                 foodTransform.Value = v;
@@ -54,17 +60,18 @@ namespace YummyVerse.Scripts.ViewModel
             // FoodScaleの設定値が更新されたらscaleを変更
             _foodScaleManager.FoodScale.Subscribe(v => foodScale.Value = v).AddTo(_disposables);
             
-            // 食べ物破壊ボタンが押されたら食べ物破壊イベントを発火
-            Observable.FromEvent(
-                h => _inputLayer.OnFoodDestroyButtonClicked += h,
-                h => _inputLayer.OnFoodDestroyButtonClicked -= h
-                ).Subscribe(_ => OnFoodDestroy?.Invoke()).AddTo(_disposables);
+        }
+
+        public void ResetFoodState()
+        {
+            OnFoodResetRequested?.Invoke();
         }
 
         public void Dispose()
         {
             _disposables?.Dispose();
             foodGltf?.Dispose();
+            chewSound?.Dispose();
             foodTransform?.Dispose();
             foodScale?.Dispose();
         }

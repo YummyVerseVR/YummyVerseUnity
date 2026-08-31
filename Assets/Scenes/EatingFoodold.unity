@@ -449,7 +449,6 @@ GameObject:
   - component: {fileID: 148994163}
   - component: {fileID: 148994162}
   - component: {fileID: 148994161}
-  - component: {fileID: 148994160}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -457,23 +456,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &148994160
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 148994159}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 681079a2b6978564986210963141c813, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FollowHandJointXRHands
-  rightHand: 1
-  jointId: 2
-  localOffset: {x: 0, y: 0, z: 0}
-  localEulerOffset: {x: 0, y: 0, z: 0}
-  smooth: 20
 --- !u!65 &148994161
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3123,7 +3105,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1560055544}
   - component: {fileID: 1560055543}
-  - component: {fileID: 1560055542}
   m_Layer: 0
   m_Name: Speaker
   m_TagString: Untagged
@@ -3131,18 +3112,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1560055542
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1560055541}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8dd21dfb21f944daaa45e106b0a48255, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Food3DModel.View.SoundView
 --- !u!82 &1560055543
 AudioSource:
   m_ObjectHideFlags: 0

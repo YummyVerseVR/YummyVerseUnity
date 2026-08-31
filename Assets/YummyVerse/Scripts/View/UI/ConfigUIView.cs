@@ -1,104 +1,66 @@
-using DG.Tweening;
-using R3;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using YummyVerse.Scripts.ViewModel.Interface;
+using YummyVerse.Scripts.Presentation;
 using Zenject;
 
 namespace YummyVerse.Scripts.View.UI
 {
-    public class ConfigUIView : MonoBehaviour
+    /// <summary>Serialized-reference and Unity lifecycle adapter for the config UI.</summary>
+    public sealed class ConfigUIView : MonoBehaviour
     {
         [SerializeField] private TMP_InputField apiEndPointUrl;
+        [Tooltip("YummyService v2 Unity Device token。入力値は persistentDataPath にキャッシュされる。")]
+        [SerializeField] private TMP_InputField apiDeviceToken;
         [SerializeField] private Button testConnectionButton;
-        [SerializeField] private TextMeshProUGUI lastRequestHttpStatus;
-        [SerializeField] private TextMeshProUGUI lastRequestGuid;
-        [SerializeField] private Toggle standaloneModeToggle;
         [SerializeField] private CanvasGroup canvasGroup;
+        [SerializeField] private OVROverlayCanvas overlayCanvas;
         [SerializeField] private Slider foodScaleSlider;
         [SerializeField] private Camera targetCamera;
         [SerializeField] private Transform uiTransform;
-        
-        private IConfigUIViewModel _configUIViewModel;
+        [SerializeField] private Button spatialAnchorButton;
+        [SerializeField] private Button fixFoodPositionButton;
+        [SerializeField] private TextMeshProUGUI spatialPlacementStatus;
+        [SerializeField] private Button returnToStartButton;
 
-        private float displayDistanceFromCamera = 0.6f;
-        
+        [Tooltip("入力欄に出る仮想キーボード。打鍵の途中を確定として扱わないために参照する。")]
+        [SerializeField] private VirtualKeyboardView virtualKeyboard;
+
+        private ConfigUIPresenter _presenter;
+
         [Inject]
-        public void Construct(IConfigUIViewModel configUIViewModel)
+        public void Construct(ConfigUIPresenter presenter)
         {
-            _configUIViewModel = configUIViewModel;
+            _presenter = presenter;
         }
 
         private void Start()
         {
-            _configUIViewModel.IsVisible.Subscribe(isVisible =>
-            {
-                if (isVisible)
-                {
-                    SetMenuPositionInFrontOfCamera();
-                    canvasGroup.DOFade(1, 0.1f);
-                    canvasGroup.interactable = true;
-                    canvasGroup.blocksRaycasts = true;
-                }
-                else
-                {
-                    canvasGroup.DOFade(0, 0.1f);
-                    canvasGroup.interactable = false;
-                    canvasGroup.blocksRaycasts = false;
-                }
-            }).AddTo(this);
-            
-            _configUIViewModel.LastRequestHTTPStatus.Subscribe(v =>
-            {
-                lastRequestHttpStatus.text = "Last Request HTTP Status "
-                                             + (_configUIViewModel.IsStandaloneMode.Value ? "(Overridden by Standalone Mode) : " : ": ")
-                                             + v;
-            }).AddTo(this);
-
-            _configUIViewModel.LastDetectedGuid.Subscribe(v =>
-            {
-                lastRequestGuid.text = "Last Request GUID " 
-                                       + (_configUIViewModel.IsStandaloneMode.Value ? "(Overridden by Standalone Mode) : " : ": ")
-                                       + v;
-            }).AddTo(this);
-
-            _configUIViewModel.APIEndPointUrl.Subscribe(SetAPIEndPointUrl).AddTo(this);
-            
-            apiEndPointUrl.onEndEdit.AddListener(v => _configUIViewModel.UpdateEndPointUrl(v));
-            _configUIViewModel.APIEndPointUrl.Subscribe(v => apiEndPointUrl.SetTextWithoutNotify(v)).AddTo(this);
-            
-            standaloneModeToggle.onValueChanged.AddListener(v => _configUIViewModel.SetStandaloneMode(v));
-            
-            // スライダーの値が変化したら、その値をViewModelに知らせる
-            foodScaleSlider.onValueChanged.AddListener(v => _configUIViewModel.SetFoodScale(v));
-            
-            // ViewModel側で値が設定された場合(スライダーで設定された値が有効である場合や、初期値が設定された場合)、その値をスライダーの見た目に反映する。
-            // (SetValueWithoutNotifyを用いて値を設定しているため、onValueChangedは発火しない。)
-            _configUIViewModel.FoodScale.Subscribe(v => foodScaleSlider.SetValueWithoutNotify(v)).AddTo(this);
-            
-            testConnectionButton.OnClickAsObservable()
-                .SubscribeAwait(async (_, ct) => await _configUIViewModel.ConnectionTest(ct))
-                .AddTo(this);
-            
+            _presenter.Initialize(
+                apiEndPointUrl,
+                apiDeviceToken,
+                testConnectionButton,
+                canvasGroup,
+                overlayCanvas,
+                foodScaleSlider,
+                targetCamera,
+                uiTransform,
+                spatialAnchorButton,
+                fixFoodPositionButton,
+                spatialPlacementStatus,
+                returnToStartButton,
+                // Unity の偽 null をインタフェースに持ち込まないよう、ここで潰しておく。
+                virtualKeyboard != null ? virtualKeyboard : null);
         }
 
-        private void SetAPIEndPointUrl(string url)
+        private void OnDisable()
         {
-            apiEndPointUrl.text = url;
+            _presenter?.OnHostDisabled();
         }
 
-        private void SetMenuPositionInFrontOfCamera()
+        private void OnDestroy()
         {
-            if (targetCamera == null || uiTransform == null)
-            {
-                Debug.LogWarning("ConfigUIView: targetCamera or uiTransform is not assigned.");
-                return;
-            }
-
-            var cameraTransform = targetCamera.transform;
-            uiTransform.position = cameraTransform.position + cameraTransform.forward * displayDistanceFromCamera;
-            uiTransform.rotation = Quaternion.LookRotation(cameraTransform.forward, cameraTransform.up);
+            _presenter?.Dispose();
         }
     }
 }

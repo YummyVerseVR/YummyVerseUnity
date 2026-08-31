@@ -2,6 +2,7 @@ using System;
 using Meta.XR.MRUtilityKit;
 using TMPro;
 using UnityEngine;
+using YummyVerse.Scripts.Infrastructure;
 using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.ViewModel.Interface;
 using Zenject;
@@ -26,6 +27,17 @@ namespace YummyVerse.Scripts.View
             if (trackable.TrackableType == OVRAnchor.TrackableType.QRCode)
             {
                 _qrViewModel.HandleTrackableAdded(new MRUKTrackableAdapter(trackable.transform, trackable.MarkerPayloadString));
+            }
+        }
+
+        /// <summary>
+        /// MRUK の TrackableRemoved から呼ばれる。プレハブ側の UnityEvent に接続すること。
+        /// </summary>
+        public void OnTrackableRemoved(MRUKTrackable trackable)
+        {
+            if (trackable.TrackableType == OVRAnchor.TrackableType.QRCode)
+            {
+                _qrViewModel.HandleTrackableRemoved(new MRUKTrackableAdapter(trackable.transform, trackable.MarkerPayloadString));
             }
         }
     }

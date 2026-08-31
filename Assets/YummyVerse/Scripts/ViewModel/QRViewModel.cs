@@ -1,5 +1,4 @@
 using System;
-using Food3DModel.Interface;
 using Meta.XR.MRUtilityKit;
 using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;
@@ -32,6 +31,20 @@ namespace YummyVerse.Scripts.ViewModel
             if (validationResult.IsValid)
             {
                 _qrDetectionService.NotifyDetectQR(validationResult.Guid, transform);
+            }
+        }
+
+        /// <summary>
+        /// QRの追尾が外れたときに呼び出す。
+        /// 妥当なQRだったものがロストしたときだけ通知する。
+        /// </summary>
+        /// <param name="trackable">追尾が外れた物体</param>
+        public void HandleTrackableRemoved(IQRTrackable trackable)
+        {
+            var validationResult = _qrValueValidator.Validate(trackable.qrPayload);
+            if (validationResult.IsValid)
+            {
+                _qrDetectionService.NotifyLostQR();
             }
         }
     }

@@ -1,99 +1,62 @@
 # 概要
 食感再現VRアプリケーション「YummyVerse」のUnity側のリポジトリです。
 
-# インストール方法
+# 起動方法
 
 ## 1. Unity HubとUnity Editorのインストール
-Unity Hubをインストールし、Unity Editorのバージョン6000.2.0f1をインストールします
+Unity Hubをインストールし、Unity Editorのバージョン6000.2.6f2をインストールします。
 
-## 2. リポジトリのクローン
+## 2. Meta Horizon Linkを導入する
+[Meta公式サイト](https://www.meta.com/ja-jp/help/quest/1517439565442928/?srsltid=AfmBOopV27V6SfdFhbPj4EYBIP1FKv08McNKj7pb0ccxNYqtBrtZFO0H) から Meta Horizon Link をダウンロードします。
+
+## 3. リポジトリのクローン
 このリポジトリをクローンします。
 安定して動くバージョンは最新のmainブランチにあります。
 
-## 3. プロジェクトを開いてビルドする
-Ctrl + Shift + B (MacOSの場合はCmd + Shift + B)でビルドウィンドウを開き、PlatformsをMeta Questに設定してBuildを押します。
+## 4. プロジェクトを開いてビルドする
+Ctrl + Shift + B でビルドウィンドウを開き、PlatformsをWindowsに設定してBuildを押します。
 
 ビルドに必要なシーンは `Restaurant` シーンのみです。
 
-## 4. Quest 3で実験的機能を有効にする
+## 5. アプリケーションの起動とQuest 3の接続
+Quest LinkからWindowsを操作し、ビルドした実行ファイルをダブルクリックします。
 
-> [!WARNING] 
-> <font color="Red">この作業はQuest 3を再起動するたびに行なってください</font>
+## 6. ローカル食品データを用意する
+`C:\Users\[ユーザー名]\AppData\LocalLow\DefaultCompany\YummyTemplate\Foods` に食べ物を配置します。
+ここに配置した食べ物は、APIなしで利用することができます。
+
+また、後述する食べ物の出現位置を設定する際のテスト用食品としても用いられます。
+
+フォルダ形式は以下の通りです。
+- 食品名(日本語OK)のフォルダを用意し、その中に以下の3つのファイルを配置する
+  - `model.glb` : 食品の3Dデータ
+  - `preview.[png,jpg]` : 食品のプレビュー用画像データ
+  - `audio.[wav,mp3,ogg]` : 咀嚼音データ
 
 
-Meta Quest Developer Hubをインストールし、Quest 3をPCに接続します。
-次に、左側のメニューから `Device Manager` を選択し、画面下部の `Custom Command` セクションの `Create Command` ボタンを押します。
+> [!Warning]
+> 少なくとも **1つ以上** のローカル食品データを用意してください。
 
-![Custom Command](./docs_image/adb.png)
+# 準備マニュアル(運営向け)
+## 1. APIの設定
+- コントローラーの`A`と`X`を同時に押すことで、管理者用メニューが開きます。
+- この画面からエンドポイントのURLとアクセストークンを入力します。
 
-`Name` には適当な名称を入力します。 `COMMAND` には、以下のコマンドを入力します。
+## 2. 食品の出現位置の設定
+- 管理者用メニューを開くと手元に何らかの食品の3Dモデルが出現します。
+- この食品の3Dモデルをコントローラーで移動し、食品の出現位置を設定します。
+- 管理者用メニューのスライダーを操作し、拡大率を設定します。
 
-``` 
-adb shell setprop debug.oculus.experimentalEnabled 1
-```
-
-`Save` ボタンを押してコマンドを保存し、作成したコマンドの `Run` ボタンを押します。
-
-## 5. アプリケーションのインストール
- `Add Build` ボタンを押して、ビルドしたapkファイルを選択します。
-インストールが完了したら、アプリ名 `com.DefaultCompany.YummyTemplate` の左側にチェックマークが表示されます。
-
-# 使い方
-## 食べる
-開いたシーンでQRコードを見つめていれば食べ物が出てきます。
-2026年2月の更新で、シーンを再読み込みしなくても読み込むQRを変えることで他の食べ物を体験できるようになりました。
-
-## 食べ物を破壊する
-右手コントローラーの `B` ボタンを押すことで、現在シーンに存在する食べ物を破壊することができます。
-
-## 【運営向け】管理画面
-　2026年2月の更新で管理画面がつきました。管理画面はコントローラーの `A` ボタンを押すことで表示できます。
-
-![Config UI](./docs_image/configui.png)
-
-- `YummyControlServer Endpoint` には、Yummy Control ServerのエンドポイントのURLを入力します。URLの末尾に `/` を入れるのを忘れないようにしてください。また、` Test Connection` ボタンを押すと、エンドポイントの直下に `GET` リクエストを送信し、10秒以内にアクセス結果が表示されます。
-
-- `Food Scale`は食べ物の大きさを調整できます。食べ物が大きすぎる、小さすぎる場合に利用してください。
-
-- `QR Detection & Food 3D Model Download Status` では、Quest 3が認識したQRコードに書かれているGUIDと、直近の食べ物の3Dモデルのダウンロードリクエストの成否(表示内容はHTTP Status Code準拠)が表示されます。後述する `StandaloneMode` 時には、ファイル読み込み結果が表示されます。
-
-- `Standalone Mode` を有効にすると、Yummy Control Serverに依存せずに事前に用意した食べ物を表示することができます。また、画面右側に `Standalone Foods` ウィンドウが表示されます。
-
-  - `Standalone Foods` ウィンドウでは食べ物の名前が書かれたボタンを押すことで、食べ物を表示することができます。
+## 3. 咀嚼計を接続する
+- 本リポジトリ内に配置されている `YummyVerse_Serial_Protocol_v1.0.md` に準拠したシリアル通信を行うことができるデバイスを、任意のUSBポートに接続します。
 
 > [!NOTE]
-> `Standalone Mode` においても、食べ物の表示位置は **QRコードを認識した位置** になります。そのため、`Standalone Mode` 使用時は、食べ物を表示したい位置に **YummuVerse用の** 任意のQRコードを配置してください。
+> 本アプリケーションは、接続されているUSBデバイスの中から咀嚼計を自動で探すため、咀嚼計を接続するUSBポートは任意で構いません。
+> 準備の段階では、咀嚼計を接続しておくだけでOKです。
+> 「ボタンを押してスタート」の画面から遷移すると、咀嚼計の探索が始まります。探索開始から10秒経ってもデバイスが見つからなかった場合には、咀嚼計なしで進みます。
 
-> [!WARNING]
-> StandaloneModeでは、Quest 3上の `storage/emulated/0/Android/data/com.DefaultCompany.YummyTemplate/TestData` 内から以下の3つのファイルを参照しています。(余談ですが、このパスがUnityにおける `Application.PersistentDataPath` 内の`TestData` フォルダです。)
-> - `curry.glb`
-> - `shrimp.glb`
-> - `hamburg.glb`
-> - `dragonsteak.glb` (2026/3/2 の更新で新規対応しました)
->
-> **これらのファイルが配置されていない場合、StandaloneModeは動作しません！！！！**
->
-> 2026/2/21 時点で、ファイルの転送は `adb` コマンドを使った方法が利用可能であることを確認しています。
-
-# トラブルシューティング
-## 確認項目( `StandaloneMode` が無効)
-1. Quest 3はインターネットに接続されている？
-  - インターネットに接続されていない場合は接続してください。
-
-2. エンドポイントは正しく設定されている？
-  - 有効なエンドポイントを設定してください。
-
-3. `Test Connection` 結果は `Reached Host` かつ `Status : OK` になっている？
-  - `Not Reached Host`の場合、サーバーまでのネットワークに何らかの問題があります。`Reached Host` でありながら `Status : OK` でない場合、エンドポイントのURLが誤っているか、サーバーに何らかの不具合が生じています。 (ここの原因の切り分けは、詳しい人に `Status` の内容を見せながら臨機応変に対応してください。)
-
-4. `Last Detected GUID` が読み込んだQRコードの値に更新されているか？
-  - `Last Detected GUID` が更新されない場合には、Quest 3の実験的機能が有効化されていない可能性があります。 `4. Quest 3で実験的機能を有効にする` の章を参考に、ADBコマンドで実験的機能を有効化してください。
-
-## 確認項目( `StandaloneMode` が有効)
-1. `.glb` ファイルが所定のディレクトリに配置されているか？
-  - `【運営向け】管理画面` の後半のStandaloneModeの説明を読んでください。
 
 ---
-最終更新 : 2026/3/8
+最終更新 : 2026/8/30
 
 更新者 : Inoyu

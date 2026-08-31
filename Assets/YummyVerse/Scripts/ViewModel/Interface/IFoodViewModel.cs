@@ -11,10 +11,22 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         /// モデル自体が更新されたとき以外は発火しない
         /// </summary>
         ReactiveProperty<GltfImport> foodGltf { get; }
+
+        /// <summary>
+        /// 表示中の食品の咀嚼音。用意されていない食品と、食品が出ていない間は null。
+        /// null のときは ChewingSensorConfig の既定音を鳴らす。
+        /// </summary>
+        ReactiveProperty<AudioClip> chewSound { get; }
+
         ReactiveProperty<Transform> foodTransform { get; }
         
         ReactiveProperty<float>  foodScale { get; }
 
-        event Action OnFoodDestroy;
+        event Action OnFoodResetRequested;
+
+        /// <summary>
+        /// セッション終了や救済処理から、表示中の食べ物と残量を初期状態へ戻す。
+        /// </summary>
+        void ResetFoodState();
     }
 }

@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4db578c2cfd124dcc9eb083511011a03, type: 3}
+  m_Name: TutorialConfig
+  m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.ViewModel.Tutorial.SO.TutorialConfig
+  mainSequence: {fileID: 11400000, guid: b70a195a773ff4d48af3c9c729e1bf9a, type: 2}
+  freePlaySequence: {fileID: 11400000, guid: 6dd4f23d665d34377ba19a6b7422a84a, type: 2}
+  attractMessage:
+    m_TableReference:
+      m_TableCollectionName: TutorialStrings
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: S1
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  attractVoiceClip: {fileID: 0}
+  foodPlacementRequiredMessage:
+    m_TableReference:
+      m_TableCollectionName: TutorialStrings
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: S0.FoodPlacementRequired
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  chewingCalibrationHoldMessage:
+    m_TableReference:
+      m_TableCollectionName: TutorialStrings
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: S1.ChewingCalibrationHold
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  chewingCalibrationChewMessage:
+    m_TableReference:
+      m_TableCollectionName: TutorialStrings
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: S1.ChewingCalibrationChew
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  chewingCalibrationChewPromptDelaySeconds: 5
+  idleTimeoutSeconds: 90
+  references:
+    version: 2
+    RefIds: []
