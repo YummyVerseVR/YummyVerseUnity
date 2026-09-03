@@ -15,10 +15,11 @@ namespace YummyVerse.Scripts.Model
         /// Maps the sanitized Unity Device order projection to menu records.
         ///
         /// Device status intentionally has no preview URL or artifact checksum.
-        /// Consequently a generated item receives an artifact download URL only
-        /// when the server marks that selected output as downloadable.  Incomplete
-        /// orders remain visible as disabled cards, but no guessed artifact ID/URL is
-        /// ever produced.
+        /// Consequently a generated item receives artifact download URLs only when
+        /// the server marks those outputs as downloadable. The generated image is
+        /// the canonical TEXT_TO_IMAGE output and is mapped independently from the
+        /// GLB/WAV selection pointers. Incomplete orders remain visible as disabled
+        /// cards, but no guessed artifact ID/URL is ever produced.
         /// </summary>
         public static IReadOnlyList<FoodCatalogItem> ToCatalogItems(
             DeviceOrderListResponseDto response,
@@ -90,6 +91,7 @@ namespace YummyVerse.Scripts.Model
                 || string.IsNullOrWhiteSpace(dto.food_name)
                 || dto.food_name.Length > 100
                 || dto.analysis == null
+                || dto.generated_image == null
                 || dto.glb == null
                 || dto.wav == null
                 || string.IsNullOrWhiteSpace(dto.created_at)
@@ -105,17 +107,38 @@ namespace YummyVerse.Scripts.Model
                 return false;
             }
 
-            // All three projections are required by CustomerOrderStatus.  Unknown
+            // All four projections are required by CustomerOrderStatus.  Unknown
             // stage values are never converted to a selectable (or an optimistic
             // disabled) menu item.
             if (!YummyServiceV2ContractGuard.TryParseStageState(
                     dto.analysis.state, out _)
+                || !YummyServiceV2ContractGuard.TryParseStageState(
+                    dto.generated_image.state, out var generatedImageState)
                 || !YummyServiceV2ContractGuard.TryParseStageState(
                     dto.glb.state, out var glbState)
                 || !YummyServiceV2ContractGuard.TryParseStageState(
                     dto.wav.state, out var wavState))
             {
                 return false;
+            }
+
+            // The generated image is a canonical TEXT_TO_IMAGE output, not a
+            // V2OrderSelection member. The server only returns artifact_id when
+            // its completed stage attempt points at a verified artifact; require
+            // the matching completed state as an additional client-side guard.
+            var generatedImageDownloadable = orderState == OrderState.Completed
+                                              && dto.generated_image.downloadable
+                                              && !string.IsNullOrWhiteSpace(dto.generated_image.artifact_id)
+                                              && generatedImageState == StageState.Completed;
+
+            var previewUrl = string.Empty;
+            if (generatedImageDownloadable)
+            {
+                YummyServiceV2Url.TryBuildUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl,
+                    dto.order_id,
+                    dto.generated_image.artifact_id,
+                    out previewUrl);
             }
 
             // The Device projection only promises selected/verified/completed output
@@ -156,7 +179,7 @@ namespace YummyVerse.Scripts.Model
             item = new FoodCatalogItem(
                 $"api-v2:order:{dto.order_id}",
                 dto.food_name,
-                string.Empty,
+                previewUrl,
                 modelUrl,
                 audioUrl,
                 MenuItemSource.ApiV2,

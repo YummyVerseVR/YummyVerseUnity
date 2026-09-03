@@ -18,9 +18,10 @@ namespace YummyVerse.Scripts.Infrastructure
     /// Reads generated orders through the authenticated v2 Unity Device API.
     ///
     /// The old Admin menu endpoint is intentionally not used here.  The Device API
-    /// returns a sanitized order projection, so preview metadata is left empty and
-    /// only selected downloadable GLB/WAV artifact IDs are converted into download
-    /// URLs by the transport mapper.
+    /// returns a sanitized order projection, so the transport mapper derives the
+    /// canonical generated-image preview and only selected downloadable GLB/WAV
+    /// artifact IDs from the projection. All artifact URLs remain on the Device API
+    /// route and are authenticated by their consuming loader.
     /// </summary>
     public sealed class NetworkFoodCatalogSource : IRemoteFoodCatalogSource
     {

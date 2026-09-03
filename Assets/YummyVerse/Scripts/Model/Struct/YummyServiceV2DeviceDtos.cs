@@ -22,6 +22,7 @@ namespace YummyVerse.Scripts.Model.Struct
         public string food_name;
         public string state;
         public CustomerStageStatusDto analysis;
+        public CustomerOutputStatusDto generated_image;
         public CustomerOutputStatusDto glb;
         public CustomerOutputStatusDto wav;
         public string created_at;

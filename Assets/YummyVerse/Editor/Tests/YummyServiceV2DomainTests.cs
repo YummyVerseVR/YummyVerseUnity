@@ -403,6 +403,70 @@ namespace YummyVerse.Editor.Tests
                 "not-a-url", "order-1", "wav-1", out _), Is.False);
         }
 
+        [Test]
+        public void UnityDeviceArtifactAuthScopeRequiresConfiguredOriginAndExactRoute()
+        {
+            const string configuredBaseUrl = "https://service.example.test/api/v2";
+            var safe = "https://service.example.test/api/v2/devices/unity/orders/order-1/artifacts/image-1/download";
+
+            Assert.That(
+                YummyServiceV2Url.IsSafeUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl, safe),
+                Is.True);
+
+            // A same-origin public menu/media route is not a Device artifact route.
+            Assert.That(
+                YummyServiceV2Url.IsSafeUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl,
+                    "https://service.example.test/api/v2/menu/image-1"),
+                Is.False);
+            Assert.That(
+                YummyServiceV2Url.IsSafeUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl,
+                    "https://service.example.test/api/v2/devices/unity/orders/order-1/artifacts/image-1/preview"),
+                Is.False);
+
+            // Credentials must never follow an origin change, even when the path is
+            // otherwise shaped like the Device artifact operation.
+            Assert.That(
+                YummyServiceV2Url.IsSafeUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl,
+                    "https://cdn.example.test/api/v2/devices/unity/orders/order-1/artifacts/image-1/download"),
+                Is.False);
+            Assert.That(
+                YummyServiceV2Url.IsSafeUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl,
+                    "http://service.example.test/api/v2/devices/unity/orders/order-1/artifacts/image-1/download"),
+                Is.False);
+
+            // Query strings/fragments and additional raw path segments are not URLs
+            // produced by the URL builder and are rejected by the auth gate.
+            Assert.That(
+                YummyServiceV2Url.IsSafeUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl, safe + "?redirect=https://cdn.example.test"),
+                Is.False);
+            Assert.That(
+                YummyServiceV2Url.IsSafeUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl,
+                    "https://service.example.test/api/v2/devices/unity/orders/order/extra/artifacts/image-1/download"),
+                Is.False);
+            Assert.That(
+                YummyServiceV2Url.IsSafeUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl,
+                    "https://user:secret@service.example.test/api/v2/devices/unity/orders/order-1/artifacts/image-1/download"),
+                Is.False);
+
+            // Opaque IDs are escaped by the builder and remain safe route segments.
+            Assert.That(
+                YummyServiceV2Url.TryBuildUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl, "order/1", "image 1", out var escaped),
+                Is.True);
+            Assert.That(
+                YummyServiceV2Url.IsSafeUnityDeviceArtifactDownloadUrl(
+                    configuredBaseUrl, escaped),
+                Is.True);
+        }
+
         private static Dictionary<StageType, StageState> AllStages(StageState state)
         {
             return new Dictionary<StageType, StageState>
