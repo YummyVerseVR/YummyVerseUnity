@@ -35,7 +35,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 3144671232
-    m_Localized: "YummyVerse \u306E\u3054\u5229\u7528\u306F\u521D\u3081\u3066\u3067\u3059\u304B\uFF1F"
+    m_Localized: "YummyVerse \u306E\u3054\u5229\u7528\u306F\u521D\u3081\u3066\u3067\u3059\u304B\uFF1F\n\u4EBA\u5DEE\u3057\u6307\u306E\u30DC\u30BF\u30F3\u3067\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
     m_Metadata:
       m_Items: []
   - m_Id: 3148865536
@@ -47,7 +47,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 3153059840
-    m_Localized: "まずは前菜からいきましょう。\n親指の位置のボタンを押してください。"
+    m_Localized: "試しにりんごを食べてみましょう。\nAボタンを押してください。"
     m_Metadata:
       m_Items: []
   - m_Id: 3509575680
@@ -95,7 +95,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 5229240320
-    m_Localized: "親指の位置のボタンを押してスタート"
+    m_Localized: "Aボタンを押してスタート"
     m_Metadata:
       m_Items: []
   - m_Id: 5229240321
@@ -103,11 +103,11 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 5229240322
-    m_Localized: "咀嚼計のキャリブレーションを行います。\n口を動かさないでください。"
+    m_Localized: "咀嚼計のキャリブレーションを行います。\n歯を小さくカチカチ鳴らしてください"
     m_Metadata:
       m_Items: []
   - m_Id: 5229240323
-    m_Localized: "もぐもぐしてください。"
+    m_Localized: "しっかり噛みしめるように\nもぐもぐしてください。"
     m_Metadata:
       m_Items: []
   references:

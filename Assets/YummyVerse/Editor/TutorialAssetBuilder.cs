@@ -197,7 +197,7 @@ namespace YummyVerse.Editor
             // --- S6: 初回かどうかの判定 (Choice) ---
             var s6 = Create<ChoiceStep>("Steps/Step_S6_FirstTimeCheck");
             SetField(s6, "stepId", "S6");
-            SetField(s6, "prompt", Str(table, "S6.Prompt", "YummyVerse のご利用は初めてですか？"));
+            SetField(s6, "prompt", Str(table, "S6.Prompt", "YummyVerse のご利用は初めてですか？\n人差し指のボタンで選択してください。"));
             SetField(s6, "timeoutSeconds", 15f);
             SetField(s6, "defaultOptionIndex", 0);
             SetField(s6, "blackboardKey", "isFirstTime");
@@ -214,7 +214,7 @@ namespace YummyVerse.Editor
             // --- S6': 前菜の案内 (食品は次の S8 の指示と同時に提供する) ---
             var s6d = Narration(
                 "Steps/Step_S6d_Appetizer", "S6'",
-                Str(table, "S6d", "まずは前菜からいきましょう。\n親指の位置のボタンを押してください。"),
+                Str(table, "S6d", "まずはリンゴを食べてみましょう。\nAボタンを押してください。"),
                 conditions.Button);
             SetEnum(s6d, "onCompletedCommand", GameCommandId.None);
             SetField(s6d, "skippableOnRepeat", true);
@@ -225,7 +225,7 @@ namespace YummyVerse.Editor
             // ゲーム側に1回すくわせて本物のイベントで先へ進める。
             var s8 = Create<TaskStep>("Steps/Step_S8_Scoop");
             SetField(s8, "stepId", "S8");
-            SetField(s8, "instruction", Str(table, "S8", "スプーンで食べ物をすくってみましょう。"));
+            SetField(s8, "instruction", Str(table, "S8", "スプーンで食べ物をすくって口に入れ\nもぐもぐしてください"));
             // S7: すくう指示が出たタイミングで前菜を提供する。
             SetEnum(s8, "onStartedCommand", GameCommandId.ServeRandomPersistentFood);
             SetField(s8, "successCondition", conditions.FoodScooped);
@@ -317,7 +317,7 @@ namespace YummyVerse.Editor
             SetField(config, "mainSequence", main);
             SetField(config, "freePlaySequence", freePlay);
             SetField(config, "attractMessage",
-                Str(table, "S1", "親指の位置のボタンを押してスタート"));
+                Str(table, "S1", "Aボタンを押してスタート"));
             SetField(config, "foodPlacementRequiredMessage",
                 Str(table, "S0.FoodPlacementRequired",
                     "食べ物の表示位置を設定してください。\n設定画面はAとXの同時押しで表示されます。"));
@@ -325,9 +325,9 @@ namespace YummyVerse.Editor
             // S1 の直後、S2「ようこそ」の手前に挟まる咀嚼計の較正案内。
             SetField(config, "chewingCalibrationHoldMessage",
                 Str(table, "S1.ChewingCalibrationHold",
-                    "咀嚼計のキャリブレーションを行います。\n口を動かさないでください。"));
+                    "咀嚼計のキャリブレーションを行います。\n歯を小さくカチカチ鳴らしてください。"));
             SetField(config, "chewingCalibrationChewMessage",
-                Str(table, "S1.ChewingCalibrationChew", "もぐもぐしてください。"));
+                Str(table, "S1.ChewingCalibrationChew", "しっかり噛みしめるように、もぐもぐしてください。"));
             SetField(config, "chewingCalibrationChewPromptDelaySeconds", 5f);
 
             SetField(config, "idleTimeoutSeconds", 90f);
