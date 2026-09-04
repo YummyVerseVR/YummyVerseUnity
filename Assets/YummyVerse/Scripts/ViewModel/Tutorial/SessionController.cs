@@ -14,8 +14,9 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
     /// <summary>
     /// Attract → Tutorial → FreePlay → Outro → Attract を回し続ける常駐ループ。
     ///
-    /// 中断は _sessionCts の一括キャンセルだけで処理する。
-    /// finally で必ず ResetToAttract を通るため、どこで離脱されても次の来場者に状態が残らない。
+    /// 中断は _cycleCts の一括キャンセルだけで処理する。
+    /// Attract の待機中も含むサイクルの終了時に必ず ResetToAttract を通るため、
+    /// どこで離脱されても次の来場者に状態が残らない。
     /// </summary>
     public class SessionController : ISessionController, IInitializable, IDisposable
     {
@@ -35,7 +36,8 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
         private readonly CompositeDisposable _disposables = new();
         private readonly CancellationTokenSource _lifetimeCts = new();
 
-        private CancellationTokenSource _sessionCts;
+        private CancellationTokenSource _cycleCts;
+        private UniTaskCompletionSource _resetToStartCompletion;
 
         public SessionController(
             ITutorialRunner runner,
@@ -90,33 +92,69 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
 
         public void AbortSession() => AbortSession("外部からの要求");
 
+        public async UniTask ResetToStartAsync(CancellationToken ct)
+        {
+            if (_lifetimeCts.IsCancellationRequested) return;
+
+            // 複数回押されても同じ Attract 再表示を待つ。完了通知は、次のサイクルで
+            // 「Aボタンを押してスタート」の表示が終わった時点で発火する。
+            _resetToStartCompletion ??= new UniTaskCompletionSource();
+            var completion = _resetToStartCompletion;
+
+            AbortSession("設定画面からスタートへ戻る");
+            await completion.Task.AttachExternalCancellation(ct);
+        }
+
         private void AbortSession(string reason)
         {
-            if (_sessionCts == null || _sessionCts.IsCancellationRequested) return;
+            if (_cycleCts == null || _cycleCts.IsCancellationRequested) return;
             Debug.Log($"[Session] 中断します: {reason}");
-            _sessionCts.Cancel();
+            _cycleCts.Cancel();
         }
 
         private async UniTaskVoid RunLoopAsync(CancellationToken lifetimeCt)
         {
             while (!lifetimeCt.IsCancellationRequested)
             {
+                var cycleCts = CancellationTokenSource.CreateLinkedTokenSource(lifetimeCt);
+                _cycleCts = cycleCts;
+                var cycleCt = cycleCts.Token;
+
                 try
                 {
-                    await WaitInAttractAsync(lifetimeCt);
-                    await RunSessionAsync(lifetimeCt);
+                    await WaitInAttractAsync(cycleCt);
+                    await RunSessionAsync(cycleCt);
                 }
                 catch (OperationCanceledException)
                 {
-                    // アプリ終了。ループを抜ける。
-                    return;
+                    if (lifetimeCt.IsCancellationRequested) return;
+                    Debug.Log("[Session] 体験サイクルが中断されました");
                 }
                 catch (Exception e)
                 {
                     // ループ自体は止めない。展示中に1回の例外で無人稼働が死ぬのを防ぐ。
                     Debug.LogException(e);
-                    await UniTask.Yield();
                 }
+                finally
+                {
+                    if (!lifetimeCt.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            await ResetToAttractAsync();
+                        }
+                        catch (Exception e)
+                        {
+                            // リセット中の例外でも常駐ループを止めず、次のサイクルで復旧を試みる。
+                            Debug.LogException(e);
+                        }
+                    }
+
+                    cycleCts.Dispose();
+                    if (ReferenceEquals(_cycleCts, cycleCts)) _cycleCts = null;
+                }
+
+                await UniTask.Yield();
             }
         }
 
@@ -133,6 +171,10 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
 
             await _ctx.Message.ShowAsync(_config.AttractMessage, lifetimeCt);
             _ctx.Voice.PlayAsync(_config.AttractVoiceClip, lifetimeCt).SuppressCancellationThrow().Forget();
+
+            // ResetToStartAsync は、開始案内が実際に表示されるまで完了させない。
+            _resetToStartCompletion?.TrySetResult();
+            _resetToStartCompletion = null;
 
             await _events.GetStream(GameEventId.StartButtonPressed).FirstAsync(lifetimeCt);
 
@@ -167,45 +209,22 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
 
         private async UniTask RunSessionAsync(CancellationToken lifetimeCt)
         {
-            _sessionCts = CancellationTokenSource.CreateLinkedTokenSource(lifetimeCt);
-            var ct = _sessionCts.Token;
+            _ctx.ResetForNewSession();
+            _idleWatcher.SetActive(true);
 
-            try
-            {
-                _ctx.ResetForNewSession();
-                _idleWatcher.SetActive(true);
+            _appState.TrySet(AppState.Tutorial);
 
-                _appState.TrySet(AppState.Tutorial);
+            // 咀嚼音の閾値は個人差が大きいので、来場者ごとに S2「ようこそ」の手前で取り直す。
+            // 咀嚼計が無い/失敗した場合もここでは止めず、そのままチュートリアルへ進む。
+            await _chewingCalibration.RunAsync(_ctx, lifetimeCt);
 
-                // 咀嚼音の閾値は個人差が大きいので、来場者ごとに S2「ようこそ」の手前で取り直す。
-                // 咀嚼計が無い/失敗した場合もここでは止めず、そのままチュートリアルへ進む。
-                await _chewingCalibration.RunAsync(_ctx, ct);
+            await _runner.RunAsync(_config.MainSequence, _ctx, lifetimeCt);
 
-                await _runner.RunAsync(_config.MainSequence, _ctx, ct);
+            // シーン遷移もロードも暗転もなく、そのまま実体験へ移行する
+            _appState.TrySet(AppState.FreePlay);
+            await _freePlay.RunAsync(_ctx, lifetimeCt);
 
-                // シーン遷移もロードも暗転もなく、そのまま実体験へ移行する
-                _appState.TrySet(AppState.FreePlay);
-                await _freePlay.RunAsync(_ctx, ct);
-
-                _appState.TrySet(AppState.Outro);
-            }
-            catch (OperationCanceledException)
-            {
-                // 想定内。中断されただけ。
-                Debug.Log("[Session] セッションが中断されました");
-                lifetimeCt.ThrowIfCancellationRequested();
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
-            finally
-            {
-                await ResetToAttractAsync();
-
-                _sessionCts.Dispose();
-                _sessionCts = null;
-            }
+            _appState.TrySet(AppState.Outro);
         }
 
         /// <summary>
@@ -233,11 +252,14 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
         {
             _disposables?.Dispose();
 
-            _sessionCts?.Cancel();
-            _sessionCts?.Dispose();
-            _sessionCts = null;
-
+            // lifetime を先に止め、cycle のキャンセルを通常の「スタートへ戻る」と
+            // 誤認してリセット処理を開始しないようにする。
             _lifetimeCts?.Cancel();
+            _cycleCts?.Cancel();
+            _cycleCts?.Dispose();
+            _cycleCts = null;
+            _resetToStartCompletion = null;
+
             _lifetimeCts?.Dispose();
         }
     }

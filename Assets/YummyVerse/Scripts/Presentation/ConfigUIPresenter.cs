@@ -32,8 +32,6 @@ namespace YummyVerse.Scripts.Presentation
         private Slider _foodScaleSlider;
         private Camera _targetCamera;
         private Transform _uiTransform;
-        private Button _spatialAnchorButton;
-        private Button _fixFoodPositionButton;
         private TextMeshProUGUI _spatialPlacementStatus;
         private Button _returnToStartButton;
         private IVirtualKeyboard _virtualKeyboard;
@@ -59,8 +57,6 @@ namespace YummyVerse.Scripts.Presentation
             Slider foodScaleSlider,
             Camera targetCamera,
             Transform uiTransform,
-            Button spatialAnchorButton,
-            Button fixFoodPositionButton,
             TextMeshProUGUI spatialPlacementStatus,
             Button returnToStartButton,
             IVirtualKeyboard virtualKeyboard = null)
@@ -74,8 +70,6 @@ namespace YummyVerse.Scripts.Presentation
                 foodScaleSlider,
                 targetCamera,
                 uiTransform,
-                spatialAnchorButton,
-                fixFoodPositionButton,
                 spatialPlacementStatus,
                 returnToStartButton,
                 virtualKeyboard);
@@ -90,8 +84,6 @@ namespace YummyVerse.Scripts.Presentation
             Slider foodScaleSlider,
             Camera targetCamera,
             Transform uiTransform,
-            Button spatialAnchorButton,
-            Button fixFoodPositionButton,
             TextMeshProUGUI spatialPlacementStatus,
             Button returnToStartButton,
             IVirtualKeyboard virtualKeyboard = null)
@@ -119,8 +111,6 @@ namespace YummyVerse.Scripts.Presentation
             _foodScaleSlider = foodScaleSlider;
             _targetCamera = targetCamera;
             _uiTransform = uiTransform;
-            _spatialAnchorButton = spatialAnchorButton;
-            _fixFoodPositionButton = fixFoodPositionButton;
             _spatialPlacementStatus = spatialPlacementStatus;
             _returnToStartButton = returnToStartButton;
 
@@ -187,19 +177,6 @@ namespace YummyVerse.Scripts.Presentation
                 })
                 .AddTo(_disposables);
 
-            Observable.CombineLatest(
-                    _viewModel.IsSpatialPlacementBusy,
-                    _viewModel.IsSpatialAnchorReady,
-                    (isBusy, isAnchorReady) => (isBusy, isAnchorReady))
-                .Subscribe(state =>
-                {
-                    if (_spatialAnchorButton != null) _spatialAnchorButton.interactable = !state.isBusy;
-                    if (_fixFoodPositionButton != null)
-                    {
-                        _fixFoodPositionButton.interactable = !state.isBusy && state.isAnchorReady;
-                    }
-                })
-                .AddTo(_disposables);
         }
 
         private void BindControls()
@@ -226,24 +203,10 @@ namespace YummyVerse.Scripts.Presentation
                     .AddTo(_disposables);
             }
 
-            if (_spatialAnchorButton != null)
-            {
-                _spatialAnchorButton.OnClickAsObservable()
-                    .SubscribeAwait(async (_, ct) => await _viewModel.SetSpatialAnchor(ct))
-                    .AddTo(_disposables);
-            }
-
-            if (_fixFoodPositionButton != null)
-            {
-                _fixFoodPositionButton.OnClickAsObservable()
-                    .SubscribeAwait(async (_, ct) => await _viewModel.FixFoodPosition(ct))
-                    .AddTo(_disposables);
-            }
-
             if (_returnToStartButton != null)
             {
                 _returnToStartButton.OnClickAsObservable()
-                    .Subscribe(_ => _viewModel.ResetToStart())
+                    .SubscribeAwait(async (_, ct) => await _viewModel.ResetToStartAsync(ct))
                     .AddTo(_disposables);
             }
         }

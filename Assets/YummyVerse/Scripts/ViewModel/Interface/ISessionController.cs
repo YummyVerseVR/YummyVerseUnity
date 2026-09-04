@@ -1,3 +1,6 @@
+using System.Threading;
+using Cysharp.Threading.Tasks;
+
 namespace YummyVerse.Scripts.ViewModel.Interface
 {
     /// <summary>
@@ -9,5 +12,11 @@ namespace YummyVerse.Scripts.ViewModel.Interface
     {
         /// <summary>セッションを中断して Attract へ戻す。</summary>
         void AbortSession();
+
+        /// <summary>
+        /// 待機中を含む現在の体験サイクルをリセットし、Attract の開始案内が
+        /// 表示されるまで待つ。
+        /// </summary>
+        UniTask ResetToStartAsync(CancellationToken ct);
     }
 }

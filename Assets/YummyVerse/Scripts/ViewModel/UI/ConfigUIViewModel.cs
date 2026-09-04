@@ -149,12 +149,12 @@ namespace YummyVerse.Scripts.ViewModel
             IsVisible.Value = isVisible;
         }
 
-        public void ResetToStart()
+        public async UniTask ResetToStartAsync(CancellationToken ct)
         {
-            // UIを先に閉じ、SessionController の既存の finally 経路へ中断を流す。
-            // これにより食品モデル・残量・注文・QR認識をまとめて初期化して Attract へ戻る。
+            // 設定UIを閉じてから体験サイクル全体を再生成する。
+            // Attract の開始案内が再表示されるまで待つため、押下後の状態が曖昧にならない。
             SetVisible(false);
-            _sessionController.AbortSession();
+            await _sessionController.ResetToStartAsync(ct);
         }
         
         public void UpdateEndPointUrl(string url)
