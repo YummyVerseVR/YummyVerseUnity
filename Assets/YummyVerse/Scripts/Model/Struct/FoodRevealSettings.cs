@@ -22,13 +22,14 @@ namespace YummyVerse.Scripts.Model.Struct
         [Tooltip("フードドームの大きさ倍率。モデルの実寸に対する倍率で、食べ物のスケール設定とは独立")]
         [SerializeField, Min(0.001f)] private float domeScale = 1f;
 
-        [Tooltip("フードドームを置く高さ (m)。食べ物の設置面からのオフセット")]
+        [Tooltip("フードドームを置く高さ (m)。食べ物の位置からのワールド上方向オフセット。"
+                 + "ドームの姿勢は皿の傾きによらず常に無回転 (取っ手が上) で固定される")]
         [SerializeField] private float domeHeightOffset;
 
         [Tooltip("ドームを消してから食べ物を出すまでの、白い煙の再生時間 (秒)")]
         [SerializeField, Min(0.01f)] private float smokeDurationSeconds = 0.5f;
 
-        [Tooltip("煙を出す高さ (m)。食べ物の設置面からのオフセット")]
+        [Tooltip("煙を出す高さ (m)。食べ物の位置からのワールド上方向オフセット")]
         [SerializeField] private float smokeHeightOffset = 0.05f;
 
         [Tooltip("1回の演出で出す煙の最小個数")]

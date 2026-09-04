@@ -87,6 +87,7 @@ namespace YummyVerse.Scripts.Presentation
                 ResetFoodState();
                 _revealStartedAt = -1f;
                 _dome.SetVisible(true);
+                SyncDomePose();
                 return;
             }
 
@@ -194,6 +195,8 @@ namespace YummyVerse.Scripts.Presentation
                     _currentPlacementTransform.position,
                     _currentPlacementTransform.rotation);
             }
+
+            SyncDomePose();
         }
 
         public void ResetFoodState()
@@ -243,10 +246,20 @@ namespace YummyVerse.Scripts.Presentation
                 cancellationToken: cancellationToken);
         }
 
+        /// <summary>
+        /// ドームの位置だけを食べ物へ合わせ直す。回転は FoodDomeController がワールド無回転に固定するため、
+        /// 皿の傾きに関係なく取っ手は常に上を向く。
+        /// </summary>
+        private void SyncDomePose()
+        {
+            if (_dome == null || !_dome.IsVisible || _foodAnchor == null) return;
+            _dome.SyncPose(_foodAnchor.position);
+        }
+
         private Vector3 RevealPosition()
         {
             if (_foodAnchor == null) return Vector3.zero;
-            return _foodAnchor.position + _foodAnchor.up * _revealSettings.SmokeHeightOffset;
+            return _foodAnchor.position + Vector3.up * _revealSettings.SmokeHeightOffset;
         }
 
         private void SetUpScoopInteraction()
