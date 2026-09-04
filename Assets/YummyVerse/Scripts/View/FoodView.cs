@@ -19,6 +19,7 @@ namespace YummyVerse.Scripts.View
     {
         [SerializeField] private ScoopDetectionSettings _scoopSettings = new();
         [SerializeField] private ScoopCrumbEffectSettings _crumbEffectSettings = new();
+        [SerializeField] private FoodRevealSettings _revealSettings = new();
 
         private IFoodViewModel _foodViewModel;
         private IFoodEatingService _foodEatingService;
@@ -37,12 +38,15 @@ namespace YummyVerse.Scripts.View
 
         private void Start()
         {
-            _presenter.Initialize(_scoopSettings, _crumbEffectSettings);
+            _presenter.Initialize(_scoopSettings, _crumbEffectSettings, _revealSettings);
             _foodViewModel.foodGltf
                 .SubscribeAwait(async (gltfImport, cancellationToken) =>
                 {
                     await DisplayFoodAsync(gltfImport, cancellationToken);
                 })
+                .AddTo(this);
+            _foodViewModel.isPreparing
+                .Subscribe(_presenter.SetPreparing)
                 .AddTo(this);
             _foodViewModel.foodTransform
                 .Subscribe(_presenter.SetFoodTransform)

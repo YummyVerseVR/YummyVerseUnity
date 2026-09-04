@@ -20,7 +20,11 @@ namespace YummyVerse.Scripts.Model
         private int _selectionVersion;
         private bool _isDisposed;
         
+        private readonly ReactiveProperty<bool> _isPreparing = new(false);
+
         public ReactiveProperty<FoodDownloadResult> downloadResult { get; } = new ();
+
+        public ReadOnlyReactiveProperty<bool> IsPreparing => _isPreparing;
         
         public FoodContext(IGameEventBus gameEventBus, IFoodModelLoader foodModelLoader)
         {
@@ -39,10 +43,17 @@ namespace YummyVerse.Scripts.Model
                 .Subscribe(StartLoad).AddTo(_disposables);
         }
         
+        public void BeginPreparation()
+        {
+            if (_isDisposed) return;
+            _isPreparing.Value = true;
+        }
+
         public void Reset()
         {
             CancelSelection();
             _selectionVersion++;
+            _isPreparing.Value = false;
             downloadResult.Value = default;
         }
 
@@ -54,6 +65,7 @@ namespace YummyVerse.Scripts.Model
             _lifetimeCancellation.Cancel();
             _lifetimeCancellation.Dispose();
             downloadResult?.Dispose();
+            _isPreparing?.Dispose();
             _disposables?.Dispose();
         }
 
@@ -78,6 +90,9 @@ namespace YummyVerse.Scripts.Model
                 var result = await _foodModelLoader.LoadAsync(item, cancellationToken);
                 if (!_isDisposed && version == _selectionVersion && !cancellationToken.IsCancellationRequested)
                 {
+                    // ドームを消して煙を出す表示側が先に動けるよう、
+                    // 結果を流す前に準備中を降ろす。
+                    _isPreparing.Value = false;
                     downloadResult.Value = result;
                 }
             }
@@ -87,8 +102,16 @@ namespace YummyVerse.Scripts.Model
             }
             catch (Exception exception)
             {
+                // 失敗したままドームを被せ続けないよう、ここでも準備中を降ろす。
+                EndPreparationIfCurrent(version);
                 Debug.LogException(exception);
             }
+        }
+
+        private void EndPreparationIfCurrent(int version)
+        {
+            if (_isDisposed || version != _selectionVersion) return;
+            _isPreparing.Value = false;
         }
 
         private void CancelSelection()

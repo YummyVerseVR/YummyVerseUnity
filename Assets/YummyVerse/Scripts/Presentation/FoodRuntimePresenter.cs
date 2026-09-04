@@ -23,7 +23,10 @@ namespace YummyVerse.Scripts.Presentation
         private readonly IScoopProbeProvider _scoopProbeProvider;
         private readonly IScoopHaptics _scoopHaptics;
         private ScoopDetectionSettings _scoopSettings;
+        private FoodRevealSettings _revealSettings;
         private ScoopCrumbEffectController _crumbEffect;
+        private FoodDomeController _dome;
+        private FoodRevealSmokeEffect _revealSmoke;
 
         private CancellationTokenSource _displayCancellation;
         private Transform _foodAnchor;
@@ -35,6 +38,9 @@ namespace YummyVerse.Scripts.Presentation
         private bool _initialized;
         private bool _disposed;
 
+        /// <summary>煙を出し始めた時刻 (Time.time)。出していない間は負。</summary>
+        private float _revealStartedAt = -1f;
+
         public FoodRuntimePresenter(
             IFoodEatingService eatingService,
             IScoopProbeProvider scoopProbeProvider,
@@ -45,7 +51,10 @@ namespace YummyVerse.Scripts.Presentation
             _scoopHaptics = scoopHaptics;
         }
 
-        public void Initialize(ScoopDetectionSettings settings, ScoopCrumbEffectSettings crumbEffectSettings)
+        public void Initialize(
+            ScoopDetectionSettings settings,
+            ScoopCrumbEffectSettings crumbEffectSettings,
+            FoodRevealSettings revealSettings)
         {
             if (_initialized) return;
 
@@ -54,9 +63,42 @@ namespace YummyVerse.Scripts.Presentation
             _foodAnchor.gameObject.SetActive(false);
             _foodRoot = CreateFoodRoot();
             _scoopSettings = settings ?? new ScoopDetectionSettings();
+            _revealSettings = revealSettings ?? new FoodRevealSettings();
 
             // 食べ物の縮小・破棄に粒が巻き込まれないよう、食べかすは食べ物の階層の外で持つ。
             _crumbEffect = new ScoopCrumbEffectController(crumbEffectSettings);
+
+            // ドームは食べ物と同じ anchor の子。皿の追従は anchor 側がまとめて面倒を見る。
+            _dome = new FoodDomeController(_revealSettings, _foodAnchor);
+            _revealSmoke = new FoodRevealSmokeEffect(_revealSettings);
+        }
+
+        /// <summary>
+        /// 食べ物の準備中かどうかを受け取り、フードドームの出し入れと現れる瞬間の煙を担う。
+        /// 準備が終わってから食べ物が届くまでの間は、煙だけが出ている状態になる。
+        /// </summary>
+        public void SetPreparing(bool preparing)
+        {
+            if (!_initialized || _disposed) return;
+
+            if (preparing)
+            {
+                // 前の食べ物がドームの中に取り残されないよう、置き場所を空にしてから被せる。
+                ResetFoodState();
+                _revealStartedAt = -1f;
+                _dome.SetVisible(true);
+                return;
+            }
+
+            if (!_dome.IsVisible) return;
+
+            _dome.SetVisible(false);
+
+            // 置き場所が決まっていなければドームも見えていない。あらぬ所で煙を出さない。
+            if (_foodAnchor == null || !_foodAnchor.gameObject.activeSelf) return;
+
+            _revealSmoke.Play(RevealPosition());
+            _revealStartedAt = Time.time;
         }
 
         public async UniTask DisplayAsync(
@@ -74,6 +116,9 @@ namespace YummyVerse.Scripts.Presentation
 
             try
             {
+                // ドームが消えた直後なら、煙を出し切ってから食べ物を出す。
+                await WaitForRevealSmokeAsync(ct);
+
                 var instantiator = new GameObjectInstantiator(gltfImport, _foodRoot.transform);
                 var instantiated = await gltfImport.InstantiateMainSceneAsync(instantiator, ct);
                 ct.ThrowIfCancellationRequested();
@@ -175,10 +220,33 @@ namespace YummyVerse.Scripts.Presentation
             _eatingService.AbandonFood();
             _crumbEffect?.Dispose();
             _crumbEffect = null;
+            _dome?.Dispose();
+            _dome = null;
+            _revealSmoke?.Dispose();
+            _revealSmoke = null;
             DestroyObject(_foodRoot);
             DestroyObject(_foodAnchor != null ? _foodAnchor.gameObject : null);
             _foodRoot = null;
             _foodAnchor = null;
+        }
+
+        private async UniTask WaitForRevealSmokeAsync(CancellationToken cancellationToken)
+        {
+            if (_revealStartedAt < 0f) return;
+
+            var remaining = _revealSettings.SmokeDurationSeconds - (Time.time - _revealStartedAt);
+            _revealStartedAt = -1f;
+            if (remaining <= 0f) return;
+
+            await UniTask.Delay(
+                TimeSpan.FromSeconds(remaining),
+                cancellationToken: cancellationToken);
+        }
+
+        private Vector3 RevealPosition()
+        {
+            if (_foodAnchor == null) return Vector3.zero;
+            return _foodAnchor.position + _foodAnchor.up * _revealSettings.SmokeHeightOffset;
         }
 
         private void SetUpScoopInteraction()

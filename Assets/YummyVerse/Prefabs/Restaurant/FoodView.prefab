@@ -46,6 +46,46 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b611877cc7754346b327b6aa3cfc1fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.View.FoodView
+  _scoopSettings:
+    probeRadius: 0.045
+    releaseMargin: 0.02
+    cooldownSeconds: 0.5
+    hapticSeconds: 0.08
+    hapticAmplitude: 0.6
+  _crumbEffectSettings:
+    minCount: 10
+    maxCount: 18
+    minLifetimeSeconds: 0.4
+    maxLifetimeSeconds: 0.7
+    minSpeed: 0.5
+    maxSpeed: 1.1
+    minSize: 0.004
+    maxSize: 0.012
+    gravityModifier: 0.5
+    spreadAngleDegrees: 45
+    spawnRadius: 0.012
+    darkColor: {r: 0.45, g: 0.32, b: 0.18, a: 1}
+    lightColor: {r: 0.78, g: 0.6, b: 0.38, a: 1}
+    material: {fileID: 0}
+  _revealSettings:
+    domePrefab: {fileID: -7039370205757034750, guid: a5c58d7e2a4f742fdaec01bd5686d46a, type: 3}
+    domeScale: 1
+    domeHeightOffset: 0
+    smokeDurationSeconds: 0.5
+    smokeHeightOffset: 0.05
+    minCount: 22
+    maxCount: 32
+    minLifetimeSeconds: 0.35
+    maxLifetimeSeconds: 0.7
+    minSpeed: 0.25
+    maxSpeed: 0.7
+    minSize: 0.06
+    maxSize: 0.16
+    gravityModifier: -0.08
+    spreadAngleDegrees: 55
+    spawnRadius: 0.07
+    smokeColor: {r: 1, g: 1, b: 1, a: 0.85}
+    material: {fileID: 0}
 --- !u!114 &6816351977732592424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74,5 +114,5 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 94b849f7ace65403483f4596bacf0eb9, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YummyVerse.Scripts.View.FoodPlacementCubeView
