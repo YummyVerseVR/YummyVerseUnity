@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using NUnit.Framework;
@@ -67,6 +68,62 @@ namespace YummyVerse.Editor.Tests
                 events.RaiseQrPlateDetected();
 
                 Assert.That(fetcher.DownloadCount, Is.Zero);
+            }
+            finally
+            {
+                context.Dispose();
+            }
+        }
+
+        [Test]
+        public void Preparation_EndsBeforeTheDownloadResultIsPublished()
+        {
+            // ドームを消して煙を出す表示側は準備中フラグを見ているため、
+            // 食べ物が流れてくる前に降ろさないと、煙より先に食べ物が出てしまう。
+            var events = new FakeGameEventBus();
+            var fetcher = new RecordingFoodFetcher();
+            var context = new FoodContext(events, fetcher);
+            var order = new List<string>();
+
+            try
+            {
+                context.Initialize();
+                context.BeginPreparation();
+                Assert.That(context.IsPreparing.CurrentValue, Is.True);
+
+                using var preparation = context.IsPreparing
+                    .Skip(1)
+                    .Subscribe(_ => order.Add("preparation"));
+                using var download = context.downloadResult
+                    .Skip(1)
+                    .Subscribe(_ => order.Add("download"));
+
+                events.RaiseMenuItemSelected(new MenuItem(LocalFoods.Curry, Guid.NewGuid()));
+
+                Assert.That(context.IsPreparing.CurrentValue, Is.False);
+                Assert.That(order, Is.EqualTo(new[] { "preparation", "download" }));
+            }
+            finally
+            {
+                context.Dispose();
+            }
+        }
+
+        [Test]
+        public void Reset_EndsPreparation()
+        {
+            // セッションが終わったのにドームが被さったままにならないようにする。
+            var events = new FakeGameEventBus();
+            var fetcher = new RecordingFoodFetcher();
+            var context = new FoodContext(events, fetcher);
+
+            try
+            {
+                context.Initialize();
+                context.BeginPreparation();
+                context.Reset();
+
+                Assert.That(context.IsPreparing.CurrentValue, Is.False);
             }
             finally
             {

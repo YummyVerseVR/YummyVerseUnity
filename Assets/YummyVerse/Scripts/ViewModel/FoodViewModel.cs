@@ -20,6 +20,9 @@ namespace YummyVerse.Scripts.ViewModel
         public ReactiveProperty<Transform> foodTransform { get; } = new();
         
         public ReactiveProperty<float> foodScale { get; } = new();
+
+        // 準備中フラグは FoodContext が持つものをそのまま流す。ここで複製しない。
+        public ReadOnlyReactiveProperty<bool> isPreparing => _foodContext.IsPreparing;
         public event Action OnFoodResetRequested;
         
         private CompositeDisposable _disposables = new CompositeDisposable();

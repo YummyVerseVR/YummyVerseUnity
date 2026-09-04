@@ -12,19 +12,24 @@ namespace YummyVerse.Scripts.ViewModel
         private readonly IFoodCatalogService _catalogService;
         private readonly IFoodSelectionMenu _menu;
         private readonly IGameEventPublisher _eventPublisher;
+        private readonly IFoodContext _foodContext;
 
         public FoodSelectionFlow(
             IFoodCatalogService catalogService,
             IFoodSelectionMenu menu,
-            IGameEventPublisher eventPublisher)
+            IGameEventPublisher eventPublisher,
+            IFoodContext foodContext)
         {
             _catalogService = catalogService;
             _menu = menu;
             _eventPublisher = eventPublisher;
+            _foodContext = foodContext;
         }
 
         public async UniTask RunAsync(CancellationToken ct)
         {
+            // 選択画面に入った時点から食べ物が届くまでは、置き場所にフードドームを被せる。
+            _foodContext.BeginPreparation();
             _menu.ShowLoading();
             try
             {

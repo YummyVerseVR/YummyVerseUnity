@@ -236,6 +236,9 @@ namespace YummyVerse.Editor.Tests
             public ReactiveProperty<Transform> foodTransform { get; } = new();
             public ReactiveProperty<float> foodScale { get; } = new();
 
+            private readonly ReactiveProperty<bool> _isPreparing = new(false);
+            public ReadOnlyReactiveProperty<bool> isPreparing => _isPreparing;
+
             public event Action OnFoodResetRequested
             {
                 add { }
@@ -252,6 +255,7 @@ namespace YummyVerse.Editor.Tests
                 chewSound.Dispose();
                 foodTransform.Dispose();
                 foodScale.Dispose();
+                _isPreparing.Dispose();
             }
         }
 

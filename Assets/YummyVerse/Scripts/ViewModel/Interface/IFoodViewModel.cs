@@ -22,6 +22,12 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         
         ReactiveProperty<float>  foodScale { get; }
 
+        /// <summary>
+        /// 選択画面に入ってから食べ物が届くまで true。
+        /// 表示側はこの間、食べ物の位置にフードドームを出す。
+        /// </summary>
+        ReadOnlyReactiveProperty<bool> isPreparing { get; }
+
         event Action OnFoodResetRequested;
 
         /// <summary>
