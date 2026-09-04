@@ -70,7 +70,7 @@ MonoBehaviour:
   _revealSettings:
     domePrefab: {fileID: -7039370205757034750, guid: a5c58d7e2a4f742fdaec01bd5686d46a, type: 3}
     domeScale: 1
-    domeHeightOffset: 0
+    domeHeightOffset: -0.1
     smokeDurationSeconds: 0.5
     smokeHeightOffset: 0.05
     minCount: 22
