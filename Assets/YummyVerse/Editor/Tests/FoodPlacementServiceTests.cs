@@ -198,6 +198,7 @@ namespace YummyVerse.Editor.Tests
             public Transform Current { get; set; }
             public ReadOnlyReactiveProperty<bool> IsReady => _isReady;
             public string Kind => FrameKind;
+            public bool SurvivesRestart => true;
         }
 
         private sealed class EmptyPlacementStore : IFoodPlacementStore

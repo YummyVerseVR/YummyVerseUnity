@@ -327,6 +327,17 @@ namespace YummyVerse.Scripts.Model
                     return;
                 }
 
+                if (!_referenceFrame.SurvivesRestart)
+                {
+                    State.Value = FoodPlacementState.Unconfigured;
+                    StatusMessage.Value =
+                        "The placement origin is session-only. Set the food position again from the settings screen.";
+                    Debug.LogWarning(
+                        "[FoodPlacement] いまの基準は再起動をまたげない方式 (session) のため、"
+                        + "保存済みの配置は使いません。設定画面で置き直してください。");
+                    return;
+                }
+
                 if (!data.MatchesFrame(_referenceFrame.Kind))
                 {
                     State.Value = FoodPlacementState.Unconfigured;

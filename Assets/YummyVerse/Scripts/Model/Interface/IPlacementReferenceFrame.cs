@@ -23,5 +23,11 @@ namespace YummyVerse.Scripts.Model.Interface
         /// 別の基準で測った値を取り違えないために使う。
         /// </summary>
         string Kind { get; }
+
+        /// <summary>
+        /// この基準がアプリの再起動をまたいで同じ物理位置を指すか。
+        /// false のときに保存済みの配置を復元すると、現実と無関係な場所に食品が出る。
+        /// </summary>
+        bool SurvivesRestart { get; }
     }
 }

@@ -31,7 +31,14 @@ namespace YummyVerse.Scripts.Infrastructure
     public sealed class StagePlacementReferenceFrame
         : IPlacementReferenceFrame, IInitializable, ITickable, IDisposable
     {
-        public const string FrameKind = "playarea";
+        /// <summary>境界多角形から作った基準。部屋に対して絶対なので、再起動をまたいでも有効。</summary>
+        public const string PlayAreaFrameKind = "playarea";
+
+        /// <summary>
+        /// 再センタリング通知だけで保っている基準。セッション内では正しいが、
+        /// アプリを再起動すると起点が変わるため、保存した位置は次回の起動では使えない。
+        /// </summary>
+        public const string SessionFrameKind = "session";
 
         /// <summary>基準がこれ以上動いたら原点が張り直されたとみなしてログに残す。</summary>
         private const float MoveLogThresholdMeters = 0.01f;
@@ -40,6 +47,9 @@ namespace YummyVerse.Scripts.Infrastructure
         /// <summary>境界が取れない状態が続くときに、警告を出し直す間隔 (秒)。</summary>
         private const float UnavailableLogIntervalSeconds = 10f;
 
+        /// <summary>境界が取れるようになるのを待つ時間 (秒)。過ぎたら session 方式へ切り替える。</summary>
+        private const float PlayAreaSearchSeconds = 5f;
+
         private readonly ReactiveProperty<bool> _isReady = new(false);
         private readonly List<Vector3> _points = new();
         private readonly List<XRInputSubsystem> _inputSubsystems = new();
@@ -47,24 +57,47 @@ namespace YummyVerse.Scripts.Infrastructure
         private Transform _root;
         private OVRCameraRig _rig;
         private string _source = "unknown";
+        private string _lastProbe = string.Empty;
         private Pose _lastLoggedPose;
         private bool _hasLoggedPose;
         private float _nextUnavailableLogAt;
         private bool _subscribed;
+        private bool _tickedOnce;
+        private bool _usingPlayArea;
+
+        /// <summary>再センタリング通知で積み上げる、部屋を保つための補正姿勢 (tracking space 内)。</summary>
+        private Pose _compensatedLocalPose = new(Vector3.zero, Quaternion.identity);
+        private bool _announcedSessionFrame;
+
+        /// <summary>この時刻までは境界の立ち上がりを待つ。すぐ session に落とすと取りこぼす。</summary>
+        private float _playAreaSearchDeadline;
 
         public Transform Current => _isReady.Value ? _root : null;
         public ReadOnlyReactiveProperty<bool> IsReady => _isReady;
-        public string Kind => FrameKind;
+        public string Kind => _usingPlayArea ? PlayAreaFrameKind : SessionFrameKind;
+        public bool SurvivesRestart => _usingPlayArea;
 
         public void Initialize()
         {
             // 再センタリングが実際に起きているかを、SDK 側の通知でも裏取りする。
             OVRManager.TrackingOriginChangePending += OnTrackingOriginChangePending;
             _subscribed = true;
+
+            // 構築されたことをここで宣言しておく。これが出ずに [Build] だけ出るなら、
+            // 原因は DI (シーンの SceneContext / インストーラ) 側にある。
+            Debug.Log("[RoomFrame] 部屋基準サービスを開始しました。次に初回 Tick を待ちます。");
         }
 
         public void Tick()
         {
+            if (!_tickedOnce)
+            {
+                _tickedOnce = true;
+                _playAreaSearchDeadline = Time.unscaledTime + PlayAreaSearchSeconds;
+                // これが出ずに「開始しました」で止まるなら、Zenject の Tickable が回っていない。
+                Debug.Log("[RoomFrame] 初回 Tick。部屋基準の探索を開始します。");
+            }
+
             var trackingSpace = ResolveTrackingSpace();
             if (trackingSpace == null)
             {
@@ -72,11 +105,26 @@ namespace YummyVerse.Scripts.Infrastructure
                 return;
             }
 
+            // 一度 session 方式に決めたら、その回はもう乗り換えない。
+            // 途中で境界が取れ始めると基準が飛び、置いた食品が動いてしまう。
+            if (_announcedSessionFrame)
+            {
+                UseRecenterCompensatedFrame(trackingSpace);
+                return;
+            }
+
             if (!TryGetPlayAreaPoints(_points))
             {
-                MarkUnavailable(
-                    "プレイエリアの境界を取得できません。"
-                    + "ヘッドセットで境界線を歩行モードで引き直し、MQDH で境界をオフにしていないか確認してください");
+                // 起動直後は subsystem がまだ立ち上がっていないことがある。少しだけ待つ。
+                if (Time.unscaledTime < _playAreaSearchDeadline)
+                {
+                    _isReady.Value = false;
+                    return;
+                }
+
+                // 境界が取れないなら、再センタリング通知だけで基準を保つ経路へ落ちる。
+                // 完全に諦めると食品がどこにも出せなくなる。
+                UseRecenterCompensatedFrame(trackingSpace);
                 return;
             }
 
@@ -96,6 +144,7 @@ namespace YummyVerse.Scripts.Infrastructure
                 _root.SetParent(trackingSpace, false);
             }
 
+            _usingPlayArea = true;
             _root.localPosition = pose.position;
             _root.localRotation = pose.rotation;
 
@@ -155,6 +204,45 @@ namespace YummyVerse.Scripts.Infrastructure
             _hasLoggedPose = true;
         }
 
+        /// <summary>
+        /// 境界が取れないときの経路。トラッキング空間の原点そのものを基準にし、
+        /// 再センタリングが通知されるたびにその逆変換を積んで、物理的な位置を保つ。
+        ///
+        /// これで守れるのはセッション内だけ。アプリを起動し直すと起点が
+        /// 「そのときのトラッキング原点」に戻るため、保存済みの位置は使えない。
+        /// 被り直し (アプリは動いたまま) はこれで守れる。
+        /// </summary>
+        private void UseRecenterCompensatedFrame(Transform trackingSpace)
+        {
+            _usingPlayArea = false;
+
+            if (_root == null)
+            {
+                _root = new GameObject("Room Reference Frame (Session)").transform;
+            }
+
+            if (!ReferenceEquals(_root.parent, trackingSpace))
+            {
+                _root.SetParent(trackingSpace, false);
+            }
+
+            _root.localPosition = _compensatedLocalPose.position;
+            _root.localRotation = _compensatedLocalPose.rotation;
+
+            if (!_announcedSessionFrame)
+            {
+                _announcedSessionFrame = true;
+                Debug.LogError(
+                    "[RoomFrame] プレイエリアの境界を取得できませんでした。"
+                    + $" 内訳: {_lastProbe}。"
+                    + " 再センタリング通知で位置を保つ方式 (session) に切り替えます。"
+                    + " 被り直しは守れますが、アプリを再起動すると配置は無効になり、"
+                    + " 設定画面で置き直しが必要です。");
+            }
+
+            _isReady.Value = true;
+        }
+
         private void MarkUnavailable(string reason)
         {
             var wasReady = _isReady.Value;
@@ -163,7 +251,9 @@ namespace YummyVerse.Scripts.Infrastructure
             if (!wasReady && Time.unscaledTime < _nextUnavailableLogAt) return;
 
             _nextUnavailableLogAt = Time.unscaledTime + UnavailableLogIntervalSeconds;
-            Debug.LogWarning(
+
+            // 機能が成立しない状態なので Error で出す。警告が絞られている環境でも必ず見えるようにする。
+            Debug.LogError(
                 $"[RoomFrame] 部屋基準を作れません: {reason}。"
                 + "この状態では食品の位置を物理空間に固定できないため、置き場所を作りません。");
         }
@@ -176,21 +266,34 @@ namespace YummyVerse.Scripts.Infrastructure
         private bool TryGetPlayAreaPoints(List<Vector3> destination)
         {
             destination.Clear();
+            _lastProbe = string.Empty;
 
             var subsystem = ResolveInputSubsystem();
-            if (subsystem != null && subsystem.TryGetBoundaryPoints(destination) && destination.Count >= 3)
+            var unityOk = subsystem != null && subsystem.TryGetBoundaryPoints(destination);
+            var unityCount = destination.Count;
+            if (unityOk && unityCount >= 3)
             {
                 _source = "UnityXR";
                 return true;
             }
 
             destination.Clear();
-            if (TryGetOvrPlayAreaPoints(destination) && destination.Count >= 3)
+            var ovrOk = TryGetOvrPlayAreaPoints(destination);
+            var ovrCount = destination.Count;
+            if (ovrOk && ovrCount >= 3)
             {
                 _source = "OVRPlugin";
                 return true;
             }
 
+            // どちらが何を返したかを残す。ここが分からないと次の手が選べない。
+            var configured = "?";
+            try { configured = OVRPlugin.GetBoundaryConfigured().ToString(); }
+            catch (Exception) { /* 取得できない環境では聞かない */ }
+
+            _lastProbe =
+                $"UnityXR(subsystem={(subsystem != null ? "有" : "無")}, ok={unityOk}, 点数={unityCount}) / "
+                + $"OVRPlugin(ok={ovrOk}, 点数={ovrCount}, BoundaryConfigured={configured})";
             return false;
         }
 
@@ -290,12 +393,34 @@ namespace YummyVerse.Scripts.Infrastructure
             return _rig != null ? _rig.trackingSpace : null;
         }
 
+        /// <summary>
+        /// 原点が張り直される直前に、新しい空間での自分の座標へ基準を移し替える。
+        /// OpenXR の poseInPreviousSpace は「新しい空間の原点を、前の空間で表した姿勢」なので、
+        /// 前の空間の座標 p は新しい空間では inverse(poseInPreviousSpace) * p になる。
+        /// </summary>
         private void OnTrackingOriginChangePending(OVRManager.TrackingOrigin origin, OVRPose? poseInPreviousSpace)
         {
-            var delta = poseInPreviousSpace.HasValue
-                ? $"pos={poseInPreviousSpace.Value.position} yaw={poseInPreviousSpace.Value.orientation.eulerAngles.y:F1}"
-                : "(前の空間との対応は不明)";
-            Debug.Log($"[RoomFrame] SDK 通知: トラッキング原点 {origin} が張り直されます: {delta}");
+            if (!poseInPreviousSpace.HasValue)
+            {
+                Debug.LogError(
+                    $"[RoomFrame] トラッキング原点 {origin} が張り直されましたが、前の空間との対応が取れません。"
+                    + " このぶんのずれは補正できません。");
+                return;
+            }
+
+            var delta = poseInPreviousSpace.Value;
+            var inverseRotation = Quaternion.Inverse(delta.orientation);
+            var inversePosition = -(inverseRotation * delta.position);
+
+            var before = _compensatedLocalPose;
+            _compensatedLocalPose = new Pose(
+                inversePosition + inverseRotation * before.position,
+                Quaternion.Normalize(inverseRotation * before.rotation));
+
+            Debug.Log(
+                $"[RoomFrame] SDK 通知: トラッキング原点 {origin} が張り直されます"
+                + $" (pos={delta.position} yaw={delta.orientation.eulerAngles.y:F1})。"
+                + $" 基準補正 {before.position} -> {_compensatedLocalPose.position}");
         }
     }
 }
