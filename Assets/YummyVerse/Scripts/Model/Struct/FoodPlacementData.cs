@@ -12,11 +12,11 @@ namespace YummyVerse.Scripts.Model.Struct
     public struct FoodPlacementData
     {
         /// <summary>
-        /// v1 は Meta Spatial Anchor 基準だった。Unity OpenXR Plugin 構成では
-        /// アンカーの保存自体が通らず、復元しても意味のある位置にならないため、
-        /// v1 の保存は読み捨てて設定し直してもらう。
+        /// v1 は Meta Spatial Anchor 基準、v2 は Stage 基準だった。どちらも
+        /// この構成では意味のある位置を復元できなかったため、古い保存は読み捨てて
+        /// 設定し直してもらう。<see cref="ReferenceFrame"/> も併せて検証すること。
         /// </summary>
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         public int SchemaVersion;
 

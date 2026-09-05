@@ -97,9 +97,12 @@ namespace YummyVerse.Scripts.Model
             _applied = !recenteringAllowed;
             if (_applied)
             {
+                // 「再センタリング要求を受け付けない」ことしか保証できない。
+                // 原点が実際に部屋へ固定されたかは、ここでは分からない。
+                // 実際にずれていないかの判定は [RoomFrame] のログで行うこと。
                 Debug.Log(
-                    "[XrRecenter] トラッキング原点を物理空間に固定しました "
-                    + "(HMD を被り直しても再センタリングされません)。");
+                    "[XrRecenter] 再センタリングを無効化しました "
+                    + $"(OpenXR AllowRecentering=false / OVRManager 原点={manager.trackingOriginType})。");
                 return;
             }
 

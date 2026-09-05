@@ -9,7 +9,7 @@ namespace YummyVerse.Editor.Tests
 {
     public class FoodPlacementServiceTests
     {
-        private const string FrameKind = "stage";
+        private const string FrameKind = "playarea";
 
         [Test]
         public void ActivatingDraftWithoutAReferenceFrameUsesTheWorldPose()
@@ -173,10 +173,10 @@ namespace YummyVerse.Editor.Tests
         [Test]
         public void PlacementSavedByAnOlderSchemaIsRejected()
         {
-            // v1 は Spatial Anchor 基準。今の基準では意味を持たない。
+            // v1 は Spatial Anchor 基準、v2 は Stage 基準。今の基準では意味を持たない。
             var data = new FoodPlacementData
             {
-                SchemaVersion = 1,
+                SchemaVersion = 2,
                 ReferenceFrame = FrameKind,
                 HasFoodPose = true,
                 LocalPosition = Vector3.zero,
