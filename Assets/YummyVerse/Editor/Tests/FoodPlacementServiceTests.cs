@@ -89,6 +89,66 @@ namespace YummyVerse.Editor.Tests
             service.Dispose();
         }
 
+        /// <summary>
+        /// 被り直すと Spatial Anchor はランタイムによって物理空間へ置き直される
+        /// (= Transform が動く)。食品はそれに付いていかなければ現実に対してずれる。
+        /// </summary>
+        [Test]
+        public void FoodFollowsAnchorWhenTheAnchorIsRelocated()
+        {
+            var anchor = new GameObject("Test Anchor").transform;
+            anchor.SetPositionAndRotation(new Vector3(1f, 0f, 0f), Quaternion.identity);
+            var service = new FoodPlacementService(
+                new ScriptedSpatialAnchorBackend(SpatialAnchorBackendResult.Failed("not used"), anchor),
+                new EmptyPlacementStore());
+
+            var draft = new Pose(new Vector3(1.5f, 0.9f, 0.2f), Quaternion.Euler(0f, 45f, 0f));
+            service.UpdateDraftPose(draft);
+            Assert.That(service.TryActivateDraftPoseForFood(), Is.True);
+
+            var foodTransform = service.FoodTransform.Value;
+            var localOffset = draft.position - anchor.position;
+
+            // 再センタリング相当。アンカーが動いた分だけ食品も動いていること。
+            anchor.SetPositionAndRotation(new Vector3(-2f, 0.3f, 4f), Quaternion.Euler(0f, 90f, 0f));
+
+            var expected = anchor.position + anchor.rotation * localOffset;
+            Assert.That(Vector3.Distance(foodTransform.position, expected), Is.LessThan(0.0001f));
+
+            service.Dispose();
+            UnityEngine.Object.DestroyImmediate(anchor.gameObject);
+        }
+
+        /// <summary>
+        /// 食品を出すたびに下書きが再適用される。ここでワールド座標を焼き直すと、
+        /// 被り直しをまたいだ2皿目から現実に対してずれる (今回の不具合)。
+        /// </summary>
+        [Test]
+        public void ReactivatingDraftAfterRelocationKeepsTheAnchorRelativePlacement()
+        {
+            var anchor = new GameObject("Test Anchor").transform;
+            var service = new FoodPlacementService(
+                new ScriptedSpatialAnchorBackend(SpatialAnchorBackendResult.Failed("not used"), anchor),
+                new EmptyPlacementStore());
+
+            var draft = new Pose(new Vector3(0.3f, -0.1f, 0.7f), Quaternion.Euler(0f, 20f, 0f));
+            service.UpdateDraftPose(draft);
+            Assert.That(service.TryActivateDraftPoseForFood(), Is.True);
+
+            anchor.SetPositionAndRotation(new Vector3(3f, 1f, -1f), Quaternion.Euler(0f, 180f, 0f));
+
+            // 2皿目。下書きはアンカー基準で保たれているはず。
+            Assert.That(service.TryActivateDraftPoseForFood(), Is.True);
+            var foodTransform = service.FoodTransform.Value;
+
+            var expected = anchor.position + anchor.rotation * draft.position;
+            Assert.That(Vector3.Distance(foodTransform.position, expected), Is.LessThan(0.0001f));
+            Assert.That(Quaternion.Angle(foodTransform.rotation, anchor.rotation * draft.rotation), Is.LessThan(0.01f));
+
+            service.Dispose();
+            UnityEngine.Object.DestroyImmediate(anchor.gameObject);
+        }
+
         private sealed class SavedPlacementStore : IFoodPlacementStore
         {
             public bool TryLoad(out FoodPlacementData data)
