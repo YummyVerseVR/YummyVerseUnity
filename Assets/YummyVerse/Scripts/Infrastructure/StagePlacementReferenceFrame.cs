@@ -383,6 +383,26 @@ namespace YummyVerse.Scripts.Infrastructure
             return null;
         }
 
+        /// <summary>
+        /// 通知された参照空間が、いま実際に使われている原点かどうか。
+        /// 判定できないときは true にする。取りこぼして補正しないより、
+        /// 拾って補正する方が症状としてまし。
+        /// </summary>
+        private static bool MatchesActiveTrackingOrigin(OVRManager.TrackingOrigin origin)
+        {
+            var manager = OVRManager.instance;
+            if (manager == null) return true;
+
+            try
+            {
+                return manager.trackingOriginType == origin;
+            }
+            catch (Exception)
+            {
+                return true;
+            }
+        }
+
         private Transform ResolveTrackingSpace()
         {
             if (_rig == null)
@@ -400,6 +420,17 @@ namespace YummyVerse.Scripts.Infrastructure
         /// </summary>
         private void OnTrackingOriginChangePending(OVRManager.TrackingOrigin origin, OVRPose? poseInPreviousSpace)
         {
+            // いま使っている参照空間の通知だけを拾う。
+            // ランタイムは複数の参照空間について通知を出すため、全部に反応すると
+            // 使っていない空間のぶんまで基準を動かしてしまう (二重補正)。
+            if (!MatchesActiveTrackingOrigin(origin))
+            {
+                Debug.Log(
+                    $"[RoomFrame] SDK 通知: トラッキング原点 {origin} の張り直し。"
+                    + " いま使っている空間ではないので補正しません。");
+                return;
+            }
+
             if (!poseInPreviousSpace.HasValue)
             {
                 Debug.LogError(
