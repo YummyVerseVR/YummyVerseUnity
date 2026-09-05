@@ -507,11 +507,36 @@ namespace YummyVerse.Scripts.Infrastructure
             var frameInTrackingSpace = _root.localPosition;
             var camInRoom = _root.InverseTransformPoint(eye.position);
 
+            // 残る望みは「原点と一緒に動かない参照空間」が一つでもあるかどうか。
+            // 4種類まとめて出す。cam(ts) が飛ぶときに一緒に動く値があれば、
+            // それが部屋固定の基準として使える。全部不動なら app 側に打つ手は無い。
             Debug.Log(
                 $"[RoomFrame] 実測 cam(ts)={camInTrackingSpace.ToString("F3")}"
                 + $" 基準(ts)={frameInTrackingSpace.ToString("F3")}"
                 + $" yaw(ts)={_root.localRotation.eulerAngles.y:F1}"
-                + $" / cam(room)={camInRoom.ToString("F3")}");
+                + $" / cam(room)={camInRoom.ToString("F3")}"
+                + $" / Eye={DescribeOrigin(OVRPlugin.TrackingOrigin.EyeLevel)}"
+                + $" Floor={DescribeOrigin(OVRPlugin.TrackingOrigin.FloorLevel)}"
+                + $" Stage={DescribeOrigin(OVRPlugin.TrackingOrigin.Stage)}"
+                + $" Stationary={DescribeOrigin(OVRPlugin.TrackingOrigin.Stationary)}");
+        }
+
+        /// <summary>
+        /// 指定した参照空間が、いまのトラッキング空間から見てどこにあるかを短く表す。
+        /// identity は「取得失敗」と「原点と一致」の両方でありうるので、
+        /// 単独では判定に使えない。cam(ts) の飛びと連動して動くかどうかで見ること。
+        /// </summary>
+        private static string DescribeOrigin(OVRPlugin.TrackingOrigin origin)
+        {
+            try
+            {
+                var pose = OVRPlugin.GetTrackingTransformRelativePose(origin).ToOVRPose();
+                return $"{pose.position.ToString("F3")}/{pose.orientation.eulerAngles.y:F1}";
+            }
+            catch (Exception)
+            {
+                return "取得不可";
+            }
         }
 
         private void ReportEnvironmentIfDue()
