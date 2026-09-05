@@ -32,6 +32,11 @@ namespace YummyVerse.Scripts.Model.DI
             container.BindInterfacesAndSelfTo<AppStateMachine>().AsSingle();
             container.BindInterfacesAndSelfTo<IdleWatcher>().AsSingle();
 
+            // 被り直しで再センタリングが走るとワールド原点が部屋に対して動き、
+            // 設定した食品位置も Spatial Anchor も現実からずれる。最初の着脱より前に
+            // 押さえておく必要があるので NonLazy で常駐させる。
+            container.BindInterfacesAndSelfTo<XrRecenterGuard>().AsSingle().NonLazy();
+
             // XR セッションの着脱監視と、それに追従する描画負荷の調整。
             // 誰も解決しなくても最初の着脱から動いている必要があるので NonLazy で常駐させる。
             // 観測と描画にしか効かない。体験の進行はここを見ない。
