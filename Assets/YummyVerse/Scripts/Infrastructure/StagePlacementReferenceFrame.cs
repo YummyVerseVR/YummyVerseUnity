@@ -80,6 +80,9 @@ namespace YummyVerse.Scripts.Infrastructure
         private int _environmentReportIndex;
         private float _tickStartedAt;
 
+        /// <summary>実測ログを出した最後の時刻。1秒に1回だけ出す。</summary>
+        private float _lastMeasurementAt = -999f;
+
         public Transform Current => _isReady.Value ? _root : null;
         public ReadOnlyReactiveProperty<bool> IsReady => _isReady;
         public string Kind => _usingPlayArea ? PlayAreaFrameKind : SessionFrameKind;
@@ -162,6 +165,7 @@ namespace YummyVerse.Scripts.Infrastructure
             _root.localRotation = pose.rotation;
 
             LogIfMoved(pose);
+            LogMeasurement();
 
             if (!_isReady.Value)
             {
@@ -288,7 +292,6 @@ namespace YummyVerse.Scripts.Infrastructure
         private bool TryGetPlayAreaPoints(List<Vector3> destination)
         {
             destination.Clear();
-            _lastProbe = string.Empty;
 
             var subsystem = ResolveInputSubsystem();
 
@@ -301,42 +304,57 @@ namespace YummyVerse.Scripts.Infrastructure
                 mode = subsystem.GetTrackingOriginMode();
                 supported = subsystem.GetSupportedTrackingOriginModes();
                 if (mode != TrackingOriginModeFlags.Floor
-                    && (supported & TrackingOriginModeFlags.Floor) != 0)
+                    && (supported & TrackingOriginModeFlags.Floor) != 0
+                    && subsystem.TrySetTrackingOriginMode(TrackingOriginModeFlags.Floor))
                 {
-                    if (subsystem.TrySetTrackingOriginMode(TrackingOriginModeFlags.Floor))
-                    {
-                        mode = subsystem.GetTrackingOriginMode();
-                        Debug.Log($"[RoomFrame] 原点モードを Floor に切り替えました (現在 {mode})。");
-                    }
+                    mode = subsystem.GetTrackingOriginMode();
+                    Debug.Log($"[RoomFrame] 原点モードを Floor に切り替えました (現在 {mode})。");
                 }
             }
 
-            var unityOk = subsystem != null && subsystem.TryGetBoundaryPoints(destination);
-            var unityCount = destination.Count;
-            if (unityOk && unityCount >= 3)
-            {
-                _source = "UnityXR";
-                return true;
-            }
-
-            destination.Clear();
+            // カメラは OVRCameraRig が OVRPlugin の頭部姿勢で駆動している。
+            // 基準はカメラと同じ空間で測らなければならない。別々の空間から取ると、
+            // 片方だけが張り直されたときにカメラだけが動いて見える。
+            // よって OVRPlugin を優先し、Unity 側は取れなかったときの保険にする。
             var ovrOk = TryGetOvrPlayAreaPoints(destination);
             var ovrCount = destination.Count;
-            if (ovrOk && ovrCount >= 3)
+            var ovrWon = ovrOk && ovrCount >= 3;
+
+            var unityDescription = "未試行";
+            var unityWon = false;
+            var unityCount = 0;
+            var unityOk = false;
+            if (!ovrWon)
+            {
+                destination.Clear();
+                unityOk = subsystem != null && subsystem.TryGetBoundaryPoints(destination);
+                unityCount = destination.Count;
+                unityWon = unityOk && unityCount >= 3;
+                unityDescription = $"ok={unityOk}, 点数={unityCount}";
+            }
+
+            var configured = "?";
+            try { configured = OVRPlugin.GetBoundaryConfigured().ToString(); }
+            catch (Exception) { /* 取得できない環境では聞かない */ }
+
+            // 成否によらず必ず記録する。成功したときだけ情報が消えるのでは診断にならない。
+            _lastProbe =
+                $"OVRPlugin(ok={ovrOk}, 点数={ovrCount}, BoundaryConfigured={configured}) / "
+                + $"UnityXR(subsystem={(subsystem != null ? "有" : "無")}, 原点モード={mode},"
+                + $" 対応={supported}, {unityDescription})";
+
+            if (ovrWon)
             {
                 _source = "OVRPlugin";
                 return true;
             }
 
-            // どちらが何を返したかを残す。ここが分からないと次の手が選べない。
-            var configured = "?";
-            try { configured = OVRPlugin.GetBoundaryConfigured().ToString(); }
-            catch (Exception) { /* 取得できない環境では聞かない */ }
+            if (unityWon)
+            {
+                _source = "UnityXR";
+                return true;
+            }
 
-            _lastProbe =
-                $"UnityXR(subsystem={(subsystem != null ? "有" : "無")}, 原点モード={mode}, 対応={supported},"
-                + $" ok={unityOk}, 点数={unityCount}) / "
-                + $"OVRPlugin(ok={ovrOk}, 点数={ovrCount}, BoundaryConfigured={configured})";
             return false;
         }
 
@@ -466,6 +484,36 @@ namespace YummyVerse.Scripts.Infrastructure
         /// <summary>
         /// 環境を1行にまとめて一度だけ出す。ずれの原因を人間が推測せずに決められるようにする。
         /// </summary>
+        /// <summary>
+        /// 「動いているのは世界か、カメラか」を切り分けるための実測。
+        ///
+        /// 境界は物理的に部屋へ固定されている。だから境界から作った基準で見たカメラの位置が、
+        /// 物理的な真実に一番近い。立ち位置を変えずに被り直したとき:
+        ///   cam(room) が動く   → 基準が部屋に追従できていない (境界の見え方が想定と違う)
+        ///   cam(room) は不動   → 基準は正しい。ずれの原因は基準より後ろ (食品の親子付けや描画側)
+        /// cam(ts) と 基準(ts) を並べておくと、原点が動いたかどうかも同時に分かる。
+        /// </summary>
+        private void LogMeasurement()
+        {
+            if (Time.unscaledTime - _lastMeasurementAt < 1f) return;
+            if (_root == null || _rig == null) return;
+
+            var eye = _rig.centerEyeAnchor;
+            if (eye == null) return;
+
+            _lastMeasurementAt = Time.unscaledTime;
+
+            var camInTrackingSpace = eye.localPosition;
+            var frameInTrackingSpace = _root.localPosition;
+            var camInRoom = _root.InverseTransformPoint(eye.position);
+
+            Debug.Log(
+                $"[RoomFrame] 実測 cam(ts)={camInTrackingSpace.ToString("F3")}"
+                + $" 基準(ts)={frameInTrackingSpace.ToString("F3")}"
+                + $" yaw(ts)={_root.localRotation.eulerAngles.y:F1}"
+                + $" / cam(room)={camInRoom.ToString("F3")}");
+        }
+
         private void ReportEnvironmentIfDue()
         {
             if (_environmentReportIndex >= EnvironmentReportAtSeconds.Length) return;
