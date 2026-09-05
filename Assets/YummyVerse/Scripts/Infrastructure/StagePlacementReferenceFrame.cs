@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using R3;
 using UnityEngine;
 using UnityEngine.XR;
+using UnityEngine.XR.OpenXR;
 using YummyVerse.Scripts.Model.Interface;
 using Zenject;
 
@@ -71,6 +72,10 @@ namespace YummyVerse.Scripts.Infrastructure
 
         /// <summary>この時刻までは境界の立ち上がりを待つ。すぐ session に落とすと取りこぼす。</summary>
         private float _playAreaSearchDeadline;
+
+        /// <summary>Unity 側の原点更新通知を受けている subsystem。二重購読を避けるため保持する。</summary>
+        private XRInputSubsystem _subscribedSubsystem;
+        private bool _environmentReported;
 
         public Transform Current => _isReady.Value ? _root : null;
         public ReadOnlyReactiveProperty<bool> IsReady => _isReady;
@@ -168,6 +173,13 @@ namespace YummyVerse.Scripts.Infrastructure
                 _subscribed = false;
             }
 
+            if (_subscribedSubsystem != null)
+            {
+                _subscribedSubsystem.trackingOriginUpdated -= OnUnityTrackingOriginUpdated;
+                _subscribedSubsystem.boundaryChanged -= OnUnityBoundaryChanged;
+                _subscribedSubsystem = null;
+            }
+
             if (_root != null)
             {
                 if (Application.isPlaying) UnityEngine.Object.Destroy(_root.gameObject);
@@ -232,12 +244,15 @@ namespace YummyVerse.Scripts.Infrastructure
             if (!_announcedSessionFrame)
             {
                 _announcedSessionFrame = true;
-                Debug.LogError(
-                    "[RoomFrame] プレイエリアの境界を取得できませんでした。"
-                    + $" 内訳: {_lastProbe}。"
-                    + " 再センタリング通知で位置を保つ方式 (session) に切り替えます。"
-                    + " 被り直しは守れますが、アプリを再起動すると配置は無効になり、"
-                    + " 設定画面で置き直しが必要です。");
+                ReportEnvironmentOnce(ResolveInputSubsystem());
+
+                // 異常終了ではない。機能はする。運用上の制約だけを正確に伝える。
+                Debug.LogWarning(
+                    "[RoomFrame] session 方式で動作します (プレイエリアの境界が取得できないため)。"
+                    + " 被り直しでの位置ずれは補正されます。"
+                    + " ただしアプリを再起動すると配置が無効になるため、起動のたびに"
+                    + " 設定画面で食品位置を置き直してください。"
+                    + $" 境界の取得結果: {_lastProbe}");
             }
 
             _isReady.Value = true;
@@ -269,6 +284,26 @@ namespace YummyVerse.Scripts.Infrastructure
             _lastProbe = string.Empty;
 
             var subsystem = ResolveInputSubsystem();
+
+            // TryGetBoundaryPoints は原点モードが Floor のときしか値を返さない。
+            // Stage 指定が効いていないと、境界があっても取れない。ここで揃えてから聞く。
+            var mode = TrackingOriginModeFlags.Unknown;
+            var supported = TrackingOriginModeFlags.Unknown;
+            if (subsystem != null)
+            {
+                mode = subsystem.GetTrackingOriginMode();
+                supported = subsystem.GetSupportedTrackingOriginModes();
+                if (mode != TrackingOriginModeFlags.Floor
+                    && (supported & TrackingOriginModeFlags.Floor) != 0)
+                {
+                    if (subsystem.TrySetTrackingOriginMode(TrackingOriginModeFlags.Floor))
+                    {
+                        mode = subsystem.GetTrackingOriginMode();
+                        Debug.Log($"[RoomFrame] 原点モードを Floor に切り替えました (現在 {mode})。");
+                    }
+                }
+            }
+
             var unityOk = subsystem != null && subsystem.TryGetBoundaryPoints(destination);
             var unityCount = destination.Count;
             if (unityOk && unityCount >= 3)
@@ -292,7 +327,8 @@ namespace YummyVerse.Scripts.Infrastructure
             catch (Exception) { /* 取得できない環境では聞かない */ }
 
             _lastProbe =
-                $"UnityXR(subsystem={(subsystem != null ? "有" : "無")}, ok={unityOk}, 点数={unityCount}) / "
+                $"UnityXR(subsystem={(subsystem != null ? "有" : "無")}, 原点モード={mode}, 対応={supported},"
+                + $" ok={unityOk}, 点数={unityCount}) / "
                 + $"OVRPlugin(ok={ovrOk}, 点数={ovrCount}, BoundaryConfigured={configured})";
             return false;
         }
@@ -374,10 +410,25 @@ namespace YummyVerse.Scripts.Infrastructure
 
             for (var i = 0; i < _inputSubsystems.Count; i++)
             {
-                if (_inputSubsystems[i] != null && _inputSubsystems[i].running)
+                var candidate = _inputSubsystems[i];
+                if (candidate == null || !candidate.running) continue;
+
+                if (!ReferenceEquals(candidate, _subscribedSubsystem))
                 {
-                    return _inputSubsystems[i];
+                    if (_subscribedSubsystem != null)
+                    {
+                        _subscribedSubsystem.trackingOriginUpdated -= OnUnityTrackingOriginUpdated;
+                        _subscribedSubsystem.boundaryChanged -= OnUnityBoundaryChanged;
+                    }
+
+                    // Unity OpenXR では OpenXR のイベントを Unity 側が消費するため、
+                    // OVRManager 経由の通知は届かない。原点が動いたことを知れるのはこちら。
+                    candidate.trackingOriginUpdated += OnUnityTrackingOriginUpdated;
+                    candidate.boundaryChanged += OnUnityBoundaryChanged;
+                    _subscribedSubsystem = candidate;
                 }
+
+                return candidate;
             }
 
             return null;
@@ -388,6 +439,51 @@ namespace YummyVerse.Scripts.Infrastructure
         /// 判定できないときは true にする。取りこぼして補正しないより、
         /// 拾って補正する方が症状としてまし。
         /// </summary>
+        /// <summary>
+        /// Unity 側の原点更新通知。これが被り直しのたびに鳴るなら、原点は動いている。
+        /// ただし差分は貰えないので、これだけでは補正できない (部屋に固定された実測が要る)。
+        /// </summary>
+        private void OnUnityTrackingOriginUpdated(XRInputSubsystem subsystem)
+        {
+            Debug.LogWarning(
+                "[RoomFrame] Unity 通知: トラッキング原点が更新されました"
+                + $" (モード={subsystem.GetTrackingOriginMode()})。"
+                + " 差分は通知されないため、部屋に固定された基準が無いとこのぶんは補正できません。");
+        }
+
+        private void OnUnityBoundaryChanged(XRInputSubsystem subsystem)
+        {
+            Debug.Log("[RoomFrame] Unity 通知: 境界が変化しました。次の Tick で取り直します。");
+        }
+
+        /// <summary>
+        /// 環境を1行にまとめて一度だけ出す。ずれの原因を人間が推測せずに決められるようにする。
+        /// </summary>
+        private void ReportEnvironmentOnce(XRInputSubsystem subsystem)
+        {
+            if (_environmentReported) return;
+            _environmentReported = true;
+
+            var allowRecentering = "?";
+            try { allowRecentering = OpenXRSettings.AllowRecentering.ToString(); }
+            catch (Exception) { /* XR なしの実行では聞けない */ }
+
+            var ovrOrigin = "?";
+            try
+            {
+                if (OVRManager.instance != null) ovrOrigin = OVRManager.instance.trackingOriginType.ToString();
+            }
+            catch (Exception) { /* HMD 未接続では聞けない */ }
+
+            Debug.LogWarning(
+                "[RoomFrame] 環境レポート: "
+                + $"AllowRecentering={allowRecentering} / "
+                + $"原点モード={(subsystem != null ? subsystem.GetTrackingOriginMode().ToString() : "subsystem無")} / "
+                + $"対応モード={(subsystem != null ? subsystem.GetSupportedTrackingOriginModes().ToString() : "-")} / "
+                + $"OVR原点={ovrOrigin} / loadedXRDevice={OVRManager.loadedXRDevice} / "
+                + $"境界={_lastProbe}");
+        }
+
         private static bool MatchesActiveTrackingOrigin(OVRManager.TrackingOrigin origin)
         {
             var manager = OVRManager.instance;
