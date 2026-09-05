@@ -75,7 +75,10 @@ namespace YummyVerse.Scripts.Infrastructure
 
         /// <summary>Unity 側の原点更新通知を受けている subsystem。二重購読を避けるため保持する。</summary>
         private XRInputSubsystem _subscribedSubsystem;
-        private bool _environmentReported;
+        /// <summary>環境レポートを出す時刻 (起動からの秒)。分岐に依存させない。</summary>
+        private static readonly float[] EnvironmentReportAtSeconds = { 2f, 8f };
+        private int _environmentReportIndex;
+        private float _tickStartedAt;
 
         public Transform Current => _isReady.Value ? _root : null;
         public ReadOnlyReactiveProperty<bool> IsReady => _isReady;
@@ -98,10 +101,15 @@ namespace YummyVerse.Scripts.Infrastructure
             if (!_tickedOnce)
             {
                 _tickedOnce = true;
+                _tickStartedAt = Time.unscaledTime;
                 _playAreaSearchDeadline = Time.unscaledTime + PlayAreaSearchSeconds;
                 // これが出ずに「開始しました」で止まるなら、Zenject の Tickable が回っていない。
                 Debug.Log("[RoomFrame] 初回 Tick。部屋基準の探索を開始します。");
             }
+
+            // どの分岐に進むかに関係なく必ず出す。
+            // 診断を分岐の中に置くと、分岐に入らないときに何も分からなくなる。
+            ReportEnvironmentIfDue();
 
             var trackingSpace = ResolveTrackingSpace();
             if (trackingSpace == null)
@@ -244,7 +252,6 @@ namespace YummyVerse.Scripts.Infrastructure
             if (!_announcedSessionFrame)
             {
                 _announcedSessionFrame = true;
-                ReportEnvironmentOnce(ResolveInputSubsystem());
 
                 // 異常終了ではない。機能はする。運用上の制約だけを正確に伝える。
                 Debug.LogWarning(
@@ -459,10 +466,18 @@ namespace YummyVerse.Scripts.Infrastructure
         /// <summary>
         /// 環境を1行にまとめて一度だけ出す。ずれの原因を人間が推測せずに決められるようにする。
         /// </summary>
-        private void ReportEnvironmentOnce(XRInputSubsystem subsystem)
+        private void ReportEnvironmentIfDue()
         {
-            if (_environmentReported) return;
-            _environmentReported = true;
+            if (_environmentReportIndex >= EnvironmentReportAtSeconds.Length) return;
+            if (Time.unscaledTime - _tickStartedAt < EnvironmentReportAtSeconds[_environmentReportIndex]) return;
+            _environmentReportIndex++;
+
+            var subsystem = ResolveInputSubsystem();
+
+            // 境界の生の取得結果も、ここで毎回取り直す。
+            // 直前の分岐が何であれ、この行だけで状況が分かるようにする。
+            _points.Clear();
+            TryGetPlayAreaPoints(_points);
 
             var allowRecentering = "?";
             try { allowRecentering = OpenXRSettings.AllowRecentering.ToString(); }
