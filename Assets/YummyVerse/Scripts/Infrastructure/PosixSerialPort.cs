@@ -209,6 +209,15 @@ namespace YummyVerse.Scripts.Infrastructure
             tcflush(_fd, Tciflush);
         }
 
+        /// <summary>
+        /// ここでは何もしない。VMIN=0 / VTIME=読み取りタイムアウト の設定により
+        /// read(2) は必ず有限時間で戻るため、起こしてやる必要が無い。
+        /// この実装はエディタでの動作確認用で、PCVR の実行経路には乗らない。
+        /// </summary>
+        public void CancelPendingIo()
+        {
+        }
+
         private void EnsureOpen()
         {
             if (_fd < 0) throw new IOException($"{PortName} は閉じられています");

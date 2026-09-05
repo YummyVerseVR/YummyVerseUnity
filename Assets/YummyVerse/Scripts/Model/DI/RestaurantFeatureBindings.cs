@@ -31,6 +31,12 @@ namespace YummyVerse.Scripts.Model.DI
             container.BindInterfacesAndSelfTo<GameCommandBus>().AsSingle();
             container.BindInterfacesAndSelfTo<AppStateMachine>().AsSingle();
             container.BindInterfacesAndSelfTo<IdleWatcher>().AsSingle();
+
+            // XR セッションの着脱監視と、それに追従する描画負荷の調整。
+            // 誰も解決しなくても最初の着脱から動いている必要があるので NonLazy で常駐させる。
+            // 観測と描画にしか効かない。体験の進行はここを見ない。
+            container.BindInterfacesAndSelfTo<XrSessionMonitor>().AsSingle().NonLazy();
+            container.BindInterfacesAndSelfTo<XrSuspensionRenderThrottle>().AsSingle().NonLazy();
             container.BindInterfacesAndSelfTo<GameResetter>().AsSingle();
             container.BindInterfacesAndSelfTo<TutorialAnalytics>().AsSingle();
         }
