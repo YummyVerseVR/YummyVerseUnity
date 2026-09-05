@@ -100,11 +100,15 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 5229240322
-    m_Key: S1.ChewingCalibrationHold
+    m_Key: S1.ChewingCalibrationNoise
     m_Metadata:
       m_Items: []
   - m_Id: 5229240323
     m_Key: S1.ChewingCalibrationChew
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5229240324
+    m_Key: S1.ChewingCalibrationMeasuring
     m_Metadata:
       m_Items: []
   m_Metadata:
