@@ -15,6 +15,16 @@ namespace YummyVerse.Scripts.ViewModel.Interface
         ReactiveProperty<bool> IsVisible { get; }
 
         UniTask ShowAsync(LocalizedString msg, CancellationToken ct);
+
+        /// <summary>
+        /// 本文の下に補助行を添えて出す。キャリブレーションのカウントダウンのように、
+        /// 本文はそのままで下の行だけが変わる提示に使う。
+        /// </summary>
+        UniTask ShowAsync(LocalizedString msg, string subText, CancellationToken ct);
+
+        /// <summary>表示中の本文を保ったまま補助行だけ差し替える。空文字と null は補助行なし。</summary>
+        void SetSubText(string subText);
+
         UniTask HideAsync(CancellationToken ct);
     }
 }

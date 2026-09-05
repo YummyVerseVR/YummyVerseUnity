@@ -103,11 +103,15 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 5229240322
-    m_Localized: "咀嚼計のキャリブレーションを行います。\n歯を小さくカチカチ鳴らしてください"
+    m_Localized: "小さく歯をカチカチしてください"
     m_Metadata:
       m_Items: []
   - m_Id: 5229240323
-    m_Localized: "しっかり噛みしめるように\nもぐもぐしてください。"
+    m_Localized: "奥歯でちゃんと噛みしめてください"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 5229240324
+    m_Localized: "計測中..."
     m_Metadata:
       m_Items: []
   references:

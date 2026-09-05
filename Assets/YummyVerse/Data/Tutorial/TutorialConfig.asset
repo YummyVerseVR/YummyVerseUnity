@@ -33,12 +33,12 @@ MonoBehaviour:
     m_FallbackState: 0
     m_WaitForCompletion: 0
     m_LocalVariables: []
-  chewingCalibrationHoldMessage:
+  chewingCalibrationNoiseMessage:
     m_TableReference:
       m_TableCollectionName: TutorialStrings
     m_TableEntryReference:
       m_KeyId: 0
-      m_Key: S1.ChewingCalibrationHold
+      m_Key: S1.ChewingCalibrationNoise
     m_FallbackState: 0
     m_WaitForCompletion: 0
     m_LocalVariables: []
@@ -51,7 +51,16 @@ MonoBehaviour:
     m_FallbackState: 0
     m_WaitForCompletion: 0
     m_LocalVariables: []
-  chewingCalibrationChewPromptDelaySeconds: 5
+  chewingCalibrationMeasuringMessage:
+    m_TableReference:
+      m_TableCollectionName: TutorialStrings
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: S1.ChewingCalibrationMeasuring
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  chewingCalibrationCountdownSeconds: 5
   idleTimeoutSeconds: 90
   references:
     version: 2

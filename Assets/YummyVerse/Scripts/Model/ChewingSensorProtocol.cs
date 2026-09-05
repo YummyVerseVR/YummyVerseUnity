@@ -29,8 +29,26 @@ namespace YummyVerse.Scripts.Model
         /// <summary>予約値。0 は「保留要求なし」の内部表現なので、電文に現れたら不正扱いにする (仕様書 §10)。</summary>
         public const uint NoRequestId = 0u;
 
+        /// <summary>キャリブレーション開始要求。この時点ではまだ測定は始まらない (仕様書 §9.1)。</summary>
         public static string BuildCalibrationStart(uint requestId) =>
-            "CAL_START," + requestId.ToString(CultureInfo.InvariantCulture);
+            Build("CAL_START", requestId);
+
+        /// <summary>
+        /// 測定フェーズの開始要求。咀嚼計は受信した時点で測定を始めるので、
+        /// 利用者への案内が終わってから送る (仕様書 §9.2)。
+        /// </summary>
+        public static string BuildCalibrationPhase(ChewingCalibrationPhase phase, uint requestId) =>
+            Build(phase == ChewingCalibrationPhase.Noise ? "CAL_NOISE" : "CAL_CHEW", requestId);
+
+        /// <summary>
+        /// 中断要求。咀嚼計はフェーズ指示を無期限に待つため、放棄するなら明示的に
+        /// 状態を捨てさせないと次の要求が BUSY になる (仕様書 §9.5, §9.7)。
+        /// </summary>
+        public static string BuildCalibrationAbort(uint requestId) =>
+            Build("CAL_ABORT", requestId);
+
+        private static string Build(string command, uint requestId) =>
+            command + "," + requestId.ToString(CultureInfo.InvariantCulture);
 
         /// <summary>
         /// 受信した1行を解釈する。解釈できない行は破棄する前提なので、例外は投げず false を返す。
@@ -52,6 +70,16 @@ namespace YummyVerse.Scripts.Model
                 case "CAL_ACCEPTED":
                     if (fields.Length != 2 || !TryParseRequestId(fields[1], out var acceptedId)) return false;
                     message = ChewingSensorMessage.CalibrationAccepted(acceptedId);
+                    return true;
+
+                case "CAL_NOISE_DONE":
+                    if (fields.Length != 2 || !TryParseRequestId(fields[1], out var noiseDoneId)) return false;
+                    message = ChewingSensorMessage.CalibrationNoiseDone(noiseDoneId);
+                    return true;
+
+                case "CAL_CHEW_DONE":
+                    if (fields.Length != 2 || !TryParseRequestId(fields[1], out var chewDoneId)) return false;
+                    message = ChewingSensorMessage.CalibrationChewDone(chewDoneId);
                     return true;
 
                 case "CAL_DONE":

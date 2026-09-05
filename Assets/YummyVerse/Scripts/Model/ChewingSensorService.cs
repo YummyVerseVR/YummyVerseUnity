@@ -88,40 +88,91 @@ namespace YummyVerse.Scripts.Model
             UpdatePendingCalibration();
         }
 
-        public UniTask<ChewingCalibrationResult> CalibrateAsync(Action onAccepted, CancellationToken ct)
+        public async UniTask<ChewingCalibrationResult> CalibrateAsync(
+            IChewingCalibrationPrompt prompt, CancellationToken ct)
         {
             if (_connectionState.Value != ChewingSensorConnectionState.Connected)
             {
                 Debug.LogWarning("[ChewingSensor] 咀嚼計へ接続していないため、キャリブレーションを要求できません");
-                return UniTask.FromResult(ChewingCalibrationResult.NotConnected());
+                return ChewingCalibrationResult.NotConnected();
             }
 
             if (_pending != null)
             {
                 // 仕様書 §9.1: Unity が同時に保留できる要求は1件だけ。
                 Debug.LogWarning("[ChewingSensor] 既にキャリブレーションを要求中のため、新しい要求は受け付けません");
-                return UniTask.FromResult(ChewingCalibrationResult.Failed("BUSY"));
+                return ChewingCalibrationResult.Failed("BUSY");
             }
 
-            var request = new CalibrationRequest(
-                _requestIds.Next(), onAccepted, Volatile.Read(ref _connectionEpoch));
+            var request = new CalibrationRequest(_requestIds.Next(), Volatile.Read(ref _connectionEpoch));
             _pending = request;
 
-            SendCalibrationStart(request);
-            return WaitForCalibrationAsync(request, ct);
-        }
-
-        private async UniTask<ChewingCalibrationResult> WaitForCalibrationAsync(
-            CalibrationRequest request, CancellationToken ct)
-        {
             try
             {
-                return await request.Completion.Task.AttachExternalCancellation(ct);
+                return await RunCalibrationAsync(request, prompt, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                // 咀嚼計はフェーズ指示を無期限に待つ。黙って待つのをやめるとデバイス側に
+                // 状態が残り、次の来場者の要求が BUSY で弾かれる (仕様書 §9.5, §9.7)。
+                SendCalibrationAbort(request);
+                throw;
             }
             finally
             {
                 if (ReferenceEquals(_pending, request)) _pending = null;
             }
+        }
+
+        /// <summary>
+        /// 受理 → ノイズ測定 → 咀嚼測定 の順に進める (仕様書 §9.1, §9.3)。
+        /// 各フェーズ要求は案内が終わってから送るため、送信の判断はここに集約する。
+        /// </summary>
+        private async UniTask<ChewingCalibrationResult> RunCalibrationAsync(
+            CalibrationRequest request, IChewingCalibrationPrompt prompt, CancellationToken ct)
+        {
+            // 受理待ち。CAL_ACCEPTED の時点ではまだ測定は始まっていない。
+            request.BeginStage(CalibrationStage.AwaitingAccept);
+            SendCalibrationStart(request);
+            await request.StageCompleted.AttachExternalCancellation(ct);
+            if (request.Terminal.HasValue) return request.Terminal.Value;
+
+            // ノイズ測定。CAL_NOISE_DONE を受けたら次の案内へ進む。
+            if (!await RunPhaseAsync(request, prompt, ChewingCalibrationPhase.Noise, ct))
+            {
+                return request.Terminal ?? ChewingCalibrationResult.TimedOut();
+            }
+
+            // 咀嚼測定。CAL_CHEW_DONE の後、閾値を保存した CAL_DONE が終端になる (仕様書 §9.1)。
+            await RunPhaseAsync(request, prompt, ChewingCalibrationPhase.Chew, ct);
+            return request.Terminal ?? ChewingCalibrationResult.TimedOut();
+        }
+
+        /// <summary>
+        /// 1フェーズぶんの案内と測定。決着せずに次へ進める場合だけ true を返す。
+        /// </summary>
+        private async UniTask<bool> RunPhaseAsync(
+            CalibrationRequest request,
+            IChewingCalibrationPrompt prompt,
+            ChewingCalibrationPhase phase,
+            CancellationToken ct)
+        {
+            // 案内とカウントダウンの間は何も送らない。咀嚼計は待ってくれる (仕様書 §9.7)。
+            request.BeginStage(CalibrationStage.Prompting);
+            await prompt.PrepareAsync(phase, ct);
+
+            // 案内中に切断された場合は送らずに終える。
+            if (request.Terminal.HasValue) return false;
+
+            // 送信の直後から測定が始まるので、カウントが0になったこの時点で送る (仕様書 §9.2)。
+            request.BeginStage(
+                phase == ChewingCalibrationPhase.Noise
+                    ? CalibrationStage.MeasuringNoise
+                    : CalibrationStage.MeasuringChew);
+            Send(ChewingSensorProtocol.BuildCalibrationPhase(phase, request.RequestId));
+
+            await request.StageCompleted.AttachExternalCancellation(ct);
+            return !request.Terminal.HasValue;
         }
 
         private void Dispatch(ChewingSensorMessage message)
@@ -137,8 +188,14 @@ namespace YummyVerse.Scripts.Model
                     return;
 
                 case ChewingSensorMessageKind.CalibrationAccepted:
+                case ChewingSensorMessageKind.CalibrationNoiseDone:
+                case ChewingSensorMessageKind.CalibrationChewDone:
                 case ChewingSensorMessageKind.CalibrationDone:
                 case ChewingSensorMessageKind.CalibrationFailed:
+                    // 送信だけログに出ていると、応答が来ていないのか、来ているが状態と噛み合って
+                    // いないのかを切り分けられない。キャリブレーション系は必ず受信も残す。
+                    // (MOUTH は咀嚼のたびに流れるので、ここでは出さない。)
+                    Debug.Log($"[ChewingSensor] 受信: {message}");
                     DispatchCalibration(message);
                     return;
             }
@@ -157,15 +214,39 @@ namespace YummyVerse.Scripts.Model
             switch (message.Kind)
             {
                 case ChewingSensorMessageKind.CalibrationAccepted:
-                    pending.MarkAccepted();
+                    // CAL_START 再送への重複応答で案内をやり直さない (仕様書 §9.6)。
+                    if (pending.Stage == CalibrationStage.AwaitingAccept) pending.CompleteStage();
+                    return;
+
+                case ChewingSensorMessageKind.CalibrationNoiseDone:
+                    if (pending.Stage == CalibrationStage.MeasuringNoise) pending.CompleteStage();
+                    return;
+
+                case ChewingSensorMessageKind.CalibrationChewDone:
+                    // 閾値の確定・保存はこの後。終端は CAL_DONE なので、待ち直すだけにする。
+                    if (pending.Stage == CalibrationStage.MeasuringChew) pending.RestartStageDeadline();
                     return;
 
                 case ChewingSensorMessageKind.CalibrationDone:
+                    if (pending.Stage != CalibrationStage.MeasuringChew)
+                    {
+                        // 咀嚼測定まで進む前に終端が来た。フェーズ応答 (CAL_NOISE_DONE /
+                        // CAL_CHEW_DONE) を返さない v1.0 相当のファームウェアだとここに来る。
+                        // 咀嚼計は測定を終えているので案内だけ足しても意味がなく、そのまま完了させる。
+                        Debug.LogWarning(
+                            $"[ChewingSensor] {Describe(pending.Stage)}の段階で CAL_DONE を受信しました。" +
+                            "咀嚼計がフェーズ分割 (CAL_NOISE_DONE / CAL_CHEW_DONE) に対応していない可能性が" +
+                            "あります。この場合、咀嚼測定の案内は表示されません。");
+                    }
+
                     Complete(pending, ChewingCalibrationResult.Succeeded());
                     return;
 
                 case ChewingSensorMessageKind.CalibrationFailed:
-                    Debug.LogWarning($"[ChewingSensor] キャリブレーションに失敗しました: {message.FailureReason}");
+                    // どの段で断られたのかが分からないと、装着不良なのか順序違反なのかを切り分けられない。
+                    Debug.LogWarning(
+                        $"[ChewingSensor] {Describe(pending.Stage)}で咀嚼計がキャリブレーションを拒否しました: " +
+                        $"{message.FailureReason}");
                     Complete(pending, ChewingCalibrationResult.Failed(message.FailureReason));
                     return;
             }
@@ -190,37 +271,72 @@ namespace YummyVerse.Scripts.Model
 
             var now = Time.realtimeSinceStartup;
 
-            if (!pending.IsAccepted)
+            switch (pending.Stage)
             {
-                if (now - pending.LastSentAt < _config.CalibrationAcceptedTimeoutSeconds) return;
+                case CalibrationStage.AwaitingAccept:
+                    if (now - pending.LastSentAt < _config.CalibrationAcceptedTimeoutSeconds) return;
 
-                if (pending.Attempts >= Mathf.Max(1, _config.CalibrationStartAttempts))
-                {
-                    Debug.LogWarning("[ChewingSensor] CAL_ACCEPTED が返らないため、キャリブレーションを断念します");
+                    if (pending.Attempts >= Mathf.Max(1, _config.CalibrationStartAttempts))
+                    {
+                        Debug.LogWarning("[ChewingSensor] CAL_ACCEPTED が返らないため、キャリブレーションを断念します");
+                        Complete(pending, ChewingCalibrationResult.TimedOut());
+                        return;
+                    }
+
+                    SendCalibrationStart(pending);
+                    return;
+
+                case CalibrationStage.Prompting:
+                    // 案内とカウントダウンの間。咀嚼計は待つと決まっているので急かさない (仕様書 §9.7)。
+                    return;
+
+                case CalibrationStage.MeasuringNoise:
+                case CalibrationStage.MeasuringChew:
+                    var limit = pending.Stage == CalibrationStage.MeasuringNoise
+                        ? _config.CalibrationNoiseTimeoutSeconds
+                        : _config.CalibrationChewTimeoutSeconds;
+                    if (now - pending.StageStartedAt < limit) return;
+
+                    Debug.LogWarning(
+                        $"[ChewingSensor] {Describe(pending.Stage)}の完了応答が {limit} 秒返らないため、" +
+                        "キャリブレーションを断念します");
+                    SendCalibrationAbort(pending);
                     Complete(pending, ChewingCalibrationResult.TimedOut());
                     return;
-                }
-
-                SendCalibrationStart(pending);
-                return;
             }
-
-            if (now - pending.AcceptedAt < _config.CalibrationCompletionTimeoutSeconds) return;
-
-            Debug.LogWarning("[ChewingSensor] CAL_DONE / CAL_FAILED が返らないため、キャリブレーションを断念します");
-            Complete(pending, ChewingCalibrationResult.TimedOut());
         }
+
+        private static string Describe(CalibrationStage stage) => stage switch
+        {
+            CalibrationStage.AwaitingAccept => "受理待ち",
+            CalibrationStage.Prompting => "案内表示中",
+            CalibrationStage.MeasuringNoise => "ノイズ測定 (CAL_NOISE)",
+            CalibrationStage.MeasuringChew => "咀嚼測定 (CAL_CHEW)",
+            _ => stage.ToString()
+        };
 
         private void SendCalibrationStart(CalibrationRequest request)
         {
+            // 再送でも新しい requestId を発行しない。受理済みだった場合に二重要求になる (仕様書 §13)。
             request.MarkSent(Time.realtimeSinceStartup);
             Send(ChewingSensorProtocol.BuildCalibrationStart(request.RequestId));
+        }
+
+        /// <summary>放棄する要求のフェーズ状態を咀嚼計側にも捨てさせる (仕様書 §9.5)。</summary>
+        private void SendCalibrationAbort(CalibrationRequest request)
+        {
+            if (request.Terminal.HasValue) return;
+
+            // 接続が変わっていれば、そのポートへ送っても意味がない。
+            if (request.Epoch != Volatile.Read(ref _connectionEpoch)) return;
+
+            Send(ChewingSensorProtocol.BuildCalibrationAbort(request.RequestId));
         }
 
         private void Complete(CalibrationRequest request, ChewingCalibrationResult result)
         {
             if (ReferenceEquals(_pending, request)) _pending = null;
-            request.Completion.TrySetResult(result);
+            request.Complete(result);
         }
 
         private void Send(string message)
@@ -455,32 +571,63 @@ namespace YummyVerse.Scripts.Model
             _workerCts?.Dispose();
             _workerCts = null;
 
-            _pending?.Completion.TrySetResult(ChewingCalibrationResult.NotConnected());
+            _pending?.Complete(ChewingCalibrationResult.NotConnected());
             _pending = null;
 
             _onMouthEvent.Dispose();
             _connectionState.Dispose();
         }
 
+        /// <summary>
+        /// キャリブレーション要求が今どこにいるか (仕様書 §16 の Unity 側の状態)。
+        /// 再送するのか、無期限に待つのか、期限を切るのかがフェーズごとに違うため区別する。
+        /// </summary>
+        private enum CalibrationStage
+        {
+            /// <summary>CAL_START を送り、CAL_ACCEPTED を待っている。</summary>
+            AwaitingAccept,
+
+            /// <summary>案内とカウントダウンの表示中。何も送らず、期限も設けない。</summary>
+            Prompting,
+
+            /// <summary>CAL_NOISE を送り、CAL_NOISE_DONE を待っている。</summary>
+            MeasuringNoise,
+
+            /// <summary>CAL_CHEW を送り、CAL_CHEW_DONE と CAL_DONE を待っている。</summary>
+            MeasuringChew
+        }
+
         /// <summary>保留中の1件のキャリブレーション要求。メインスレッドからのみ触る。</summary>
         private sealed class CalibrationRequest
         {
-            private readonly Action _onAccepted;
+            private UniTaskCompletionSource _stage = new();
 
             public uint RequestId { get; }
             public int Epoch { get; }
-            public UniTaskCompletionSource<ChewingCalibrationResult> Completion { get; } = new();
+
+            public CalibrationStage Stage { get; private set; } = CalibrationStage.AwaitingAccept;
+
+            /// <summary>決着した結果。値が入ったらこの要求は終わっている。</summary>
+            public ChewingCalibrationResult? Terminal { get; private set; }
+
+            /// <summary>現在の段が進むか、要求が決着すると完了する。</summary>
+            public UniTask StageCompleted => _stage.Task;
 
             public int Attempts { get; private set; }
             public float LastSentAt { get; private set; }
-            public bool IsAccepted { get; private set; }
-            public float AcceptedAt { get; private set; }
+            public float StageStartedAt { get; private set; }
 
-            public CalibrationRequest(uint requestId, Action onAccepted, int epoch)
+            public CalibrationRequest(uint requestId, int epoch)
             {
                 RequestId = requestId;
                 Epoch = epoch;
-                _onAccepted = onAccepted;
+            }
+
+            public void BeginStage(CalibrationStage stage)
+            {
+                Stage = stage;
+                StageStartedAt = Time.realtimeSinceStartup;
+                _stage = new UniTaskCompletionSource();
             }
 
             public void MarkSent(float now)
@@ -489,14 +636,18 @@ namespace YummyVerse.Scripts.Model
                 LastSentAt = now;
             }
 
-            public void MarkAccepted()
-            {
-                // 重複した CAL_ACCEPTED (再送への応答) で案内文を出し直さない。
-                if (IsAccepted) return;
+            /// <summary>期待した応答が来たので次の段へ進める。</summary>
+            public void CompleteStage() => _stage.TrySetResult();
 
-                IsAccepted = true;
-                AcceptedAt = Time.realtimeSinceStartup;
-                _onAccepted?.Invoke();
+            /// <summary>CAL_CHEW_DONE のように、まだ終端ではない応答で待ち時間を取り直す。</summary>
+            public void RestartStageDeadline() => StageStartedAt = Time.realtimeSinceStartup;
+
+            public void Complete(ChewingCalibrationResult result)
+            {
+                if (Terminal.HasValue) return;
+
+                Terminal = result;
+                _stage.TrySetResult();
             }
         }
     }

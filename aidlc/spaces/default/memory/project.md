@@ -55,6 +55,7 @@
 - `docs/` は移管完了後の現行要件ソースとして参照しない。要件は source path の存在なしに理解できる本文と恒久 ID を `aidlc` に持たせる。
 - 実装と `aidlc` の不一致を発見した場合、黙って片方を正とせず gap/未解決事項として記録する。
 - `README.md` の Unity `6000.2.0f1` 表記と `ProjectVersion.txt` の `6000.2.6f2` は不一致のため、関連 intent で解消するまで既知の差分として扱う。
+- 咀嚼計シリアル通信プロトコルの要点と Unity 側実装境界は `spaces/default/knowledge/aidlc-shared/chewing-sensor-serial-protocol.md` を参照する。v1.1 のキャリブレーション・フェーズ分割対応は `260904-chewing-calibration-phase-split` を参照する。
 
 ## Scope Overrides
 
@@ -72,6 +73,7 @@
 - DECIDED: 現行要件は `aidlc` 内で自己完結させ、`docs/` の存在を要件理解の前提にしない (2026-08-24)。
 - DECIDED: YummyVerseUnity が利用する API は YummyService v2 のみとする。v1 API は廃止済みであり、production/development/test/demo/fallback/migration/Standalone を含む全 runtime から金輪際呼び出さない。v1 rejection 用 local negative fixture だけを例外とする (2026-08-24)。
 - DECIDED: Standalone Mode は今後も維持する。これは v1 fallback ではなく、API request を行わない端末内食品 source である。Tutorial 完了後の一つの食品選択 UI に YummyService v2 item と Standalone item を同時表示する (2026-08-24)。
+- DECIDED: 咀嚼計シリアル通信プロトコルは v1.1 (`YummyVerse_Serial_Protocol_v1.1.md`) を採用し、キャリブレーションをノイズ測定・咀嚼測定のフェーズ分割コマンド (`CAL_NOISE`/`CAL_CHEW`) と中断コマンド (`CAL_ABORT`) へ移行する。フェーズ順序・再送・タイムアウトは Model 層 (`ChewingSensorService`)、案内表示・カウントダウンは Presentation 層 (`ChewingCalibrationFlow`) が持ち、両者は role-specific port `IChewingCalibrationPrompt` で接続する。咀嚼計の不調時にも展示を止めない既存方針は維持する。詳細は `spaces/default/knowledge/aidlc-shared/chewing-sensor-serial-protocol.md` と `260904-chewing-calibration-phase-split` を参照する (2026-09-04)。
 
 ## Forbidden
 

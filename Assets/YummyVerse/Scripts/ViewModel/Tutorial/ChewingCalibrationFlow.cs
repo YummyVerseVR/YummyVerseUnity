@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -13,10 +14,15 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
     /// <summary>
     /// 咀嚼計のキャリブレーション案内。
     ///
-    /// 流れ:
-    ///   1. 「口を動かさないでください」を出し、CAL_START を送る。
-    ///   2. CAL_ACCEPTED から一定時間 (既定 5 秒) 後に「もぐもぐしてください」へ切り替える。
-    ///   3. CAL_DONE で案内を閉じ、呼び出し元がチュートリアル本体 (S2) へ進む。
+    /// 流れ (プロトコル仕様書 §9.2):
+    ///   1. 「小さく歯をカチカチしてください」+ カウントダウン。0 で「計測中...」に変わり、
+    ///      同時に CAL_NOISE が送られてノイズ測定が始まる。
+    ///   2. ノイズ測定が終わったら「奥歯でちゃんと噛みしめてください」+ カウントダウン。
+    ///      0 で「計測中...」に変わり、同時に CAL_CHEW が送られる。
+    ///   3. 閾値が確定したら案内を閉じ、呼び出し元がチュートリアル本体 (S2) へ進む。
+    ///
+    /// フェーズの順序と送信の判断は ChewingSensorService が持ち、ここは
+    /// 「利用者の準備ができるまで待たせる」表示だけを担当する。
     ///
     /// 咀嚼計が繋がっていない・失敗した・応答が返らない場合でも例外にはせず、
     /// 案内を閉じて先へ進める。無人運用の展示で1台の不調が来場者を足止めしないようにするため。
@@ -43,23 +49,8 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
                 return;
             }
 
-            await ctx.Message.ShowAsync(_tutorialConfig.ChewingCalibrationHoldMessage, ct);
-
-            // 「もぐもぐしてください」への切り替えは CAL_ACCEPTED を起点に走らせ、
-            // 較正が決着した時点で打ち切る。CAL_DONE の方が先に来たら案内を出さずに終える。
-            using var promptCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            var acceptedSource = new UniTaskCompletionSource();
-            ShowChewPromptAsync(ctx, acceptedSource, promptCts.Token).Forget();
-
-            ChewingCalibrationResult result;
-            try
-            {
-                result = await _sensor.CalibrateAsync(() => acceptedSource.TrySetResult(), ct);
-            }
-            finally
-            {
-                promptCts.Cancel();
-            }
+            var prompt = new CountdownPrompt(ctx, _tutorialConfig);
+            var result = await _sensor.CalibrateAsync(prompt, ct);
 
             if (!result.IsSuccess)
             {
@@ -92,23 +83,47 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
             return false;
         }
 
-        private async UniTaskVoid ShowChewPromptAsync(
-            TutorialContext ctx, UniTaskCompletionSource accepted, CancellationToken ct)
+        /// <summary>
+        /// フェーズ開始前の案内とカウントダウン。
+        ///
+        /// カウントが 0 になった時点でこの待ちが明けて、呼び出し側がフェーズ要求を送る。
+        /// 先に送ると、利用者が動作を始める前の値を測ってしまう (仕様書 §9.2)。
+        /// </summary>
+        private sealed class CountdownPrompt : IChewingCalibrationPrompt
         {
-            try
-            {
-                await accepted.Task.AttachExternalCancellation(ct);
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(_tutorialConfig.ChewingCalibrationChewPromptDelaySeconds),
-                    DelayType.UnscaledDeltaTime,
-                    cancellationToken: ct);
+            private readonly TutorialContext _ctx;
+            private readonly TutorialConfig _config;
 
-                await ctx.Message.ShowAsync(_tutorialConfig.ChewingCalibrationChewMessage, ct);
-            }
-            catch (OperationCanceledException)
+            public CountdownPrompt(TutorialContext ctx, TutorialConfig config)
             {
-                // 較正が先に決着した。案内の切り替えは不要。
+                _ctx = ctx;
+                _config = config;
             }
+
+            public async UniTask PrepareAsync(ChewingCalibrationPhase phase, CancellationToken ct)
+            {
+                var instruction = phase == ChewingCalibrationPhase.Noise
+                    ? _config.ChewingCalibrationNoiseMessage
+                    : _config.ChewingCalibrationChewMessage;
+
+                // 測定中の表示はカウント 0 の瞬間に差し替えるため、先に解決しておく。
+                var measuring = await _config.ChewingCalibrationMeasuringMessage.ResolveAsync(ct);
+                var seconds = Mathf.Max(0, _config.ChewingCalibrationCountdownSeconds);
+
+                await _ctx.Message.ShowAsync(instruction, seconds > 0 ? Format(seconds) : measuring, ct);
+
+                for (var remaining = seconds; remaining > 0; remaining--)
+                {
+                    _ctx.Message.SetSubText(Format(remaining));
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(1), DelayType.UnscaledDeltaTime, cancellationToken: ct);
+                }
+
+                // カウント 0。この直後に呼び出し側がフェーズ要求を送り、測定が始まる。
+                _ctx.Message.SetSubText(measuring);
+            }
+
+            private static string Format(int seconds) => seconds.ToString(CultureInfo.InvariantCulture);
         }
     }
 }
