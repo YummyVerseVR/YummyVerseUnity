@@ -167,7 +167,7 @@ namespace YummyVerse.Editor.Tests
             };
 
             Assert.That(data.IsValid(), Is.True);
-            Assert.That(data.MatchesFrame(FrameKind), Is.False);
+            Assert.That(data.MatchesFrame(FrameKind, "test-gen"), Is.False);
         }
 
         [Test]
@@ -199,6 +199,7 @@ namespace YummyVerse.Editor.Tests
             public ReadOnlyReactiveProperty<bool> IsReady => _isReady;
             public string Kind => FrameKind;
             public bool SurvivesRestart => true;
+            public string GenerationId => "test-gen";
         }
 
         private sealed class EmptyPlacementStore : IFoodPlacementStore

@@ -41,6 +41,12 @@ namespace YummyVerse.Scripts.Infrastructure
         /// </summary>
         public const string SessionFrameKind = "session";
 
+        /// <summary>
+        /// Meta の Stationary 参照空間から作った基準。再センタリングされない空間なので、
+        /// 原点が張り直されてもこの空間との相対は物理的に保たれる。
+        /// </summary>
+        public const string StationaryFrameKind = "stationary";
+
         /// <summary>基準がこれ以上動いたら原点が張り直されたとみなしてログに残す。</summary>
         private const float MoveLogThresholdMeters = 0.01f;
         private const float RotateLogThresholdDegrees = 0.5f;
@@ -65,6 +71,8 @@ namespace YummyVerse.Scripts.Infrastructure
         private bool _subscribed;
         private bool _tickedOnce;
         private bool _usingPlayArea;
+        private bool _usingStationary;
+        private string _generationId = string.Empty;
 
         /// <summary>再センタリング通知で積み上げる、部屋を保つための補正姿勢 (tracking space 内)。</summary>
         private Pose _compensatedLocalPose = new(Vector3.zero, Quaternion.identity);
@@ -85,8 +93,12 @@ namespace YummyVerse.Scripts.Infrastructure
 
         public Transform Current => _isReady.Value ? _root : null;
         public ReadOnlyReactiveProperty<bool> IsReady => _isReady;
-        public string Kind => _usingPlayArea ? PlayAreaFrameKind : SessionFrameKind;
-        public bool SurvivesRestart => _usingPlayArea;
+        public string Kind => _usingStationary
+            ? StationaryFrameKind
+            : (_usingPlayArea ? PlayAreaFrameKind : SessionFrameKind);
+
+        public bool SurvivesRestart => _usingStationary || _usingPlayArea;
+        public string GenerationId => _generationId;
 
         public void Initialize()
         {
@@ -118,6 +130,13 @@ namespace YummyVerse.Scripts.Infrastructure
             if (trackingSpace == null)
             {
                 MarkUnavailable("OVRCameraRig が見つかりません");
+                return;
+            }
+
+            // Stationary は「再センタリングされない空間」として用意されているもの。
+            // ここが取れる限り、原点が張り直されても物理位置を保てる。最優先で使う。
+            if (!_announcedSessionFrame && TryUseStationaryFrame(trackingSpace))
+            {
                 return;
             }
 
@@ -236,6 +255,71 @@ namespace YummyVerse.Scripts.Infrastructure
         /// 「そのときのトラッキング原点」に戻るため、保存済みの位置は使えない。
         /// 被り直し (アプリは動いたまま) はこれで守れる。
         /// </summary>
+        /// <summary>
+        /// Stationary 参照空間を基準にする。
+        /// 有効かどうかは世代 ID が取れるかで判定する。姿勢が identity かどうかでは判定しない
+        /// (取得失敗でも identity が返るため、区別がつかない)。
+        /// </summary>
+        private bool TryUseStationaryFrame(Transform trackingSpace)
+        {
+            Guid generation;
+            try
+            {
+                if (OVRPlugin.GetStationaryReferenceSpaceId(out generation) != OVRPlugin.Result.Success)
+                {
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            var pose = OVRPlugin.GetTrackingTransformRelativePose(OVRPlugin.TrackingOrigin.Stationary).ToOVRPose();
+
+            if (_root == null)
+            {
+                _root = new GameObject("Room Reference Frame (Stationary)").transform;
+            }
+
+            if (!ReferenceEquals(_root.parent, trackingSpace))
+            {
+                _root.SetParent(trackingSpace, false);
+            }
+
+            _root.localPosition = pose.position;
+            _root.localRotation = pose.orientation == default
+                ? Quaternion.identity
+                : Quaternion.Normalize(pose.orientation);
+
+            var newGeneration = generation.ToString("D");
+            if (_usingStationary && !string.Equals(newGeneration, _generationId, StringComparison.Ordinal))
+            {
+                Debug.LogWarning(
+                    $"[RoomFrame] Stationary 空間が作り直されました ({_generationId} -> {newGeneration})。"
+                    + " 保存済みの配置は物理的に別の場所を指すため、置き直しが必要です。");
+            }
+
+            _generationId = newGeneration;
+            _usingStationary = true;
+            _usingPlayArea = false;
+            _source = "Stationary";
+
+            LogIfMoved(new Pose(_root.localPosition, _root.localRotation));
+            LogMeasurement();
+
+            if (!_isReady.Value)
+            {
+                _isReady.Value = true;
+                Debug.Log(
+                    $"[RoomFrame] 部屋基準を確立しました (source=Stationary, 世代={newGeneration})。"
+                    + $" tracking space 内 pos={_root.localPosition} yaw={_root.localRotation.eulerAngles.y:F1}"
+                    + $" / world pos={_root.position}");
+            }
+
+            return true;
+        }
+
         private void UseRecenterCompensatedFrame(Transform trackingSpace)
         {
             _usingPlayArea = false;

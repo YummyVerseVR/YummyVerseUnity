@@ -29,5 +29,12 @@ namespace YummyVerse.Scripts.Model.Interface
         /// false のときに保存済みの配置を復元すると、現実と無関係な場所に食品が出る。
         /// </summary>
         bool SurvivesRestart { get; }
+
+        /// <summary>
+        /// 基準の世代を表す識別子。ランタイムが空間を作り直すと変わる。
+        /// 保存時の値と一致しない配置は、同じ物理位置を指さないので使ってはいけない。
+        /// 世代を持たない基準では空文字。
+        /// </summary>
+        string GenerationId { get; }
     }
 }

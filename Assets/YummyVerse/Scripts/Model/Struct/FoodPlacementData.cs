@@ -23,6 +23,9 @@ namespace YummyVerse.Scripts.Model.Struct
         /// <summary>基準フレームの種類 (<c>IPlacementReferenceFrame.Kind</c> と同じ値)。</summary>
         public string ReferenceFrame;
 
+        /// <summary>保存時の基準の世代 (<c>IPlacementReferenceFrame.GenerationId</c>)。</summary>
+        public string FrameGenerationId;
+
         public bool HasFoodPose;
         public Vector3 LocalPosition;
         public Quaternion LocalRotation;
@@ -44,10 +47,14 @@ namespace YummyVerse.Scripts.Model.Struct
         }
 
         /// <summary>いま使える基準フレームで測った値かどうか。違う基準の値は使ってはいけない。</summary>
-        public bool MatchesFrame(string frameKind)
+        public bool MatchesFrame(string frameKind, string generationId)
         {
-            return !string.IsNullOrEmpty(frameKind)
-                   && string.Equals(ReferenceFrame, frameKind, StringComparison.Ordinal);
+            if (string.IsNullOrEmpty(frameKind)) return false;
+            if (!string.Equals(ReferenceFrame, frameKind, StringComparison.Ordinal)) return false;
+
+            // 世代が変わっていたら、同じ種類の基準でも別の物理位置を指している。
+            return string.Equals(FrameGenerationId ?? string.Empty, generationId ?? string.Empty,
+                StringComparison.Ordinal);
         }
 
         private static bool IsFinite(float value)

@@ -242,6 +242,7 @@ namespace YummyVerse.Scripts.Model
             {
                 SchemaVersion = FoodPlacementData.CurrentSchemaVersion,
                 ReferenceFrame = _referenceFrame.Kind,
+                FrameGenerationId = _referenceFrame.GenerationId,
                 HasFoodPose = true,
                 LocalPosition = localPose.position,
                 LocalRotation = NormalizeRotation(localPose.rotation)
@@ -338,7 +339,7 @@ namespace YummyVerse.Scripts.Model
                     return;
                 }
 
-                if (!data.MatchesFrame(_referenceFrame.Kind))
+                if (!data.MatchesFrame(_referenceFrame.Kind, _referenceFrame.GenerationId))
                 {
                     State.Value = FoodPlacementState.Unconfigured;
                     StatusMessage.Value = "The saved placement uses a different origin. Configure it again.";
