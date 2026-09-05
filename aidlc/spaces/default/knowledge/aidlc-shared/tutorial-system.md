@@ -120,6 +120,7 @@ Reset 対象:
 - Presenter が async API に加えて reactive state を公開すること。
 - Voice/Choice Presenter が追加されていること。
 - S1 の Attract message を `TutorialConfig` が担当し、実行 step は S2 から始まること。
+- S1 と S2 の間に咀嚼計キャリブレーションの案内 (`ChewingCalibrationFlow`) が挟まること。プロトコル v1.1 移行後はノイズ測定→咀嚼測定のフェーズ分割案内となり、各フェーズ前にカウントダウンを表示する。詳細は `chewing-sensor-serial-protocol.md` と `260904-chewing-calibration-phase-split` intent を参照する。
 
 これらは責務分離、data-driven editing、同一 scene のシームレス移行を満たす限り、元仕様に対する許容 adaptation である。
 

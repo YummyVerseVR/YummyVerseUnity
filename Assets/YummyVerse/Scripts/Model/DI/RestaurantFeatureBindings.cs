@@ -23,7 +23,10 @@ namespace YummyVerse.Scripts.Model.DI
             container.BindInterfacesAndSelfTo<SettingManager>().AsSingle();
             container.BindInterfacesAndSelfTo<FoodScaleManager>().AsSingle();
             container.BindInterfacesAndSelfTo<PlayerPrefsFoodPlacementStore>().AsSingle();
-            container.BindInterfacesAndSelfTo<MetaSpatialAnchorBackend>().AsSingle();
+            // 配置の基準は部屋固定の参照フレーム (Stage)。Meta Spatial Anchor は
+            // Unity OpenXR Plugin 構成で保存が通らず、PCVR では特に使えないため配置には使わない。
+            // 基準は最初の食品より前に立ち上がっている必要があるので NonLazy で常駐させる。
+            container.BindInterfacesAndSelfTo<StagePlacementReferenceFrame>().AsSingle().NonLazy();
             container.BindInterfacesAndSelfTo<FoodPlacementService>().AsSingle();
             container.BindInterfacesAndSelfTo<InputLayer>().AsSingle();
             container.BindInterfacesAndSelfTo<NetworkConnectionTester>().AsSingle();
@@ -31,6 +34,17 @@ namespace YummyVerse.Scripts.Model.DI
             container.BindInterfacesAndSelfTo<GameCommandBus>().AsSingle();
             container.BindInterfacesAndSelfTo<AppStateMachine>().AsSingle();
             container.BindInterfacesAndSelfTo<IdleWatcher>().AsSingle();
+
+            // 被り直しで再センタリングが走るとワールド原点が部屋に対して動き、
+            // 設定した食品位置も Spatial Anchor も現実からずれる。最初の着脱より前に
+            // 押さえておく必要があるので NonLazy で常駐させる。
+            container.BindInterfacesAndSelfTo<XrRecenterGuard>().AsSingle().NonLazy();
+
+            // XR セッションの着脱監視と、それに追従する描画負荷の調整。
+            // 誰も解決しなくても最初の着脱から動いている必要があるので NonLazy で常駐させる。
+            // 観測と描画にしか効かない。体験の進行はここを見ない。
+            container.BindInterfacesAndSelfTo<XrSessionMonitor>().AsSingle().NonLazy();
+            container.BindInterfacesAndSelfTo<XrSuspensionRenderThrottle>().AsSingle().NonLazy();
             container.BindInterfacesAndSelfTo<GameResetter>().AsSingle();
             container.BindInterfacesAndSelfTo<TutorialAnalytics>().AsSingle();
         }

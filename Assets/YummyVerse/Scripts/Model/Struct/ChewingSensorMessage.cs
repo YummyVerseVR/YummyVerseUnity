@@ -5,6 +5,8 @@ namespace YummyVerse.Scripts.Model.Struct
     {
         Ready,
         CalibrationAccepted,
+        CalibrationNoiseDone,
+        CalibrationChewDone,
         CalibrationDone,
         CalibrationFailed,
         Mouth
@@ -44,6 +46,12 @@ namespace YummyVerse.Scripts.Model.Struct
         public static ChewingSensorMessage CalibrationAccepted(uint requestId) =>
             new(ChewingSensorMessageKind.CalibrationAccepted, requestId, null, default);
 
+        public static ChewingSensorMessage CalibrationNoiseDone(uint requestId) =>
+            new(ChewingSensorMessageKind.CalibrationNoiseDone, requestId, null, default);
+
+        public static ChewingSensorMessage CalibrationChewDone(uint requestId) =>
+            new(ChewingSensorMessageKind.CalibrationChewDone, requestId, null, default);
+
         public static ChewingSensorMessage CalibrationDone(uint requestId) =>
             new(ChewingSensorMessageKind.CalibrationDone, requestId, null, default);
 
@@ -57,6 +65,8 @@ namespace YummyVerse.Scripts.Model.Struct
         {
             ChewingSensorMessageKind.Ready => "READY",
             ChewingSensorMessageKind.CalibrationAccepted => $"CAL_ACCEPTED,{RequestId}",
+            ChewingSensorMessageKind.CalibrationNoiseDone => $"CAL_NOISE_DONE,{RequestId}",
+            ChewingSensorMessageKind.CalibrationChewDone => $"CAL_CHEW_DONE,{RequestId}",
             ChewingSensorMessageKind.CalibrationDone => $"CAL_DONE,{RequestId}",
             ChewingSensorMessageKind.CalibrationFailed => $"CAL_FAILED,{RequestId},{FailureReason}",
             ChewingSensorMessageKind.Mouth => $"MOUTH,{MouthState}",

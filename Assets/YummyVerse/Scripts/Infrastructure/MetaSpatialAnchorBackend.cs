@@ -219,10 +219,13 @@ namespace YummyVerse.Scripts.Infrastructure
 
         private static void DestroyAnchorObject(OVRSpatialAnchor anchor)
         {
-            if (anchor != null)
-            {
-                UnityEngine.Object.Destroy(anchor.gameObject);
-            }
+            if (anchor == null) return;
+
+            // 食品の置き場所はアンカーの子として吊られている。そのまま破棄すると
+            // 置き場所ごと道連れになり、次のアンカーへ繋ぎ直す相手を失う。
+            // 巻き添えを避けるため、先に子を切り離してから消す。
+            anchor.transform.DetachChildren();
+            UnityEngine.Object.Destroy(anchor.gameObject);
         }
     }
 }

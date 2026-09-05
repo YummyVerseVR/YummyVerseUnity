@@ -18,8 +18,6 @@ namespace YummyVerse.Scripts.View.UI
         [SerializeField] private Slider foodScaleSlider;
         [SerializeField] private Camera targetCamera;
         [SerializeField] private Transform uiTransform;
-        [SerializeField] private Button spatialAnchorButton;
-        [SerializeField] private Button fixFoodPositionButton;
         [SerializeField] private TextMeshProUGUI spatialPlacementStatus;
         [SerializeField] private Button returnToStartButton;
 
@@ -45,8 +43,6 @@ namespace YummyVerse.Scripts.View.UI
                 foodScaleSlider,
                 targetCamera,
                 uiTransform,
-                spatialAnchorButton,
-                fixFoodPositionButton,
                 spatialPlacementStatus,
                 returnToStartButton,
                 // Unity の偽 null をインタフェースに持ち込まないよう、ここで潰しておく。

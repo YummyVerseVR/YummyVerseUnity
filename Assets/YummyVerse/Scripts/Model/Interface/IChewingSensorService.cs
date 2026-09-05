@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using R3;
@@ -26,10 +25,13 @@ namespace YummyVerse.Scripts.Model.Interface
         ///
         /// 保留できる要求は同時に1件だけで、2件目は失敗として即座に返る (仕様書 §9.1)。
         /// 未接続や切断でも例外ではなく結果で返すので、呼び出し側は展示を止めずに続行できる。
+        ///
+        /// ノイズ測定と咀嚼測定の順序、再送、タイムアウトは実装側が持つ。呼び出し側は
+        /// <paramref name="prompt"/> で「いつ測定を始めてよいか」だけを答える (仕様書 §9)。
         /// </summary>
-        /// <param name="onAccepted">
-        /// CAL_ACCEPTED を受信した時点で1度だけ呼ばれる。案内文の切り替え開始点として使う。
+        /// <param name="prompt">
+        /// 各フェーズの要求を送る直前に呼ばれる案内。完了するまでフェーズ要求を送らない。
         /// </param>
-        UniTask<ChewingCalibrationResult> CalibrateAsync(Action onAccepted, CancellationToken ct);
+        UniTask<ChewingCalibrationResult> CalibrateAsync(IChewingCalibrationPrompt prompt, CancellationToken ct);
     }
 }

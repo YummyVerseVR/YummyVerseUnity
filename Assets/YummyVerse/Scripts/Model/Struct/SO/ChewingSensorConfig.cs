@@ -26,7 +26,9 @@ namespace YummyVerse.Scripts.Model.Struct.SO
         [Tooltip("全ポートを試して見つからなかったときに、次の探索まで待つ時間。")]
         [SerializeField, Min(0.5f)] private float rediscoverIntervalSeconds = 3f;
 
-        [Tooltip("この語を含むポートを先に試す。探索順の最適化にだけ使い、除外はしない (仕様書 §6.2)。")]
+        [Tooltip("この語を含むポートを先に試す。探索順の最適化にだけ使い、除外はしない (仕様書 §6.2)。\n" +
+                 "当たるのは POSIX のデバイスファイル名だけで、Windows の \"COMn\" には効かない。\n" +
+                 "Windows 側の並べ替えは NT デバイス名 (USBSER / BthModem) を見て実装側が行う。")]
         [SerializeField] private string[] preferredPortNameKeywords =
         {
             "usbmodem", "usbserial", "ttyACM", "ttyUSB"
@@ -39,8 +41,11 @@ namespace YummyVerse.Scripts.Model.Struct.SO
         [Tooltip("CAL_START の送信回数の上限。使い切ったら要求失敗としてUIへ返す。")]
         [SerializeField, Min(1)] private int calibrationStartAttempts = 5;
 
-        [Tooltip("CAL_ACCEPTED 後に CAL_DONE / CAL_FAILED を待つ時間 (最大処理時間＋安全余裕)。")]
-        [SerializeField, Min(1f)] private float calibrationCompletionTimeoutSeconds = 30f;
+        [Tooltip("CAL_NOISE 送信後に CAL_NOISE_DONE を待つ時間 (ノイズ測定時間＋安全余裕)。")]
+        [SerializeField, Min(1f)] private float calibrationNoiseTimeoutSeconds = 30f;
+
+        [Tooltip("CAL_CHEW 送信後に CAL_CHEW_DONE / CAL_DONE を待つ時間 (咀嚼測定時間＋安全余裕)。")]
+        [SerializeField, Min(1f)] private float calibrationChewTimeoutSeconds = 30f;
 
         [Tooltip("キャリブレーション開始前に、咀嚼計へ繋がるのを待つ上限。" +
                  "超えたらキャリブレーションを飛ばしてチュートリアルを続行する。")]
@@ -62,7 +67,8 @@ namespace YummyVerse.Scripts.Model.Struct.SO
         public string[] PreferredPortNameKeywords => preferredPortNameKeywords;
         public float CalibrationAcceptedTimeoutSeconds => calibrationAcceptedTimeoutSeconds;
         public int CalibrationStartAttempts => calibrationStartAttempts;
-        public float CalibrationCompletionTimeoutSeconds => calibrationCompletionTimeoutSeconds;
+        public float CalibrationNoiseTimeoutSeconds => calibrationNoiseTimeoutSeconds;
+        public float CalibrationChewTimeoutSeconds => calibrationChewTimeoutSeconds;
         public float ConnectionWaitSeconds => connectionWaitSeconds;
         public AudioClip FallbackChewSound => fallbackChewSound;
         public float ChewSoundVolume => chewSoundVolume;

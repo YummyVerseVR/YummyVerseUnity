@@ -102,13 +102,20 @@ namespace YummyVerse.Editor.Tests
             public ReactiveProperty<bool> IsVisible { get; } = new(false);
             public int ShowCount { get; private set; }
 
-            public UniTask ShowAsync(LocalizedString msg, CancellationToken ct)
+            public UniTask ShowAsync(LocalizedString msg, CancellationToken ct) => ShowAsync(msg, null, ct);
+
+            public UniTask ShowAsync(LocalizedString msg, string subText, CancellationToken ct)
             {
                 ct.ThrowIfCancellationRequested();
                 ShowCount++;
+                SubText = subText;
                 IsVisible.Value = true;
                 return UniTask.CompletedTask;
             }
+
+            public string SubText { get; private set; }
+
+            public void SetSubText(string subText) => SubText = subText;
 
             public UniTask HideAsync(CancellationToken ct)
             {

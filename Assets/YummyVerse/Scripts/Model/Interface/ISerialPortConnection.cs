@@ -22,5 +22,14 @@ namespace YummyVerse.Scripts.Model.Interface
 
         /// <summary>送受信バッファを捨てる。ポートを採用した直後の残骸を消すために使う。</summary>
         void DiscardBuffers();
+
+        /// <summary>
+        /// 保留中の読み書きを打ち切る。<see cref="Read"/> は 0 を返すか例外で戻る。
+        ///
+        /// このメソッドだけは受信スレッド以外から呼んでよい。USB が抜けた直後の読み取りは
+        /// タイムアウトで戻ってこないことがあり、終了時にスレッドを起こす手段が要るため。
+        /// 既に閉じている場合や中断できない実装では何もしない (例外を投げない)。
+        /// </summary>
+        void CancelPendingIo();
     }
 }

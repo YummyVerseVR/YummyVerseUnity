@@ -68,9 +68,22 @@ namespace YummyVerse.Scripts.Presentation
             // 食べ物の縮小・破棄に粒が巻き込まれないよう、食べかすは食べ物の階層の外で持つ。
             _crumbEffect = new ScoopCrumbEffectController(crumbEffectSettings);
 
-            // ドームは食べ物と同じ anchor の子。皿の追従は anchor 側がまとめて面倒を見る。
-            _dome = new FoodDomeController(_revealSettings, _foodAnchor);
-            _revealSmoke = new FoodRevealSmokeEffect(_revealSettings);
+            // 準備中の演出は食べ物表示の付帯機能でしかない。ここで失敗しても、
+            // 呼び出し元 (FoodView.Start) の以降の購読登録まで巻き添えにしない。
+            try
+            {
+                // ドームは食べ物と同じ anchor の子。皿の追従は anchor 側がまとめて面倒を見る。
+                _dome = new FoodDomeController(_revealSettings, _foodAnchor);
+                _revealSmoke = new FoodRevealSmokeEffect(_revealSettings);
+            }
+            catch (Exception exception)
+            {
+                _dome = null;
+                _revealSmoke = null;
+                Debug.LogError(
+                    "[Food] 準備中演出 (フードドーム/煙) の準備に失敗しました。"
+                    + $"ドームと煙なしで続行します: {exception}");
+            }
         }
 
         /// <summary>
@@ -86,20 +99,26 @@ namespace YummyVerse.Scripts.Presentation
                 // 前の食べ物がドームの中に取り残されないよう、置き場所を空にしてから被せる。
                 ResetFoodState();
                 _revealStartedAt = -1f;
-                _dome.SetVisible(true);
+                _dome?.SetVisible(true);
                 SyncDomePose();
+                Debug.Log($"[Food] 準備中: フードドームを表示します ({DescribePlacement()})");
                 return;
             }
 
-            if (!_dome.IsVisible) return;
+            if (_dome == null || !_dome.IsVisible) return;
 
             _dome.SetVisible(false);
 
             // 置き場所が決まっていなければドームも見えていない。あらぬ所で煙を出さない。
-            if (_foodAnchor == null || !_foodAnchor.gameObject.activeSelf) return;
+            if (_foodAnchor == null || !_foodAnchor.gameObject.activeSelf)
+            {
+                Debug.LogWarning("[Food] 準備完了: 表示位置が無いため、ドームも食べ物も表示できません");
+                return;
+            }
 
-            _revealSmoke.Play(RevealPosition());
+            _revealSmoke?.Play(RevealPosition());
             _revealStartedAt = Time.time;
+            Debug.Log($"[Food] 準備完了: ドームを消して煙を出します ({DescribePlacement()})");
         }
 
         public async UniTask DisplayAsync(
@@ -117,22 +136,32 @@ namespace YummyVerse.Scripts.Presentation
 
             try
             {
-                // ドームが消えた直後なら、煙を出し切ってから食べ物を出す。
-                await WaitForRevealSmokeAsync(ct);
-
-                var instantiator = new GameObjectInstantiator(gltfImport, _foodRoot.transform);
+                // モデルの生成は演出より先に済ませる。演出の待ちで食べ物が出ないことがないようにする。
+                var root = _foodRoot;
+                var instantiator = new GameObjectInstantiator(gltfImport, root.transform);
                 var instantiated = await gltfImport.InstantiateMainSceneAsync(instantiator, ct);
                 ct.ThrowIfCancellationRequested();
 
-                FoodModelVisualCompatibility.Apply(_foodRoot);
+                FoodModelVisualCompatibility.Apply(root);
                 SetFoodTransform(initialTransform);
                 ApplyScale();
 
-                // 起動直後の空の GltfImport でも購読が走るため、実体があるときだけ食べられる状態にする。
-                if (instantiated && _foodRoot.transform.childCount > 0)
+                // 起動直後の空の GltfImport でも購読が走る。実体があるときだけ演出と当たり判定を回す。
+                if (!instantiated || root.transform.childCount == 0) return;
+
+                if (initialTransform == null)
                 {
-                    SetUpScoopInteraction();
+                    Debug.LogWarning(
+                        "[Food] 食べ物の表示位置が設定されていません。"
+                        + "モデルは読み込めていますが、どこにも表示されません。"
+                        + "管理者用メニューで食品の出現位置を設定してください。");
                 }
+
+                // ドームが消えた直後なら、煙が出ている間だけモデルを隠しておく。
+                await HideWhileRevealSmokeAsync(root, ct);
+
+                SetUpScoopInteraction(root);
+                Debug.Log($"[Food] 食べ物を表示しました ({DescribePlacement()})");
             }
             catch (OperationCanceledException)
             {
@@ -233,17 +262,29 @@ namespace YummyVerse.Scripts.Presentation
             _foodAnchor = null;
         }
 
-        private async UniTask WaitForRevealSmokeAsync(CancellationToken cancellationToken)
+        /// <summary>
+        /// 煙の再生が終わるまでモデルを隠す。煙を出していなければ何もしない。
+        /// 生成済みのモデルを隠すだけなので、待ちが中断されても「読み込んだのに出ない」にはならない。
+        /// </summary>
+        private async UniTask HideWhileRevealSmokeAsync(GameObject root, CancellationToken cancellationToken)
         {
             if (_revealStartedAt < 0f) return;
 
             var remaining = _revealSettings.SmokeDurationSeconds - (Time.time - _revealStartedAt);
             _revealStartedAt = -1f;
-            if (remaining <= 0f) return;
+            if (remaining <= 0f || root == null) return;
 
-            await UniTask.Delay(
-                TimeSpan.FromSeconds(remaining),
-                cancellationToken: cancellationToken);
+            root.SetActive(false);
+            try
+            {
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(remaining),
+                    cancellationToken: cancellationToken);
+            }
+            finally
+            {
+                if (root != null) root.SetActive(true);
+            }
         }
 
         /// <summary>
@@ -256,17 +297,27 @@ namespace YummyVerse.Scripts.Presentation
             _dome.SyncPose(_foodAnchor.position);
         }
 
+        /// <summary>ログ用に、いま食べ物を出せる状態かどうかを一言で表す。</summary>
+        private string DescribePlacement()
+        {
+            if (_foodAnchor == null) return "anchor 未作成";
+            return _foodAnchor.gameObject.activeSelf
+                ? $"表示位置 {_foodAnchor.position}"
+                : "表示位置が未設定のため見えません";
+        }
+
         private Vector3 RevealPosition()
         {
             if (_foodAnchor == null) return Vector3.zero;
             return _foodAnchor.position + Vector3.up * _revealSettings.SmokeHeightOffset;
         }
 
-        private void SetUpScoopInteraction()
+        private void SetUpScoopInteraction(GameObject root)
         {
-            if (_foodRoot == null) return;
+            // 待っている間に置き場所が作り直されていたら、その食べ物はもう出番がない。
+            if (root == null || root != _foodRoot) return;
 
-            var target = _foodRoot.AddComponent<FoodScoopTargetView>();
+            var target = root.AddComponent<FoodScoopTargetView>();
             if (!target.TryInitialize(
                     _eatingService,
                     _scoopProbeProvider,

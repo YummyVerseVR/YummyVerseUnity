@@ -24,7 +24,8 @@ MonoBehaviour:
   - ttyUSB
   calibrationAcceptedTimeoutSeconds: 1
   calibrationStartAttempts: 5
-  calibrationCompletionTimeoutSeconds: 30
+  calibrationNoiseTimeoutSeconds: 30
+  calibrationChewTimeoutSeconds: 30
   connectionWaitSeconds: 10
   fallbackChewSound: {fileID: 0}
   chewSoundVolume: 1

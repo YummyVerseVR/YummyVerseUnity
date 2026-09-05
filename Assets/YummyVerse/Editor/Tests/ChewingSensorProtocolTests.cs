@@ -24,6 +24,18 @@ namespace YummyVerse.Editor.Tests
         }
 
         [Test]
+        public void CalibrationPhaseRequests_MatchSpecification()
+        {
+            Assert.That(
+                ChewingSensorProtocol.BuildCalibrationPhase(ChewingCalibrationPhase.Noise, 42u),
+                Is.EqualTo("CAL_NOISE,42"));
+            Assert.That(
+                ChewingSensorProtocol.BuildCalibrationPhase(ChewingCalibrationPhase.Chew, 42u),
+                Is.EqualTo("CAL_CHEW,42"));
+            Assert.That(ChewingSensorProtocol.BuildCalibrationAbort(42u), Is.EqualTo("CAL_ABORT,42"));
+        }
+
+        [Test]
         public void Ready_IsAcceptedOnlyWithProtocolAndRole()
         {
             Assert.That(ChewingSensorProtocol.TryParse("READY,YUMMYVERSE,1,CHEWING_SENSOR", out var message), Is.True);
@@ -49,8 +61,23 @@ namespace YummyVerse.Editor.Tests
             Assert.That(accepted.Kind, Is.EqualTo(ChewingSensorMessageKind.CalibrationAccepted));
             Assert.That(accepted.RequestId, Is.EqualTo(42u));
 
+            Assert.That(ChewingSensorProtocol.TryParse("CAL_NOISE_DONE,42", out var noiseDone), Is.True);
+            Assert.That(noiseDone.Kind, Is.EqualTo(ChewingSensorMessageKind.CalibrationNoiseDone));
+            Assert.That(noiseDone.RequestId, Is.EqualTo(42u));
+
+            Assert.That(ChewingSensorProtocol.TryParse("CAL_CHEW_DONE,42", out var chewDone), Is.True);
+            Assert.That(chewDone.Kind, Is.EqualTo(ChewingSensorMessageKind.CalibrationChewDone));
+            Assert.That(chewDone.RequestId, Is.EqualTo(42u));
+
             Assert.That(ChewingSensorProtocol.TryParse("CAL_DONE,4294967295", out var done), Is.True);
             Assert.That(done.RequestId, Is.EqualTo(uint.MaxValue));
+
+            // フェーズ順序違反はエラー理由として返る (仕様書 §9.3)。
+            Assert.That(ChewingSensorProtocol.TryParse("CAL_FAILED,42,NOT_STARTED", out var notStarted), Is.True);
+            Assert.That(notStarted.FailureReason, Is.EqualTo("NOT_STARTED"));
+
+            Assert.That(ChewingSensorProtocol.TryParse("CAL_FAILED,42,ABORTED", out var aborted), Is.True);
+            Assert.That(aborted.FailureReason, Is.EqualTo("ABORTED"));
 
             Assert.That(ChewingSensorProtocol.TryParse("CAL_FAILED,43,SENSOR_UNSTABLE", out var failed), Is.True);
             Assert.That(failed.Kind, Is.EqualTo(ChewingSensorMessageKind.CalibrationFailed));
@@ -86,7 +113,11 @@ namespace YummyVerse.Editor.Tests
         [Test]
         public void UnknownAndMalformedLines_AreRejectedWithoutThrowing()
         {
-            foreach (var line in new List<string> { null, "", "PING", "MOUTH", "MOUTH,OPEN,EXTRA", "CAL_FAILED,43" })
+            foreach (var line in new List<string>
+                     {
+                         null, "", "PING", "MOUTH", "MOUTH,OPEN,EXTRA", "CAL_FAILED,43",
+                         "CAL_NOISE_DONE", "CAL_CHEW_DONE,0", "cal_noise_done,42"
+                     })
             {
                 Assert.That(ChewingSensorProtocol.TryParse(line, out _), Is.False, $"入力: {line}");
             }

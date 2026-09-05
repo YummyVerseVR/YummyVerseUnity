@@ -59,6 +59,7 @@ aidlc/spaces/default/intents/<YYMMDD>-<short-kebab-label>/
 - YummyService v2 の契約 snapshot と API policy は `spaces/default/knowledge/aidlc-shared/yummy-service-v2-api.md` を参照する。v1 API は廃止済みで、YummyVerseUnity から今後一切利用しない。
 - Unity Device の v2 endpoint/schema（history、status、selected artifact、Hardware Payload/ACK、認証、残課題）は `spaces/default/knowledge/aidlc-shared/yummy-service-v2-unity-api.md` を参照する。
 - `spaces/default/intents/260821-spatial-anchor-food-placement/` は Spatial Anchor 実装時の履歴である。その中の QR GUID による食品選択方針は 2026-08-24 intent により superseded されている。
+- 咀嚼計シリアル通信プロトコル (`YummyVerse_Serial_Protocol_v1.1.md`, `YV-SERIAL-001`) の要点と Unity 側実装境界・回帰観点は `spaces/default/knowledge/aidlc-shared/chewing-sensor-serial-protocol.md` を参照する。v1.1 で導入されたキャリブレーションのフェーズ分割対応の要件・設計判断は `spaces/default/intents/260904-chewing-calibration-phase-split/` に記録する。
 
 ## 公式ランタイムとの境界
 

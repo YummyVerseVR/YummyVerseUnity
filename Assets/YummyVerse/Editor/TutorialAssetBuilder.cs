@@ -323,12 +323,14 @@ namespace YummyVerse.Editor
                     "食べ物の表示位置を設定してください。\n設定画面はAとXの同時押しで表示されます。"));
 
             // S1 の直後、S2「ようこそ」の手前に挟まる咀嚼計の較正案内。
-            SetField(config, "chewingCalibrationHoldMessage",
-                Str(table, "S1.ChewingCalibrationHold",
-                    "咀嚼計のキャリブレーションを行います。\n歯を小さくカチカチ鳴らしてください。"));
+            // 各案内はカウントダウンを伴い、0 になった時点で測定フェーズが始まる (仕様書 §9.2)。
+            SetField(config, "chewingCalibrationNoiseMessage",
+                Str(table, "S1.ChewingCalibrationNoise", "小さく歯をカチカチしてください"));
             SetField(config, "chewingCalibrationChewMessage",
-                Str(table, "S1.ChewingCalibrationChew", "しっかり噛みしめるように、もぐもぐしてください。"));
-            SetField(config, "chewingCalibrationChewPromptDelaySeconds", 5f);
+                Str(table, "S1.ChewingCalibrationChew", "奥歯でちゃんと噛みしめてください"));
+            SetField(config, "chewingCalibrationMeasuringMessage",
+                Str(table, "S1.ChewingCalibrationMeasuring", "計測中..."));
+            SetField(config, "chewingCalibrationCountdownSeconds", 5);
 
             SetField(config, "idleTimeoutSeconds", 90f);
         }

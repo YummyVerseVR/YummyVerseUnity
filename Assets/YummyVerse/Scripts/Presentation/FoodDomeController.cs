@@ -73,6 +73,16 @@ namespace YummyVerse.Scripts.Presentation
             }
 
             dome.SetActive(false);
+
+            var renderers = dome.GetComponentsInChildren<Renderer>(true).Length;
+            Debug.Log($"[Food] フードドームを用意しました (Renderer {renderers}個, scale {_settings.DomeScale})");
+            if (renderers == 0)
+            {
+                Debug.LogWarning(
+                    "[Food] フードドームのモデルに Renderer がありません。"
+                    + "Dome Prefab には glb のルート (FoodDoom) を割り当ててください。");
+            }
+
             return dome;
         }
 
