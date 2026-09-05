@@ -26,7 +26,9 @@ namespace YummyVerse.Scripts.Model.Struct.SO
         [Tooltip("全ポートを試して見つからなかったときに、次の探索まで待つ時間。")]
         [SerializeField, Min(0.5f)] private float rediscoverIntervalSeconds = 3f;
 
-        [Tooltip("この語を含むポートを先に試す。探索順の最適化にだけ使い、除外はしない (仕様書 §6.2)。")]
+        [Tooltip("この語を含むポートを先に試す。探索順の最適化にだけ使い、除外はしない (仕様書 §6.2)。\n" +
+                 "当たるのは POSIX のデバイスファイル名だけで、Windows の \"COMn\" には効かない。\n" +
+                 "Windows 側の並べ替えは NT デバイス名 (USBSER / BthModem) を見て実装側が行う。")]
         [SerializeField] private string[] preferredPortNameKeywords =
         {
             "usbmodem", "usbserial", "ttyACM", "ttyUSB"

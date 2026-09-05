@@ -49,6 +49,19 @@ namespace YummyVerse.Scripts.Model
         private Thread _worker;
         private CancellationTokenSource _workerCts;
 
+        /// <summary>
+        /// 受信スレッドが今開いているポート。終了時に、ブロックしている読み取りを
+        /// メインスレッドから打ち切るためだけに公開する (仕様書 §15.1 の例外)。
+        /// Dispose するのは受信スレッド側だけ。所有権はここでは移さない。
+        /// </summary>
+        private volatile ISerialPortConnection _activeConnection;
+
+        /// <summary>
+        /// 直前に咀嚼計だと確認できたポート。次の探索でここから試す。
+        /// 受信スレッドからのみ触る。
+        /// </summary>
+        private string _lastGoodPortName;
+
         private CalibrationRequest _pending;
 
         public ReadOnlyReactiveProperty<ChewingSensorConnectionState> ConnectionState => _connectionState;
@@ -267,6 +280,9 @@ namespace YummyVerse.Scripts.Model
                 }
                 finally
                 {
+                    // 参照を先に外してから閉じる。逆順にすると、閉じ終わったポートに対して
+                    // Dispose 側が打ち切りを掛けにいく窓が広がる。
+                    _activeConnection = null;
                     connection?.Dispose();
                     EndConnection(assembler);
                 }
@@ -294,6 +310,7 @@ namespace YummyVerse.Scripts.Model
                 try
                 {
                     connection = _portProvider.Open(portName, settings);
+                    _activeConnection = connection;
                     connection.DiscardBuffers();
                     assembler.Reset();
                     lines.Clear();
@@ -322,6 +339,10 @@ namespace YummyVerse.Scripts.Model
                             if (!ChewingSensorProtocol.TryParse(line, out var message)) continue;
                             if (message.Kind != ChewingSensorMessageKind.Ready) continue;
 
+                            // 次に切れたときはこのポートから試す。USB の再列挙で
+                            // 番号が変わらない限り、全ポートを舐め直さずに済む。
+                            _lastGoodPortName = portName;
+
                             var adopted = connection;
                             connection = null;
                             return adopted;
@@ -335,7 +356,11 @@ namespace YummyVerse.Scripts.Model
                 }
                 finally
                 {
-                    connection?.Dispose();
+                    if (connection != null)
+                    {
+                        _activeConnection = null;
+                        connection.Dispose();
+                    }
                 }
             }
 
@@ -380,32 +405,52 @@ namespace YummyVerse.Scripts.Model
 
         /// <summary>
         /// 見つかりやすい順に並べ替えるだけで、候補から外すことはしない (仕様書 §6.2)。
+        ///
+        /// 優先順位は「直前に当たったポート → 名前がキーワードに合うポート → 残り」。
+        /// 先頭の1件が効くのは切断からの復帰で、USB の再列挙でポート番号が変わらない限り
+        /// 全ポートへ HELLO を投げ直さずに済む。Quest Link の抜き差しでも再列挙は起きるので、
+        /// 咀嚼計と無関係な着脱で無駄な総なめをしないためにも要る。
+        ///
+        /// キーワード照合が効くのは POSIX のデバイスファイル名 (/dev/cu.usbmodem*) だけで、
+        /// Windows の "COMn" には当たらない。Windows 側の並べ替えは
+        /// <see cref="Infrastructure.SerialPortProvider"/> の実装 (NT デバイス名による種別判定) が担う。
         /// </summary>
         private IEnumerable<string> OrderCandidates(IReadOnlyList<string> portNames)
         {
             var keywords = _config.PreferredPortNameKeywords;
-            if (keywords == null || keywords.Length == 0) return portNames;
+            var lastGood = _lastGoodPortName;
 
+            var first = new List<string>();
             var preferred = new List<string>();
             var rest = new List<string>();
 
             foreach (var portName in portNames)
             {
-                var isPreferred = false;
-                foreach (var keyword in keywords)
+                if (lastGood != null && string.Equals(portName, lastGood, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (string.IsNullOrEmpty(keyword)) continue;
-                    if (portName.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) < 0) continue;
-
-                    isPreferred = true;
-                    break;
+                    first.Add(portName);
+                    continue;
                 }
 
-                (isPreferred ? preferred : rest).Add(portName);
+                (MatchesKeyword(portName, keywords) ? preferred : rest).Add(portName);
             }
 
-            preferred.AddRange(rest);
-            return preferred;
+            first.AddRange(preferred);
+            first.AddRange(rest);
+            return first;
+        }
+
+        private static bool MatchesKeyword(string portName, string[] keywords)
+        {
+            if (keywords == null) return false;
+
+            foreach (var keyword in keywords)
+            {
+                if (string.IsNullOrEmpty(keyword)) continue;
+                if (portName.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+
+            return false;
         }
 
         private void BeginConnection()
@@ -448,7 +493,19 @@ namespace YummyVerse.Scripts.Model
         {
             _workerCts?.Cancel();
 
-            // 読み取りタイムアウトぶんで必ず戻るので、待ち切れずに落とすことはまずない。
+            // USB が抜けた直後の読み取りは、読み取りタイムアウトを過ぎても戻らないことがある。
+            // キャンセルを見てもらう前に、まずブロックしている I/O を叩き起こす。
+            // ここで Dispose しないのは所有権を受信スレッドに残すためで、
+            // 閉じるのはあちらの finally に任せる。
+            try
+            {
+                _activeConnection?.CancelPendingIo();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[ChewingSensor] 受信の打ち切りに失敗しました: {e.Message}");
+            }
+
             if (_worker != null && _worker.IsAlive) _worker.Join(TimeSpan.FromSeconds(2));
             _worker = null;
 
