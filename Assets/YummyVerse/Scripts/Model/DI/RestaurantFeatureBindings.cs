@@ -23,7 +23,10 @@ namespace YummyVerse.Scripts.Model.DI
             container.BindInterfacesAndSelfTo<SettingManager>().AsSingle();
             container.BindInterfacesAndSelfTo<FoodScaleManager>().AsSingle();
             container.BindInterfacesAndSelfTo<PlayerPrefsFoodPlacementStore>().AsSingle();
-            container.BindInterfacesAndSelfTo<MetaSpatialAnchorBackend>().AsSingle();
+            // 配置の基準は部屋固定の参照フレーム (Stage)。Meta Spatial Anchor は
+            // Unity OpenXR Plugin 構成で保存が通らず、PCVR では特に使えないため配置には使わない。
+            // 基準は最初の食品より前に立ち上がっている必要があるので NonLazy で常駐させる。
+            container.BindInterfacesAndSelfTo<StagePlacementReferenceFrame>().AsSingle().NonLazy();
             container.BindInterfacesAndSelfTo<FoodPlacementService>().AsSingle();
             container.BindInterfacesAndSelfTo<InputLayer>().AsSingle();
             container.BindInterfacesAndSelfTo<NetworkConnectionTester>().AsSingle();

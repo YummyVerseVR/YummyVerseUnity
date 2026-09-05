@@ -3,25 +3,34 @@ using UnityEngine;
 
 namespace YummyVerse.Scripts.Model.Struct
 {
+    /// <summary>
+    /// 保存された食品の置き場所。姿勢は必ず「基準フレームから見た相対」で持つ。
+    /// どの基準で測ったかを <see cref="ReferenceFrame"/> に記録しておかないと、
+    /// 別の基準で測った値を取り違えて、現実とずれた場所に食品を出してしまう。
+    /// </summary>
     [Serializable]
     public struct FoodPlacementData
     {
-        public const int CurrentSchemaVersion = 1;
+        /// <summary>
+        /// v1 は Meta Spatial Anchor 基準だった。Unity OpenXR Plugin 構成では
+        /// アンカーの保存自体が通らず、復元しても意味のある位置にならないため、
+        /// v1 の保存は読み捨てて設定し直してもらう。
+        /// </summary>
+        public const int CurrentSchemaVersion = 2;
 
         public int SchemaVersion;
-        public string AnchorUuid;
+
+        /// <summary>基準フレームの種類 (<c>IPlacementReferenceFrame.Kind</c> と同じ値)。</summary>
+        public string ReferenceFrame;
+
         public bool HasFoodPose;
         public Vector3 LocalPosition;
         public Quaternion LocalRotation;
 
-        public bool TryGetAnchorUuid(out Guid uuid)
-        {
-            return Guid.TryParse(AnchorUuid, out uuid) && uuid != Guid.Empty;
-        }
-
         public bool IsValid()
         {
-            if (SchemaVersion != CurrentSchemaVersion || !TryGetAnchorUuid(out _)) return false;
+            if (SchemaVersion != CurrentSchemaVersion) return false;
+            if (string.IsNullOrEmpty(ReferenceFrame)) return false;
             if (!HasFoodPose) return false;
 
             return IsFinite(LocalPosition.x)
@@ -32,6 +41,13 @@ namespace YummyVerse.Scripts.Model.Struct
                    && IsFinite(LocalRotation.z)
                    && IsFinite(LocalRotation.w)
                    && RotationSqrMagnitude(LocalRotation) > 0.000001f;
+        }
+
+        /// <summary>いま使える基準フレームで測った値かどうか。違う基準の値は使ってはいけない。</summary>
+        public bool MatchesFrame(string frameKind)
+        {
+            return !string.IsNullOrEmpty(frameKind)
+                   && string.Equals(ReferenceFrame, frameKind, StringComparison.Ordinal);
         }
 
         private static bool IsFinite(float value)

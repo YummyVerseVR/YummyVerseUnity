@@ -10,39 +10,43 @@ using Zenject;
 namespace YummyVerse.Scripts.Model
 {
     /// <summary>
-    /// 食品をどこに出すかを決め、Spatial Anchor に貼り付けたまま保つ。
+    /// 食品をどこに出すかを決め、物理空間に貼り付けたまま保つ。
     ///
-    /// 置き場所は必ず「アンカー基準 (local)」で持つ。ワールド姿勢で持ってはいけない。
-    /// HMD を被り直すとランタイムはトラッキング原点を取り直すため、ワールド座標は
-    /// 物理空間に対して動く。アンカーの Transform はランタイムが毎フレーム
-    /// 物理空間に合わせて更新してくれるので、そこからの相対で持っている限りだけ、
-    /// 食品は現実の同じ場所に居続ける。
+    /// 置き場所は必ず <see cref="IPlacementReferenceFrame"/> 基準の相対姿勢で持つ。
+    /// ワールド姿勢で持ってはいけない。HMD を被り直すとランタイムがワールド原点を
+    /// 張り直すため、ワールド座標は「部屋のどこか」を表さなくなる。
+    ///
+    /// かつては Meta Spatial Anchor を基準にしていたが、このプロジェクトの構成
+    /// (Unity OpenXR Plugin + Meta XR SDK) ではアンカーの保存が
+    /// <c>XR_FB_spatial_entity_storage</c> 拡張なしで失敗し、PCVR では特に通らない。
+    /// アンカーが作れないと「アンカー設定」も「位置固定」も完了できず、
+    /// 設定画面のドラフト (ワールド姿勢) のまま運用されて着脱のたびにずれていた。
+    /// そのため基準は部屋固定の参照フレームへ移した。
     /// </summary>
     public sealed class FoodPlacementService : IFoodPlacementService, IInitializable, ITickable, IDisposable
     {
-        private const int AnchorLoadAttempts = 3;
-        private const float AnchorLoadRetryDelaySeconds = 1.5f;
+        /// <summary>基準フレームが立ち上がるのを待つ上限 (秒)。</summary>
+        private const float ReferenceFrameWaitSeconds = 10f;
 
-        private readonly ISpatialAnchorBackend _spatialAnchorBackend;
+        private readonly IPlacementReferenceFrame _referenceFrame;
         private readonly IFoodPlacementStore _placementStore;
         private readonly CancellationTokenSource _lifetimeCancellation = new();
 
-        private FoodPlacementData _data;
         private Transform _foodPlacementRoot;
 
-        /// <summary>設定画面の配置モデルの姿勢。アンカーがある間はアンカー基準で持つ。</summary>
+        /// <summary>設定画面の配置モデルの姿勢。基準が立っている間は基準フレーム基準で持つ。</summary>
         private Pose _draftPose;
         private bool _hasDraftPose;
-        private bool _isDraftAnchorRelative;
+        private bool _isDraftFrameRelative;
 
         /// <summary>いま食品を出している置き場所の姿勢。意味は <see cref="_draftPose"/> と同じ。</summary>
         private Pose _activePose;
         private bool _hasActivePose;
-        private bool _isActiveAnchorRelative;
+        private bool _isActiveFrameRelative;
 
         public ReactiveProperty<Transform> FoodTransform { get; } = new();
         public ReactiveProperty<FoodPlacementState> State { get; } = new(FoodPlacementState.Unconfigured);
-        public ReactiveProperty<string> StatusMessage { get; } = new("Spatial Anchor is not configured.");
+        public ReactiveProperty<string> StatusMessage { get; } = new("Spatial placement is not configured.");
         public ReactiveProperty<bool> IsAnchorReady { get; } = new(false);
         public ReactiveProperty<bool> IsFoodPositionFixed { get; } = new(false);
         public ReactiveProperty<bool> IsConfigurationVisible { get; } = new(false);
@@ -50,10 +54,10 @@ namespace YummyVerse.Scripts.Model
         public ReactiveProperty<bool> IsPlacementConfigured { get; } = new(false);
 
         public FoodPlacementService(
-            ISpatialAnchorBackend spatialAnchorBackend,
+            IPlacementReferenceFrame referenceFrame,
             IFoodPlacementStore placementStore)
         {
-            _spatialAnchorBackend = spatialAnchorBackend;
+            _referenceFrame = referenceFrame;
             _placementStore = placementStore;
         }
 
@@ -63,25 +67,30 @@ namespace YummyVerse.Scripts.Model
         }
 
         /// <summary>
-        /// 置き場所を現在のアンカーに繋ぎ直し続ける。
-        /// アンカーは設定のやり直しや復元完了で GameObject ごと作り替わる。
-        /// 繋ぎ直しを怠ると、食品は「作られた当時のワールド座標」に取り残され、
-        /// 被り直しのたびに物理空間からずれていく。
+        /// 置き場所を現在の基準フレームに繋ぎ直し続ける。
+        /// 基準フレームは毎フレーム物理空間へ合わせ直されるので、その子で居続ける限り
+        /// 食品は現実の同じ場所に留まる。繋ぎ直しを怠ると取り残される。
         /// </summary>
         public void Tick()
         {
             if (!_hasActivePose) return;
 
-            if (_foodPlacementRoot == null)
+            var frame = _referenceFrame.Current;
+
+            // 基準が後から立ち上がったら、ワールドで持っていた暫定値をそこへ移す。
+            if (frame != null && !_isActiveFrameRelative)
             {
-                // 親アンカーごと破棄された場合はここに来る。現在のアンカーの下に作り直す。
                 ApplyPlacement();
                 return;
             }
 
-            var anchor = _spatialAnchorBackend.CurrentAnchorTransform;
-            if (ReferenceEquals(_foodPlacementRoot.parent, anchor)) return;
+            if (_foodPlacementRoot == null)
+            {
+                ApplyPlacement();
+                return;
+            }
 
+            if (ReferenceEquals(_foodPlacementRoot.parent, frame)) return;
             ApplyPlacement();
         }
 
@@ -94,39 +103,39 @@ namespace YummyVerse.Scripts.Model
                 State.Value = FoodPlacementState.Editing;
                 StatusMessage.Value = IsAnchorReady.Value
                     ? "Move or rotate the food model, then lock its position."
-                    : "Move or rotate the food model, then set the Spatial Anchor.";
+                    : "Move or rotate the food model, then set the placement origin.";
             }
             else if (!isVisible && !IsBusy.Value && IsFoodPositionFixed.Value)
             {
                 State.Value = FoodPlacementState.Ready;
-                StatusMessage.Value = "Food position is fixed to the Spatial Anchor.";
+                StatusMessage.Value = "Food position is fixed to the room.";
             }
         }
 
         /// <summary>
-        /// 設定用モデルのワールド姿勢を受け取る。受け取った時点でアンカー基準へ直す。
-        /// 「後で使うときに直す」では間に合わない。使うのは何分も後で、
-        /// その間に被り直しが挟まればワールド座標の意味が変わってしまう。
+        /// 設定用モデルのワールド姿勢を受け取る。受け取った時点で基準フレーム基準へ直す。
+        /// 「使うときに直す」では間に合わない。使うのは何分も後で、その間に
+        /// 被り直しが挟まればワールド座標の意味が変わってしまう。
         /// </summary>
         public void UpdateDraftPose(Pose pose)
         {
-            var anchor = _spatialAnchorBackend.CurrentAnchorTransform;
-            _isDraftAnchorRelative = anchor != null;
-            _draftPose = _isDraftAnchorRelative ? ToAnchorLocalPose(anchor, pose) : pose;
+            var frame = _referenceFrame.Current;
+            _isDraftFrameRelative = frame != null;
+            _draftPose = _isDraftFrameRelative ? ToFrameLocalPose(frame, pose) : pose;
             _hasDraftPose = true;
             RefreshPlacementConfigured();
         }
 
         /// <summary>
         /// 設定用モデルの最新の姿勢を、次に表示する食品の基準Transformへ反映する。
-        /// 永続化前でもチュートリアル食品をプレビューと同じ場所・回転に出せる。
+        /// 永続化前でもチュートリアル food をプレビューと同じ場所・回転に出せる。
         /// </summary>
         public bool TryActivateDraftPoseForFood()
         {
             if (_hasDraftPose)
             {
                 _activePose = _draftPose;
-                _isActiveAnchorRelative = _isDraftAnchorRelative;
+                _isActiveFrameRelative = _isDraftFrameRelative;
                 _hasActivePose = true;
             }
 
@@ -138,21 +147,15 @@ namespace YummyVerse.Scripts.Model
 
         public bool TryGetSuggestedDraftPose(out Pose pose)
         {
-            var anchor = _spatialAnchorBackend.CurrentAnchorTransform;
+            var frame = _referenceFrame.Current;
 
-            if (_hasDraftPose && TryResolveWorldPose(_draftPose, _isDraftAnchorRelative, anchor, out pose))
+            if (_hasDraftPose && TryResolveWorldPose(_draftPose, _isDraftFrameRelative, frame, out pose))
             {
                 return true;
             }
 
-            if (_hasActivePose && TryResolveWorldPose(_activePose, _isActiveAnchorRelative, anchor, out pose))
+            if (_hasActivePose && TryResolveWorldPose(_activePose, _isActiveFrameRelative, frame, out pose))
             {
-                return true;
-            }
-
-            if (anchor != null)
-            {
-                pose = new Pose(anchor.position, anchor.rotation);
                 return true;
             }
 
@@ -160,17 +163,14 @@ namespace YummyVerse.Scripts.Model
             return false;
         }
 
+        /// <summary>
+        /// 「配置の基準を用意する」操作。かつては Meta Spatial Anchor を作って保存していたが、
+        /// いまは部屋固定の基準フレームが立ち上がっているかを確認するだけでよい。
+        /// ここで待つのは、起動直後にガーディアン由来の基準がまだ来ていないことがあるため。
+        /// </summary>
         public async UniTask<bool> SetAnchorAtDraftAsync(CancellationToken cancellationToken)
         {
             if (!_hasDraftPose || IsBusy.Value) return false;
-
-            var currentAnchor = _spatialAnchorBackend.CurrentAnchorTransform;
-            if (!TryResolveWorldPose(_draftPose, _isDraftAnchorRelative, currentAnchor, out var draftWorldPose))
-            {
-                State.Value = FoodPlacementState.Error;
-                StatusMessage.Value = "The placement pose could not be resolved. Move the food model and retry.";
-                return false;
-            }
 
             using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
                 cancellationToken,
@@ -178,38 +178,39 @@ namespace YummyVerse.Scripts.Model
 
             IsBusy.Value = true;
             State.Value = FoodPlacementState.Saving;
-            StatusMessage.Value = "Saving Spatial Anchor...";
+            StatusMessage.Value = "Preparing the placement origin...";
 
             try
             {
-                var result = await _spatialAnchorBackend.ReplaceAsync(draftWorldPose, linkedCancellation.Token);
-                if (!result.Success)
+                if (!await WaitForReferenceFrameAsync(linkedCancellation.Token))
                 {
+                    IsAnchorReady.Value = false;
                     State.Value = FoodPlacementState.Error;
-                    StatusMessage.Value = result.ErrorMessage;
+                    StatusMessage.Value =
+                        "Could not establish a room-fixed origin. Set up the headset boundary (Guardian) and retry.";
                     return false;
                 }
 
-                // 新しいアンカーができた。下書きをその基準へ移し替えておく。
-                RebaseDraftOnCurrentAnchor(draftWorldPose);
+                // 基準が立った。ワールドで持っていた下書きをその基準へ移す。
+                RebaseDraftOnCurrentFrame();
 
                 IsAnchorReady.Value = true;
                 IsFoodPositionFixed.Value = false;
                 State.Value = FoodPlacementState.Editing;
-                StatusMessage.Value = "Anchor saved. Move or rotate the food model, then lock its position.";
+                StatusMessage.Value = "Origin ready. Move or rotate the food model, then lock its position.";
                 return true;
             }
             catch (OperationCanceledException)
             {
                 State.Value = FoodPlacementState.Error;
-                StatusMessage.Value = "Spatial Anchor setup was canceled. Open settings to retry.";
+                StatusMessage.Value = "Placement setup was canceled. Open settings to retry.";
                 throw;
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
                 State.Value = FoodPlacementState.Error;
-                StatusMessage.Value = $"Spatial Anchor setup failed: {exception.Message}";
+                StatusMessage.Value = $"Placement setup failed: {exception.Message}";
                 return false;
             }
             finally
@@ -220,10 +221,10 @@ namespace YummyVerse.Scripts.Model
 
         public async UniTask<bool> FixFoodPositionAtDraftAsync(CancellationToken cancellationToken)
         {
-            var anchor = _spatialAnchorBackend.CurrentAnchorTransform;
-            if (!_hasDraftPose || anchor == null || IsBusy.Value)
+            var frame = _referenceFrame.Current;
+            if (!_hasDraftPose || frame == null || IsBusy.Value)
             {
-                StatusMessage.Value = "Set the Spatial Anchor before locking the food position.";
+                StatusMessage.Value = "Set the placement origin before locking the food position.";
                 return false;
             }
 
@@ -235,14 +236,12 @@ namespace YummyVerse.Scripts.Model
             State.Value = FoodPlacementState.Saving;
             StatusMessage.Value = "Saving food position...";
 
-            var localPose = _isDraftAnchorRelative
-                ? _draftPose
-                : ToAnchorLocalPose(anchor, _draftPose);
+            var localPose = _isDraftFrameRelative ? _draftPose : ToFrameLocalPose(frame, _draftPose);
 
             var newData = new FoodPlacementData
             {
                 SchemaVersion = FoodPlacementData.CurrentSchemaVersion,
-                AnchorUuid = _spatialAnchorBackend.CurrentUuid.ToString("D"),
+                ReferenceFrame = _referenceFrame.Kind,
                 HasFoodPose = true,
                 LocalPosition = localPose.position,
                 LocalRotation = NormalizeRotation(localPose.rotation)
@@ -252,36 +251,32 @@ namespace YummyVerse.Scripts.Model
             {
                 linkedCancellation.Token.ThrowIfCancellationRequested();
                 _placementStore.Save(newData);
-                _data = newData;
 
                 _draftPose = localPose;
-                _isDraftAnchorRelative = true;
+                _isDraftFrameRelative = true;
                 _activePose = localPose;
-                _isActiveAnchorRelative = true;
+                _isActiveFrameRelative = true;
                 _hasActivePose = true;
                 ApplyPlacement();
 
-                await _spatialAnchorBackend.CommitReplacementAsync();
                 IsAnchorReady.Value = true;
                 IsFoodPositionFixed.Value = true;
                 State.Value = FoodPlacementState.Ready;
-                StatusMessage.Value = "Food position is fixed to the Spatial Anchor.";
+                StatusMessage.Value = "Food position is fixed to the room.";
                 Debug.Log(
-                    $"[FoodPlacement] 食品位置を Spatial Anchor {newData.AnchorUuid} に固定しました "
-                    + $"(local pos {localPose.position}).");
+                    $"[FoodPlacement] 食品位置を基準フレーム '{newData.ReferenceFrame}' に固定しました "
+                    + $"(local pos {localPose.position} / world pos {FoodTransform.Value?.position}).");
                 return true;
             }
             catch (OperationCanceledException)
             {
-                await _spatialAnchorBackend.RollbackReplacementAsync();
-                RestoreStatusAfterFailedCommit("Food position was not changed.");
+                RestoreStatusAfterFailedSave("Food position was not changed.");
                 throw;
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                await _spatialAnchorBackend.RollbackReplacementAsync();
-                RestoreStatusAfterFailedCommit($"Could not save the food position: {exception.Message}");
+                RestoreStatusAfterFailedSave($"Could not save the food position: {exception.Message}");
                 return false;
             }
             finally
@@ -308,47 +303,51 @@ namespace YummyVerse.Scripts.Model
 
         private async UniTask RestoreAsync(CancellationToken cancellationToken)
         {
-            if (!_placementStore.TryLoad(out _data) || !_data.TryGetAnchorUuid(out var uuid))
+            if (!_placementStore.TryLoad(out var data))
             {
                 State.Value = FoodPlacementState.Unconfigured;
-                StatusMessage.Value = "Spatial Anchor is not configured.";
+                StatusMessage.Value = "Spatial placement is not configured.";
                 return;
             }
 
-            // 復元は Spatial Anchor の localize 待ちで数秒かかる。IsBusy を見ている側は
-            // この間「表示位置が決まっていない」ではなく「決着していない」として扱うこと。
+            // 基準フレームの立ち上がりを待つ。IsBusy を見ている側はこの間
+            // 「表示位置が無い」ではなく「決着していない」として扱うこと。
             IsBusy.Value = true;
             State.Value = FoodPlacementState.Loading;
-            StatusMessage.Value = "Loading saved Spatial Anchor...";
+            StatusMessage.Value = "Waiting for the room-fixed origin...";
 
             try
             {
-                var result = await LoadAnchorWithRetryAsync(uuid, cancellationToken);
-                if (!result.Success)
+                if (!await WaitForReferenceFrameAsync(cancellationToken))
                 {
-                    Debug.LogWarning($"[FoodPlacement] {result.ErrorMessage}");
                     State.Value = FoodPlacementState.Error;
-                    StatusMessage.Value = $"{result.ErrorMessage} Open settings to configure it again.";
+                    StatusMessage.Value =
+                        "Could not establish a room-fixed origin. Set up the headset boundary (Guardian) and configure the placement again.";
+                    Debug.LogWarning("[FoodPlacement] 部屋基準が立ち上がらず、保存済みの配置を復元できませんでした。");
                     return;
                 }
 
-                IsAnchorReady.Value = true;
-                if (!_data.HasFoodPose)
+                if (!data.MatchesFrame(_referenceFrame.Kind))
                 {
-                    State.Value = FoodPlacementState.Editing;
-                    StatusMessage.Value = "Move or rotate the food model, then lock its position.";
+                    State.Value = FoodPlacementState.Unconfigured;
+                    StatusMessage.Value = "The saved placement uses a different origin. Configure it again.";
+                    Debug.LogWarning(
+                        $"[FoodPlacement] 保存済みの配置は基準 '{data.ReferenceFrame}' で測られており、"
+                        + $"いまの基準 '{_referenceFrame.Kind}' では使えません。設定し直してください。");
                     return;
                 }
 
-                _activePose = new Pose(_data.LocalPosition, NormalizeRotation(_data.LocalRotation));
-                _isActiveAnchorRelative = true;
+                _activePose = new Pose(data.LocalPosition, NormalizeRotation(data.LocalRotation));
+                _isActiveFrameRelative = true;
                 _hasActivePose = true;
                 ApplyPlacement();
-                Debug.Log(
-                    $"[FoodPlacement] Spatial Anchor {_data.AnchorUuid} を復元し、"
-                    + $"食品位置を貼り直しました (local pos {_data.LocalPosition}).");
 
+                IsAnchorReady.Value = true;
                 IsFoodPositionFixed.Value = true;
+                Debug.Log(
+                    $"[FoodPlacement] 保存済みの配置を復元しました (基準 '{data.ReferenceFrame}' / "
+                    + $"local pos {data.LocalPosition} / world pos {FoodTransform.Value?.position}).");
+
                 if (IsConfigurationVisible.Value)
                 {
                     State.Value = FoodPlacementState.Editing;
@@ -357,7 +356,7 @@ namespace YummyVerse.Scripts.Model
                 else
                 {
                     State.Value = FoodPlacementState.Ready;
-                    StatusMessage.Value = "Food position restored from Spatial Anchor.";
+                    StatusMessage.Value = "Food position restored.";
                 }
             }
             catch (OperationCanceledException)
@@ -371,61 +370,48 @@ namespace YummyVerse.Scripts.Model
         }
 
         /// <summary>
-        /// 起動直後は空間データの読み込みが終わっておらず、保存済みアンカーの localize が
-        /// 素直に失敗することがある。ここで一度で諦めると「設定したのに食品が出ない」に見える。
-        /// 数回だけ間を空けて粘り、それでも駄目なときにだけ設定し直しを促す。
+        /// 基準フレームが使えるようになるまで待つ。起動直後やガーディアン取得前は
+        /// 数秒かかることがあるので、一度で諦めない。
         /// </summary>
-        private async UniTask<SpatialAnchorBackendResult> LoadAnchorWithRetryAsync(
-            Guid uuid,
-            CancellationToken cancellationToken)
+        private async UniTask<bool> WaitForReferenceFrameAsync(CancellationToken cancellationToken)
         {
-            var result = default(SpatialAnchorBackendResult);
+            if (_referenceFrame.Current != null) return true;
 
-            for (var attempt = 1; attempt <= AnchorLoadAttempts; attempt++)
+            // PlayerLoop が回らない実行 (エディタのテストなど) では待てない。
+            if (!Application.isPlaying) return false;
+
+            var deadline = Time.unscaledTime + ReferenceFrameWaitSeconds;
+            while (Time.unscaledTime < deadline)
             {
-                result = await _spatialAnchorBackend.LoadAsync(uuid, cancellationToken);
-                if (result.Success) return result;
-
-                if (attempt == AnchorLoadAttempts) break;
-
-                // PlayerLoop が回らない実行 (エディタのテストなど) では待てない。粘るのは実行中だけ。
-                if (!Application.isPlaying) break;
-
-                Debug.LogWarning(
-                    $"[FoodPlacement] Spatial Anchor の読み込みに失敗しました "
-                    + $"({attempt}/{AnchorLoadAttempts}): {result.ErrorMessage} 少し待って再試行します。");
-                StatusMessage.Value = $"Retrying to load the saved Spatial Anchor ({attempt}/{AnchorLoadAttempts})...";
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(AnchorLoadRetryDelaySeconds),
-                    cancellationToken: cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+                if (_referenceFrame.Current != null) return true;
             }
 
-            return result;
+            return false;
         }
 
         /// <summary>
-        /// 置き場所 Transform を現在のアンカーの子として置き直す。
-        /// アンカーの子にしておけば、ランタイムがアンカーを物理空間へ合わせ直すたびに
-        /// 食品も一緒に付いていく。ここでワールド姿勢を焼き付けてはいけない。
+        /// 置き場所 Transform を現在の基準フレームの子として置き直す。
+        /// ここでワールド姿勢を焼き付けてはいけない。
         /// </summary>
         private void ApplyPlacement()
         {
             if (!_hasActivePose) return;
 
-            var anchor = _spatialAnchorBackend.CurrentAnchorTransform;
+            var frame = _referenceFrame.Current;
 
-            if (_isActiveAnchorRelative && anchor == null)
+            if (_isActiveFrameRelative && frame == null)
             {
-                // アンカーがまだ (もう) 無い。ここでローカル姿勢をワールドとして置くと
-                // 現実と無関係な場所に食品が出る。解決できるようになるまで作らない。
+                // 基準がまだ (もう) 無い。ローカル姿勢をワールドとして置くと
+                // 現実と無関係な場所に食品が出る。解決できるまで作らない。
                 return;
             }
 
-            // アンカーが後から用意された場合、ワールドで持っていた置き場所をここで基準へ移す。
-            if (anchor != null && !_isActiveAnchorRelative)
+            if (frame != null && !_isActiveFrameRelative)
             {
-                _activePose = ToAnchorLocalPose(anchor, _activePose);
-                _isActiveAnchorRelative = true;
+                _activePose = ToFrameLocalPose(frame, _activePose);
+                _isActiveFrameRelative = true;
             }
 
             if (_foodPlacementRoot == null)
@@ -433,19 +419,19 @@ namespace YummyVerse.Scripts.Model
                 _foodPlacementRoot = new GameObject("Food Placement Root").transform;
             }
 
-            if (anchor != null)
+            if (frame != null)
             {
-                if (!ReferenceEquals(_foodPlacementRoot.parent, anchor))
+                if (!ReferenceEquals(_foodPlacementRoot.parent, frame))
                 {
-                    _foodPlacementRoot.SetParent(anchor, false);
+                    _foodPlacementRoot.SetParent(frame, false);
                 }
                 _foodPlacementRoot.localPosition = _activePose.position;
                 _foodPlacementRoot.localRotation = NormalizeRotation(_activePose.rotation);
             }
             else
             {
-                // アンカー未設定。設定画面で置いた場所をそのまま使う暫定表示で、
-                // 被り直しをまたぐと現実に対してずれる。設定を保存してもらうまでの繋ぎ。
+                // 基準が無い暫定表示。被り直しをまたぐと現実に対してずれる。
+                // 設定を保存してもらうまでの繋ぎでしかない。
                 if (_foodPlacementRoot.parent != null)
                 {
                     _foodPlacementRoot.SetParent(null, false);
@@ -469,13 +455,13 @@ namespace YummyVerse.Scripts.Model
             RefreshPlacementConfigured();
         }
 
-        private void RebaseDraftOnCurrentAnchor(Pose draftWorldPose)
+        private void RebaseDraftOnCurrentFrame()
         {
-            var anchor = _spatialAnchorBackend.CurrentAnchorTransform;
-            if (anchor == null) return;
+            var frame = _referenceFrame.Current;
+            if (frame == null || _isDraftFrameRelative) return;
 
-            _draftPose = ToAnchorLocalPose(anchor, draftWorldPose);
-            _isDraftAnchorRelative = true;
+            _draftPose = ToFrameLocalPose(frame, _draftPose);
+            _isDraftFrameRelative = true;
         }
 
         private void ClearFoodTransform()
@@ -496,10 +482,10 @@ namespace YummyVerse.Scripts.Model
             _foodPlacementRoot = null;
         }
 
-        private void RestoreStatusAfterFailedCommit(string message)
+        private void RestoreStatusAfterFailedSave(string message)
         {
             var hasPreviousPlacement = FoodTransform.Value != null;
-            IsAnchorReady.Value = _spatialAnchorBackend.CurrentAnchorTransform != null;
+            IsAnchorReady.Value = _referenceFrame.Current != null;
             IsFoodPositionFixed.Value = hasPreviousPlacement;
             State.Value = FoodPlacementState.Error;
             StatusMessage.Value = hasPreviousPlacement
@@ -511,47 +497,46 @@ namespace YummyVerse.Scripts.Model
         /// 「食べ物を出せる表示先が今あるか」を再評価する。
         /// ここが false のまま食べ物を生成すると FoodView が表示先を持てず、
         /// モデルは読み込まれているのに何も見えない状態になる。
-        /// 保存済み設定があっても Spatial Anchor の復元に失敗すれば false のままである点に注意。
         /// </summary>
         private void RefreshPlacementConfigured()
         {
             IsPlacementConfigured.Value = _hasDraftPose || FoodTransform.Value != null;
         }
 
-        /// <summary>ワールド姿勢をアンカー基準へ直す。スケールに依存しない素の相対姿勢を使う。</summary>
-        private static Pose ToAnchorLocalPose(Transform anchor, Pose worldPose)
+        /// <summary>ワールド姿勢を基準フレーム基準へ直す。スケールに依存しない素の相対姿勢を使う。</summary>
+        private static Pose ToFrameLocalPose(Transform frame, Pose worldPose)
         {
-            var inverseAnchorRotation = Quaternion.Inverse(anchor.rotation);
+            var inverseFrameRotation = Quaternion.Inverse(frame.rotation);
             return new Pose(
-                inverseAnchorRotation * (worldPose.position - anchor.position),
-                NormalizeRotation(inverseAnchorRotation * worldPose.rotation));
+                inverseFrameRotation * (worldPose.position - frame.position),
+                NormalizeRotation(inverseFrameRotation * worldPose.rotation));
         }
 
         /// <summary>
-        /// 保持している姿勢をワールドへ戻す。アンカー基準なのにアンカーが無いときは
+        /// 保持している姿勢をワールドへ戻す。基準フレーム基準なのに基準が無いときは
         /// 意味のある値を作れないので false を返す。ローカル値をワールドとして使い回さない。
         /// </summary>
         private static bool TryResolveWorldPose(
             Pose pose,
-            bool isAnchorRelative,
-            Transform anchor,
+            bool isFrameRelative,
+            Transform frame,
             out Pose worldPose)
         {
-            if (!isAnchorRelative)
+            if (!isFrameRelative)
             {
                 worldPose = pose;
                 return true;
             }
 
-            if (anchor == null)
+            if (frame == null)
             {
                 worldPose = default;
                 return false;
             }
 
             worldPose = new Pose(
-                anchor.position + anchor.rotation * pose.position,
-                NormalizeRotation(anchor.rotation * pose.rotation));
+                frame.position + frame.rotation * pose.position,
+                NormalizeRotation(frame.rotation * pose.rotation));
             return true;
         }
 

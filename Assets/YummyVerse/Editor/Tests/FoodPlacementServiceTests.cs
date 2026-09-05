@@ -1,7 +1,5 @@
-using System;
-using System.Threading;
-using Cysharp.Threading.Tasks;
 using NUnit.Framework;
+using R3;
 using UnityEngine;
 using YummyVerse.Scripts.Model;
 using YummyVerse.Scripts.Model.Interface;
@@ -11,13 +9,15 @@ namespace YummyVerse.Editor.Tests
 {
     public class FoodPlacementServiceTests
     {
+        private const string FrameKind = "stage";
+
         [Test]
-        public void ActivatingDraftUsesPlacementModelWorldPositionAndRotation()
+        public void ActivatingDraftWithoutAReferenceFrameUsesTheWorldPose()
         {
-            var service = new FoodPlacementService(new StubSpatialAnchorBackend(), new EmptyPlacementStore());
-            var pose = new Pose(
-                new Vector3(1.25f, 0.8f, -2.5f),
-                Quaternion.Euler(15f, 120f, 35f));
+            // 基準がまだ立っていない間の暫定表示。ここは着脱でずれる前提の繋ぎでしかない。
+            var frame = new StubReferenceFrame(null);
+            var service = new FoodPlacementService(frame, new EmptyPlacementStore());
+            var pose = new Pose(new Vector3(1.25f, 0.8f, -2.5f), Quaternion.Euler(15f, 120f, 35f));
 
             service.UpdateDraftPose(pose);
 
@@ -33,7 +33,7 @@ namespace YummyVerse.Editor.Tests
         [Test]
         public void ActivatingWithoutDraftOrSavedPlacementReturnsFalse()
         {
-            var service = new FoodPlacementService(new StubSpatialAnchorBackend(), new EmptyPlacementStore());
+            var service = new FoodPlacementService(new StubReferenceFrame(null), new EmptyPlacementStore());
 
             Assert.That(service.TryActivateDraftPoseForFood(), Is.False);
 
@@ -43,7 +43,7 @@ namespace YummyVerse.Editor.Tests
         [Test]
         public void PlacementIsUnconfiguredUntilDraftPoseIsSet()
         {
-            var service = new FoodPlacementService(new StubSpatialAnchorBackend(), new EmptyPlacementStore());
+            var service = new FoodPlacementService(new StubReferenceFrame(null), new EmptyPlacementStore());
             service.Initialize();
 
             // 表示先が無いまま食べ物を出すと、モデルは読み込まれても画面には何も出ない。
@@ -56,50 +56,17 @@ namespace YummyVerse.Editor.Tests
             service.Dispose();
         }
 
-        [Test]
-        public void PlacementBecomesConfiguredWhenSavedAnchorIsRestored()
-        {
-            var anchor = new GameObject("Test Anchor").transform;
-            var service = new FoodPlacementService(
-                new ScriptedSpatialAnchorBackend(SpatialAnchorBackendResult.Succeeded(Guid.NewGuid(), anchor), anchor),
-                new SavedPlacementStore());
-
-            service.Initialize();
-
-            Assert.That(service.IsBusy.Value, Is.False, "復元は同期的に完了しているはず");
-            Assert.That(service.IsPlacementConfigured.Value, Is.True);
-
-            service.Dispose();
-            UnityEngine.Object.DestroyImmediate(anchor.gameObject);
-        }
-
-        [Test]
-        public void PlacementStaysUnconfiguredWhenSavedAnchorCannotBeRestored()
-        {
-            var service = new FoodPlacementService(
-                new ScriptedSpatialAnchorBackend(SpatialAnchorBackendResult.Failed("anchor not found"), null),
-                new SavedPlacementStore());
-
-            service.Initialize();
-
-            // 保存済み設定があってもAnchorをlocalizeできなければ表示先は無い。
-            // ここをtrueに倒すと、案内も出ないまま食べ物だけが見えない状態になる。
-            Assert.That(service.IsPlacementConfigured.Value, Is.False);
-
-            service.Dispose();
-        }
-
         /// <summary>
-        /// 被り直すと Spatial Anchor はランタイムによって物理空間へ置き直される
-        /// (= Transform が動く)。食品はそれに付いていかなければ現実に対してずれる。
+        /// 被り直すとトラッキング原点が張り直され、部屋基準の Transform はそれを打ち消すように動く。
+        /// 食品がその子で居続けている限り、現実の同じ場所に留まる。
         /// </summary>
         [Test]
-        public void FoodFollowsAnchorWhenTheAnchorIsRelocated()
+        public void FoodFollowsTheReferenceFrameWhenItMoves()
         {
-            var anchor = new GameObject("Test Anchor").transform;
-            anchor.SetPositionAndRotation(new Vector3(1f, 0f, 0f), Quaternion.identity);
+            var frameTransform = new GameObject("Test Room Frame").transform;
+            frameTransform.SetPositionAndRotation(new Vector3(1f, 0f, 0f), Quaternion.identity);
             var service = new FoodPlacementService(
-                new ScriptedSpatialAnchorBackend(SpatialAnchorBackendResult.Failed("not used"), anchor),
+                new StubReferenceFrame(frameTransform),
                 new EmptyPlacementStore());
 
             var draft = new Pose(new Vector3(1.5f, 0.9f, 0.2f), Quaternion.Euler(0f, 45f, 0f));
@@ -107,94 +74,130 @@ namespace YummyVerse.Editor.Tests
             Assert.That(service.TryActivateDraftPoseForFood(), Is.True);
 
             var foodTransform = service.FoodTransform.Value;
-            var localOffset = draft.position - anchor.position;
+            var localOffset = draft.position - frameTransform.position;
 
-            // 再センタリング相当。アンカーが動いた分だけ食品も動いていること。
-            anchor.SetPositionAndRotation(new Vector3(-2f, 0.3f, 4f), Quaternion.Euler(0f, 90f, 0f));
+            // 再センタリング相当。基準が動いた分だけ食品も動いていること。
+            frameTransform.SetPositionAndRotation(new Vector3(-2f, 0.3f, 4f), Quaternion.Euler(0f, 90f, 0f));
 
-            var expected = anchor.position + anchor.rotation * localOffset;
+            var expected = frameTransform.position + frameTransform.rotation * localOffset;
             Assert.That(Vector3.Distance(foodTransform.position, expected), Is.LessThan(0.0001f));
 
             service.Dispose();
-            UnityEngine.Object.DestroyImmediate(anchor.gameObject);
+            UnityEngine.Object.DestroyImmediate(frameTransform.gameObject);
         }
 
         /// <summary>
         /// 食品を出すたびに下書きが再適用される。ここでワールド座標を焼き直すと、
-        /// 被り直しをまたいだ2皿目から現実に対してずれる (今回の不具合)。
+        /// 被り直しをまたいだ2皿目から現実に対してずれる。
         /// </summary>
         [Test]
-        public void ReactivatingDraftAfterRelocationKeepsTheAnchorRelativePlacement()
+        public void ReactivatingDraftAfterTheFrameMovedKeepsTheRelativePlacement()
         {
-            var anchor = new GameObject("Test Anchor").transform;
+            var frameTransform = new GameObject("Test Room Frame").transform;
             var service = new FoodPlacementService(
-                new ScriptedSpatialAnchorBackend(SpatialAnchorBackendResult.Failed("not used"), anchor),
+                new StubReferenceFrame(frameTransform),
                 new EmptyPlacementStore());
 
             var draft = new Pose(new Vector3(0.3f, -0.1f, 0.7f), Quaternion.Euler(0f, 20f, 0f));
             service.UpdateDraftPose(draft);
             Assert.That(service.TryActivateDraftPoseForFood(), Is.True);
 
-            anchor.SetPositionAndRotation(new Vector3(3f, 1f, -1f), Quaternion.Euler(0f, 180f, 0f));
+            frameTransform.SetPositionAndRotation(new Vector3(3f, 1f, -1f), Quaternion.Euler(0f, 180f, 0f));
 
-            // 2皿目。下書きはアンカー基準で保たれているはず。
+            // 2皿目。下書きは基準フレーム基準で保たれているはず。
             Assert.That(service.TryActivateDraftPoseForFood(), Is.True);
             var foodTransform = service.FoodTransform.Value;
 
-            var expected = anchor.position + anchor.rotation * draft.position;
+            var expected = frameTransform.position + frameTransform.rotation * draft.position;
             Assert.That(Vector3.Distance(foodTransform.position, expected), Is.LessThan(0.0001f));
-            Assert.That(Quaternion.Angle(foodTransform.rotation, anchor.rotation * draft.rotation), Is.LessThan(0.01f));
+            Assert.That(
+                Quaternion.Angle(foodTransform.rotation, frameTransform.rotation * draft.rotation),
+                Is.LessThan(0.01f));
 
             service.Dispose();
-            UnityEngine.Object.DestroyImmediate(anchor.gameObject);
+            UnityEngine.Object.DestroyImmediate(frameTransform.gameObject);
         }
 
-        private sealed class SavedPlacementStore : IFoodPlacementStore
+        /// <summary>
+        /// 基準が後から立ち上がった場合、暫定のワールド姿勢はその時点で基準基準へ移り、
+        /// 以後は基準に追従しなければならない。
+        /// </summary>
+        [Test]
+        public void PlacementRebasesOnceTheReferenceFrameAppears()
         {
-            public bool TryLoad(out FoodPlacementData data)
-            {
-                data = new FoodPlacementData
-                {
-                    SchemaVersion = FoodPlacementData.CurrentSchemaVersion,
-                    AnchorUuid = Guid.NewGuid().ToString("D"),
-                    HasFoodPose = true,
-                    LocalPosition = Vector3.zero,
-                    LocalRotation = Quaternion.identity
-                };
-                return true;
-            }
+            var frame = new StubReferenceFrame(null);
+            var service = new FoodPlacementService(frame, new EmptyPlacementStore());
 
-            public void Save(FoodPlacementData data)
-            {
-            }
+            var draft = new Pose(new Vector3(0.5f, 1f, 2f), Quaternion.identity);
+            service.UpdateDraftPose(draft);
+            Assert.That(service.TryActivateDraftPoseForFood(), Is.True);
+
+            var frameTransform = new GameObject("Test Room Frame").transform;
+            frame.Current = frameTransform;
+            service.Tick();
+
+            var foodTransform = service.FoodTransform.Value;
+            Assert.That(ReferenceEquals(foodTransform.parent, frameTransform), Is.True, "基準の子になっていること");
+            Assert.That(Vector3.Distance(foodTransform.position, draft.position), Is.LessThan(0.0001f));
+
+            frameTransform.position = new Vector3(10f, 0f, 0f);
+            Assert.That(
+                Vector3.Distance(foodTransform.position, draft.position + new Vector3(10f, 0f, 0f)),
+                Is.LessThan(0.0001f),
+                "基準に移った後は基準に追従すること");
+
+            service.Dispose();
+            UnityEngine.Object.DestroyImmediate(frameTransform.gameObject);
         }
 
-        /// <summary>LoadAsync の結果を指定できるバックエンド。復元成功・失敗の両方を再現する。</summary>
-        private sealed class ScriptedSpatialAnchorBackend : ISpatialAnchorBackend
+        /// <summary>
+        /// 別の基準で測った保存値を今の基準に当てはめると、現実と無関係な場所に食品が出る。
+        /// 読み捨てて設定し直させるのが正しい。
+        /// </summary>
+        [Test]
+        public void SavedPlacementMeasuredAgainstAnotherFrameIsRejected()
         {
-            private readonly SpatialAnchorBackendResult _loadResult;
-
-            public ScriptedSpatialAnchorBackend(SpatialAnchorBackendResult loadResult, Transform anchorTransform)
+            var data = new FoodPlacementData
             {
-                _loadResult = loadResult;
-                CurrentAnchorTransform = anchorTransform;
+                SchemaVersion = FoodPlacementData.CurrentSchemaVersion,
+                ReferenceFrame = "some-other-frame",
+                HasFoodPose = true,
+                LocalPosition = Vector3.zero,
+                LocalRotation = Quaternion.identity
+            };
+
+            Assert.That(data.IsValid(), Is.True);
+            Assert.That(data.MatchesFrame(FrameKind), Is.False);
+        }
+
+        [Test]
+        public void PlacementSavedByAnOlderSchemaIsRejected()
+        {
+            // v1 は Spatial Anchor 基準。今の基準では意味を持たない。
+            var data = new FoodPlacementData
+            {
+                SchemaVersion = 1,
+                ReferenceFrame = FrameKind,
+                HasFoodPose = true,
+                LocalPosition = Vector3.zero,
+                LocalRotation = Quaternion.identity
+            };
+
+            Assert.That(data.IsValid(), Is.False);
+        }
+
+        private sealed class StubReferenceFrame : IPlacementReferenceFrame
+        {
+            private readonly ReactiveProperty<bool> _isReady = new(false);
+
+            public StubReferenceFrame(Transform current)
+            {
+                Current = current;
             }
 
-            public Guid CurrentUuid => Guid.Empty;
-            public Transform CurrentAnchorTransform { get; }
-
-            public UniTask<SpatialAnchorBackendResult> LoadAsync(
-                Guid uuid,
-                CancellationToken cancellationToken) =>
-                UniTask.FromResult(_loadResult);
-
-            public UniTask<SpatialAnchorBackendResult> ReplaceAsync(
-                Pose pose,
-                CancellationToken cancellationToken) =>
-                UniTask.FromResult(SpatialAnchorBackendResult.Failed("not used"));
-
-            public UniTask CommitReplacementAsync() => UniTask.CompletedTask;
-            public UniTask RollbackReplacementAsync() => UniTask.CompletedTask;
+            public Transform Current { get; set; }
+            public ReadOnlyReactiveProperty<bool> IsReady => _isReady;
+            public string Kind => FrameKind;
         }
 
         private sealed class EmptyPlacementStore : IFoodPlacementStore
@@ -208,25 +211,6 @@ namespace YummyVerse.Editor.Tests
             public void Save(FoodPlacementData data)
             {
             }
-        }
-
-        private sealed class StubSpatialAnchorBackend : ISpatialAnchorBackend
-        {
-            public Guid CurrentUuid => Guid.Empty;
-            public Transform CurrentAnchorTransform => null;
-
-            public UniTask<SpatialAnchorBackendResult> LoadAsync(
-                Guid uuid,
-                CancellationToken cancellationToken) =>
-                UniTask.FromResult(SpatialAnchorBackendResult.Failed("not used"));
-
-            public UniTask<SpatialAnchorBackendResult> ReplaceAsync(
-                Pose pose,
-                CancellationToken cancellationToken) =>
-                UniTask.FromResult(SpatialAnchorBackendResult.Failed("not used"));
-
-            public UniTask CommitReplacementAsync() => UniTask.CompletedTask;
-            public UniTask RollbackReplacementAsync() => UniTask.CompletedTask;
         }
     }
 }
