@@ -327,7 +327,7 @@ namespace YummyVerse.Editor
             SetField(config, "chewingCalibrationNoiseMessage",
                 Str(table, "S1.ChewingCalibrationNoise", "口を閉じて動かさないでください"));
             SetField(config, "chewingCalibrationChewMessage",
-                Str(table, "S1.ChewingCalibrationChew", "10回嚙んでください"));
+                Str(table, "S1.ChewingCalibrationChew", "10回かんでください"));
             SetField(config, "chewingCalibrationMeasuringMessage",
                 Str(table, "S1.ChewingCalibrationMeasuring", "計測中..."));
             SetField(config, "chewingCalibrationCountdownSeconds", 5);
