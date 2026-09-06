@@ -47,7 +47,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 3153059840
-    m_Localized: "試しにりんごを食べてみましょう。\nAボタンを押してください。"
+    m_Localized: "まずはポテトチップスを食べてみましょう。\nAボタンを押してください。"
     m_Metadata:
       m_Items: []
   - m_Id: 3509575680
@@ -103,11 +103,11 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 5229240322
-    m_Localized: "小さく歯をカチカチしてください"
+    m_Localized: "口を閉じて動かさないでください"
     m_Metadata:
       m_Items: []
   - m_Id: 5229240323
-    m_Localized: "奥歯でちゃんと噛みしめてください"
+    m_Localized: "10回嚙んでください"
     m_Metadata:
       m_Items: []
   - m_Id: 5229240324

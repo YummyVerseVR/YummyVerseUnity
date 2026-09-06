@@ -214,7 +214,7 @@ namespace YummyVerse.Editor
             // --- S6': 前菜の案内 (食品は次の S8 の指示と同時に提供する) ---
             var s6d = Narration(
                 "Steps/Step_S6d_Appetizer", "S6'",
-                Str(table, "S6d", "まずはリンゴを食べてみましょう。\nAボタンを押してください。"),
+                Str(table, "S6d", "まずはポテトチップスを食べてみましょう。\nAボタンを押してください。"),
                 conditions.Button);
             SetEnum(s6d, "onCompletedCommand", GameCommandId.None);
             SetField(s6d, "skippableOnRepeat", true);
@@ -325,9 +325,9 @@ namespace YummyVerse.Editor
             // S1 の直後、S2「ようこそ」の手前に挟まる咀嚼計の較正案内。
             // 各案内はカウントダウンを伴い、0 になった時点で測定フェーズが始まる (仕様書 §9.2)。
             SetField(config, "chewingCalibrationNoiseMessage",
-                Str(table, "S1.ChewingCalibrationNoise", "小さく歯をカチカチしてください"));
+                Str(table, "S1.ChewingCalibrationNoise", "口を閉じて動かさないでください"));
             SetField(config, "chewingCalibrationChewMessage",
-                Str(table, "S1.ChewingCalibrationChew", "奥歯でちゃんと噛みしめてください"));
+                Str(table, "S1.ChewingCalibrationChew", "10回嚙んでください"));
             SetField(config, "chewingCalibrationMeasuringMessage",
                 Str(table, "S1.ChewingCalibrationMeasuring", "計測中..."));
             SetField(config, "chewingCalibrationCountdownSeconds", 5);

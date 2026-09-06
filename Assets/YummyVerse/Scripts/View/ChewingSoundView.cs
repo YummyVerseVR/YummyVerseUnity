@@ -1,6 +1,7 @@
 using R3;
 using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;
+using YummyVerse.Scripts.Model.Struct;
 using YummyVerse.Scripts.Model.Struct.SO;
 using YummyVerse.Scripts.ViewModel.Interface;
 using Zenject;
@@ -8,7 +9,11 @@ using Zenject;
 namespace YummyVerse.Scripts.View
 {
     /// <summary>
-    /// 咀嚼計の開閉イベントで、表示中の食品の咀嚼音を鳴らす。
+    /// 咀嚼計の開閉イベントと、食べ物を1回すくったタイミングで、表示中の食品の咀嚼音を鳴らす。
+    ///
+    /// すくいでも鳴らすのは、咀嚼計が繋がっていない展示でも口に運ぶ手応えを返すため。
+    /// 経路ごとに鳴らし方を変えると重なったときの挙動が読みにくくなるので、
+    /// どちらも同じ「頭から鳴らし直す」1つの入口に集約する。
     ///
     /// プロトコル v1 では OPEN と CLOSED を区別せず、どちらも「1回噛んだ」として同じ音を鳴らす。
     /// 再生途中に次のイベントが来たら重ねずに頭から鳴らし直す。噛むテンポと音のテンポを
@@ -21,6 +26,7 @@ namespace YummyVerse.Scripts.View
     public class ChewingSoundView : MonoBehaviour
     {
         private IChewingSensorService _sensor;
+        private IGameEventBus _gameEventBus;
         private IFoodViewModel _foodViewModel;
         private ChewingSensorConfig _config;
         private AudioSource _audioSource;
@@ -33,9 +39,11 @@ namespace YummyVerse.Scripts.View
 
         [Inject]
         public void Construct(
-            IChewingSensorService sensor, IFoodViewModel foodViewModel, ChewingSensorConfig config)
+            IChewingSensorService sensor, IGameEventBus gameEventBus,
+            IFoodViewModel foodViewModel, ChewingSensorConfig config)
         {
             _sensor = sensor;
+            _gameEventBus = gameEventBus;
             _foodViewModel = foodViewModel;
             _config = config;
         }
@@ -63,6 +71,10 @@ namespace YummyVerse.Scripts.View
             _foodViewModel.chewSound.Subscribe(SetFoodChewSound).AddTo(this);
 
             _sensor.OnMouthEvent.Subscribe(_ => PlayFromStart()).AddTo(this);
+
+            // すくった瞬間にも1回噛んだぶんの音を返す。
+            _gameEventBus.GetStream(GameEventId.FoodScooped)
+                .Subscribe(_ => PlayFromStart()).AddTo(this);
         }
 
         private void SetFoodChewSound(AudioClip clip)
