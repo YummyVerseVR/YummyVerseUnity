@@ -57,4 +57,3 @@ namespace YummyVerse.Editor.Tests
         }
     }
 }
-

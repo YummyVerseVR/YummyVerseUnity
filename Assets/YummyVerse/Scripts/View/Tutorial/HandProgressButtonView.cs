@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using YummyVerse.Scripts.Infrastructure;
 using YummyVerse.Scripts.Presentation;
-using YummyVerse.Scripts.ViewModel.Interface;
+using YummyVerse.Scripts.View.UI;
 using YummyVerse.Scripts.ViewModel.Tutorial;
 using Zenject;
 
@@ -15,16 +15,17 @@ namespace YummyVerse.Scripts.View.Tutorial
     {
         private TutorialContext _context;
         private InputLayer _input;
-        private IConfigUIViewModel _settings;
+        private ConfigUIView _settings;
         private GameObject _root;
         private TextMeshProUGUI _label;
         private bool _lastVisible;
         [Inject]
-        public void Construct(TutorialContext context, InputLayer input, IConfigUIViewModel settings)
-        { _context = context; _input = input; _settings = settings; }
+        public void Construct(TutorialContext context, InputLayer input)
+        { _context = context; _input = input; }
 
         private void Start()
         {
+            _settings = FindFirstObjectByType<ConfigUIView>(FindObjectsInactive.Include);
             _root = new GameObject("HandProgressCanvas", typeof(RectTransform), typeof(Canvas),
                 typeof(CanvasScaler), typeof(GraphicRaycaster));
             _root.SetActive(false);
@@ -44,7 +45,7 @@ namespace YummyVerse.Scripts.View.Tutorial
             buttonRoot.GetComponent<Image>().color = new Color(0.12f, 0.32f, 0.48f, 1);
             buttonRoot.GetComponent<Button>().onClick.AddListener(() =>
             {
-                if (_context.IsProgressButtonVisible.Value && !_settings.IsVisible.Value)
+                if (_context.IsProgressButtonVisible.Value && (_settings == null || !_settings.IsVisible))
                     _input.PressStartFromHand();
             });
             var labelRoot = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -61,8 +62,8 @@ namespace YummyVerse.Scripts.View.Tutorial
 
         private void LateUpdate()
         {
-            if (_root == null) return;
-            var visible = _context.IsProgressButtonVisible.Value && !_settings.IsVisible.Value
+            if (_root == null || _context == null) return;
+            var visible = _context.IsProgressButtonVisible.Value && (_settings == null || !_settings.IsVisible)
                 && !_context.Choice.IsVisible.Value && Camera.main != null;
             if (visible && !_lastVisible && Camera.main != null)
             {
@@ -79,4 +80,3 @@ namespace YummyVerse.Scripts.View.Tutorial
         }
     }
 }
-

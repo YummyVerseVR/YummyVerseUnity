@@ -24,6 +24,8 @@ namespace YummyVerse.Scripts.View.UI
         [Tooltip("入力欄に出る仮想キーボード。打鍵の途中を確定として扱わないために参照する。")]
         [SerializeField] private VirtualKeyboardView virtualKeyboard;
 
+        public bool IsVisible => isActiveAndEnabled && canvasGroup != null && canvasGroup.blocksRaycasts;
+
         private ConfigUIPresenter _presenter;
 
         [Inject]
