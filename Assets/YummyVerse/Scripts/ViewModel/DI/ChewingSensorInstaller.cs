@@ -35,7 +35,6 @@ namespace YummyVerse.Scripts.ViewModel.DI
             Container.BindInterfacesAndSelfTo<ChewingSensorService>().AsSingle().NonLazy();
 
             // スタート直後 (S2 の手前) に挟まる較正案内。SessionController から呼ばれる。
-            Container.BindInterfacesAndSelfTo<ChewingCalibrationFlow>().AsSingle();
 
             // 咀嚼音は AudioSource を1つ持つだけなので、シーンに置かず実行時に用意する。
             Container.BindInterfacesAndSelfTo<ChewingSoundView>()

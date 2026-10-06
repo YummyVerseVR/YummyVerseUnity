@@ -22,7 +22,6 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
     {
         private readonly ITutorialRunner _runner;
         private readonly IFreePlayFlow _freePlay;
-        private readonly IChewingCalibrationFlow _chewingCalibration;
         private readonly TutorialContext _ctx;
         private readonly TutorialConfig _config;
         private readonly IAppStateMachine _appState;
@@ -42,7 +41,6 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
         public SessionController(
             ITutorialRunner runner,
             IFreePlayFlow freePlay,
-            IChewingCalibrationFlow chewingCalibration,
             TutorialContext ctx,
             TutorialConfig config,
             IAppStateMachine appState,
@@ -55,7 +53,6 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
         {
             _runner = runner;
             _freePlay = freePlay;
-            _chewingCalibration = chewingCalibration;
             _ctx = ctx;
             _config = config;
             _appState = appState;
@@ -214,9 +211,7 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
 
             _appState.TrySet(AppState.Tutorial);
 
-            // 咀嚼音の閾値は個人差が大きいので、来場者ごとに S2「ようこそ」の手前で取り直す。
-            // 咀嚼計が無い/失敗した場合もここでは止めず、そのままチュートリアルへ進む。
-            await _chewingCalibration.RunAsync(_ctx, lifetimeCt);
+            // S3 uses fixed pressure thresholds (1500 / 1600 mV); skip calibration.
 
             await _runner.RunAsync(_config.MainSequence, _ctx, lifetimeCt);
 

@@ -9,24 +9,13 @@ using Zenject;
 namespace YummyVerse.Scripts.View
 {
     /// <summary>
-    /// 咀嚼計の開閉イベントと、食べ物を1回すくったタイミングで、表示中の食品の咀嚼音を鳴らす。
-    ///
-    /// すくいでも鳴らすのは、咀嚼計が繋がっていない展示でも口に運ぶ手応えを返すため。
-    /// 経路ごとに鳴らし方を変えると重なったときの挙動が読みにくくなるので、
-    /// どちらも同じ「頭から鳴らし直す」1つの入口に集約する。
-    ///
-    /// プロトコル v1 では OPEN と CLOSED を区別せず、どちらも「1回噛んだ」として同じ音を鳴らす。
-    /// 再生途中に次のイベントが来たら重ねずに頭から鳴らし直す。噛むテンポと音のテンポを
-    /// 一致させたいので、PlayOneShot による重ね合わせは使わない。
-    ///
-    /// 鳴らす音は食品ごとに差し替わる。音を持たない食品(built-in food など)では
-    /// ChewingSensorConfig の既定音を使う。
+    /// 圧力センサーの CLOSED イベントで、表示中の食品の咀嚼音を1回再生する。
+    /// 次の咀嚼では重ねずに頭から再生し直す。
     /// </summary>
     [RequireComponent(typeof(AudioSource))]
     public class ChewingSoundView : MonoBehaviour
     {
         private IChewingSensorService _sensor;
-        private IGameEventBus _gameEventBus;
         private IFoodViewModel _foodViewModel;
         private ChewingSensorConfig _config;
         private AudioSource _audioSource;
@@ -39,11 +28,10 @@ namespace YummyVerse.Scripts.View
 
         [Inject]
         public void Construct(
-            IChewingSensorService sensor, IGameEventBus gameEventBus,
+            IChewingSensorService sensor,
             IFoodViewModel foodViewModel, ChewingSensorConfig config)
         {
             _sensor = sensor;
-            _gameEventBus = gameEventBus;
             _foodViewModel = foodViewModel;
             _config = config;
         }
@@ -70,11 +58,9 @@ namespace YummyVerse.Scripts.View
             // 前の食品の音がそのまま次の食品で鳴り続ける方が違和感が大きい。
             _foodViewModel.chewSound.Subscribe(SetFoodChewSound).AddTo(this);
 
-            _sensor.OnMouthEvent.Subscribe(_ => PlayFromStart()).AddTo(this);
-
-            // すくった瞬間にも1回噛んだぶんの音を返す。
-            _gameEventBus.GetStream(GameEventId.FoodScooped)
+            _sensor.OnMouthEvent.Where(state => state == MouthState.Closed)
                 .Subscribe(_ => PlayFromStart()).AddTo(this);
+
         }
 
         private void SetFoodChewSound(AudioClip clip)
@@ -83,6 +69,7 @@ namespace YummyVerse.Scripts.View
 
             _audioSource.Stop();
             _audioSource.clip = clip != null ? clip : _config.FallbackChewSound;
+            Debug.Log($"[ChewAudio] Clip ready: {_audioSource.clip?.name ?? "none"}");
 
             ReleaseLoadedClip(clip);
             _loadedClip = clip;
@@ -108,7 +95,7 @@ namespace YummyVerse.Scripts.View
         {
             if (_audioSource.clip == null)
             {
-                // 食品にも設定にも音が無い。毎イベント警告すると邪魔なので黙って何もしない。
+                Debug.LogWarning("[ChewAudio] CLOSED received but no audio clip is selected.");
                 return;
             }
 
@@ -116,6 +103,7 @@ namespace YummyVerse.Scripts.View
             _audioSource.Stop();
             _audioSource.time = 0f;
             _audioSource.Play();
+            Debug.Log($"[ChewAudio] Play: clip={_audioSource.clip.name}, volume={_audioSource.volume}, listenerVolume={AudioListener.volume}, paused={AudioListener.pause}, playing={_audioSource.isPlaying}");
         }
     }
 }
