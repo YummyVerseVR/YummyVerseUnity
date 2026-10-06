@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using R3;
@@ -173,7 +173,9 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
             _resetToStartCompletion?.TrySetResult();
             _resetToStartCompletion = null;
 
-            await _events.GetStream(GameEventId.StartButtonPressed).FirstAsync(lifetimeCt);
+            _ctx.IsProgressButtonVisible.Value = true;
+            try { await _events.GetStream(GameEventId.StartButtonPressed).FirstAsync(lifetimeCt); }
+            finally { _ctx.IsProgressButtonVisible.Value = false; }
 
             _ctx.Voice.Stop();
             await _ctx.Message.HideAsync(lifetimeCt);

@@ -1,4 +1,4 @@
-using System.Threading;
+﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using R3;
 using UnityEngine;
@@ -12,7 +12,9 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial.SO.Conditions
     {
         public override async UniTask WaitAsync(TutorialContext ctx, CancellationToken ct)
         {
-            await ctx.Events.GetStream(GameEventId.StartButtonPressed).FirstAsync(ct);
+            ctx.IsProgressButtonVisible.Value = true;
+            try { await ctx.Events.GetStream(GameEventId.StartButtonPressed).FirstAsync(ct); }
+            finally { ctx.IsProgressButtonVisible.Value = false; }
         }
     }
 }

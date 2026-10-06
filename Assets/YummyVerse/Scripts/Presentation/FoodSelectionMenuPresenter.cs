@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -97,17 +97,7 @@ namespace YummyVerse.Scripts.Presentation
             if (_ui?.Root != null) _ui.Root.SetActive(false);
         }
 
-        public void Tick(float deltaTime)
-        {
-            if (_ui?.Root == null || !_ui.Root.activeInHierarchy || _ui.ScrollRect == null) return;
-            var axis = _ui.ScrollAction?.ReadValue<Vector2>().y ?? 0f;
-            if (Mathf.Abs(axis) < StickDeadZone) return;
-
-            _ui.ScrollRect.StopMovement();
-            _ui.ScrollRect.verticalNormalizedPosition = Mathf.Clamp01(
-                _ui.ScrollRect.verticalNormalizedPosition
-                + axis * StickScrollSpeed * deltaTime);
-        }
+        public void Tick(float deltaTime) { }
 
         public void Dispose()
         {
@@ -155,7 +145,7 @@ namespace YummyVerse.Scripts.Presentation
         {
             PositionInFrontOfViewer();
             _ui.Root.SetActive(true);
-            _ui.ScrollAction.Enable();
+            _ui.ScrollAction?.Enable();
         }
 
         private void PositionInFrontOfViewer()

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -19,6 +19,9 @@ namespace YummyVerse.Scripts.Presentation
         public RectTransform Content { get; set; }
         public TextMeshProUGUI StatusText { get; set; }
         public InputAction ScrollAction { get; set; }
+        public Button PreviousPage { get; set; }
+        public Button NextPage { get; set; }
+        public TextMeshProUGUI PageText { get; set; }
         public Texture2D PlaceholderTexture { get; set; }
     }
 
@@ -38,6 +41,9 @@ namespace YummyVerse.Scripts.Presentation
         private const float CanvasScale = 0.001f;
         private const int ColumnCount = 4;
 
+        public const int PageSize = 8;
+        private readonly List<FoodSelectionMenuCard> _cards = new();
+        private int _page;
         private TMP_FontAsset _font;
         private FoodSelectionMenuUi _ui;
 
@@ -60,6 +66,7 @@ namespace YummyVerse.Scripts.Presentation
                 typeof(Canvas),
                 typeof(CanvasScaler),
                 typeof(GraphicRaycaster));
+            _ui.Root.SetActive(false);
             _ui.Root.transform.SetParent(owner, false);
 
             var canvasRect = (RectTransform)_ui.Root.transform;
@@ -76,9 +83,7 @@ namespace YummyVerse.Scripts.Presentation
             ConfigurePointableCanvas();
             BuildLayout(canvasRect);
 
-            _ui.ScrollAction = new InputAction("FoodMenuScroll", InputActionType.Value);
-            _ui.ScrollAction.AddBinding("<XRController>{RightHand}/primary2DAxis");
-            _ui.ScrollAction.AddBinding("<Gamepad>/rightStick");
+
             _ui.Root.SetActive(false);
             return _ui;
         }
@@ -99,6 +104,8 @@ namespace YummyVerse.Scripts.Presentation
                 }
             }
 
+            _cards.AddRange(cards);
+            ShowPage(0);
             Canvas.ForceUpdateCanvases();
             LayoutRebuilder.ForceRebuildLayoutImmediate(_ui.Content);
             _ui.ScrollRect.verticalNormalizedPosition = 1f;
@@ -107,9 +114,15 @@ namespace YummyVerse.Scripts.Presentation
 
         public void ClearCards()
         {
+            _cards.Clear();
+            _page = 0;
+            if (_ui?.PreviousPage != null) _ui.PreviousPage.interactable = false;
+            if (_ui?.NextPage != null) _ui.NextPage.interactable = false;
+            if (_ui?.PageText != null) _ui.PageText.text = "0 / 0";
             if (_ui?.Content == null) return;
             for (var index = _ui.Content.childCount - 1; index >= 0; index--)
             {
+                _ui.Content.GetChild(index).gameObject.SetActive(false);
                 ReleaseObject(_ui.Content.GetChild(index).gameObject);
             }
         }
@@ -137,14 +150,14 @@ namespace YummyVerse.Scripts.Presentation
             _ui.StatusText.color = new Color(0.71f, 0.78f, 0.88f, 1f);
             SetRect(_ui.StatusText.rectTransform, new Vector2(0f, 286f), new Vector2(1120f, 36f));
 
-            var scrollRoot = CreateRect("FoodScroll", panel, new Vector2(0f, -12f), new Vector2(1160f, 540f));
+            var scrollRoot = CreateRect("FoodScroll", panel, new Vector2(0f, -12f), new Vector2(1160f, 564f));
             var scrollBackground = scrollRoot.gameObject.AddComponent<Image>();
             scrollBackground.color = new Color(0.015f, 0.021f, 0.035f, 0.9f);
             _ui.ScrollRect = scrollRoot.gameObject.AddComponent<ScrollRect>();
             _ui.ScrollRect.horizontal = false;
-            _ui.ScrollRect.vertical = true;
+            _ui.ScrollRect.vertical = false;
             _ui.ScrollRect.movementType = ScrollRect.MovementType.Clamped;
-            _ui.ScrollRect.inertia = true;
+            _ui.ScrollRect.inertia = false;
             _ui.ScrollRect.decelerationRate = 0.12f;
             _ui.ScrollRect.scrollSensitivity = 48f;
 
@@ -170,28 +183,38 @@ namespace YummyVerse.Scripts.Presentation
             _ui.ScrollRect.viewport = viewport;
             _ui.ScrollRect.content = _ui.Content;
 
-            var hint = CreateText(
-                "ScrollHint",
-                panel,
-                "右スティック ↑↓ でスクロール　／　カードをポイントしてトリガーで決定",
-                20f,
-                FontStyles.Normal);
-            hint.color = new Color(0.62f, 0.69f, 0.8f, 1f);
-            SetRect(hint.rectTransform, new Vector2(0f, -350f), new Vector2(1120f, 38f));
+            _ui.PreviousPage = CreatePageButton(panel, "PreviousPage", "前へ", -350f, () => ShowPage(_page - 1));
+            _ui.NextPage = CreatePageButton(panel, "NextPage", "次へ", 350f, () => ShowPage(_page + 1));
+            _ui.PageText = CreateText("PageNumber", panel, "0 / 0", 26f, FontStyles.Bold);
+            SetRect(_ui.PageText.rectTransform, new Vector2(0, -336), new Vector2(260, 62));
         }
 
-        private void ConfigurePointableCanvas()
+        public void ShowPage(int page)
         {
-            var collider = _ui.Root.AddComponent<BoxCollider>();
-            collider.size = new Vector3(1280f, 800f, 2f);
-            var surface = _ui.Root.AddComponent<ColliderSurface>();
-            surface.InjectAllColliderSurface(collider);
-            var pointableCanvas = _ui.Root.AddComponent<PointableCanvas>();
-            pointableCanvas.InjectAllPointableCanvas(_ui.Canvas);
-            var rayInteractable = _ui.Root.AddComponent<RayInteractable>();
-            rayInteractable.InjectAllRayInteractable(surface);
-            rayInteractable.InjectOptionalPointableElement(pointableCanvas);
+            var pageCount = Mathf.CeilToInt((float)_cards.Count / PageSize);
+            _page = Mathf.Clamp(page, 0, Mathf.Max(0, pageCount - 1));
+            for (var i = 0; i < _cards.Count; i++)
+                _cards[i].Preview.transform.parent.parent.gameObject.SetActive(i / PageSize == _page);
+            _ui.PreviousPage.interactable = _page > 0;
+            _ui.NextPage.interactable = _page + 1 < pageCount;
+            _ui.PageText.text = pageCount == 0 ? "0 / 0" : $"{_page + 1} / {pageCount}";
+            _ui.ScrollRect.StopMovement();
+            _ui.Content.anchoredPosition = Vector2.zero;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_ui.Content);
         }
+
+        private Button CreatePageButton(RectTransform parent, string name, string label, float x, Action action)
+        {
+            var rect = CreateRect(name, parent, new Vector2(x, -336), new Vector2(260, 62));
+            rect.gameObject.AddComponent<Image>().color = new Color(0.12f, 0.32f, 0.48f, 1);
+            var button = rect.gameObject.AddComponent<Button>();
+            button.onClick.AddListener(() => action());
+            var text = CreateText("Label", rect, label, 28f, FontStyles.Bold);
+            SetRect(text.rectTransform, Vector2.zero, new Vector2(250, 60));
+            return button;
+        }
+
+        private void ConfigurePointableCanvas() => HandCanvasInteraction.Configure(_ui.Canvas);
 
         private FoodSelectionMenuCard CreateCard(
             FoodCatalogItem item,

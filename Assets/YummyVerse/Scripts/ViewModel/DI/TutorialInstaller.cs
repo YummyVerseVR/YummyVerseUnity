@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using YummyVerse.Scripts.Presentation;
 using YummyVerse.Scripts.View.Tutorial;
 using YummyVerse.Scripts.View.UI;
@@ -34,6 +34,9 @@ namespace YummyVerse.Scripts.ViewModel.DI
             Container.BindInterfacesAndSelfTo<FeedbackPresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<VoicePresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<ChoicePresenter>().AsSingle();
+
+            Container.Bind<HandProgressButtonView>().FromNewComponentOnNewGameObject()
+                .AsSingle().NonLazy();
 
             // 進行
             Container.BindInterfacesAndSelfTo<TutorialContext>().AsSingle();

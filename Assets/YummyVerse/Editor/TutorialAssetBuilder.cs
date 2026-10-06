@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -214,7 +214,7 @@ namespace YummyVerse.Editor
             // --- S6': 前菜の案内 (食品は次の S8 の指示と同時に提供する) ---
             var s6d = Narration(
                 "Steps/Step_S6d_Appetizer", "S6'",
-                Str(table, "S6d", "まずはポテトチップスを食べてみましょう。\nAボタンを押してください。"),
+                Str(table, "S6d", "まずはポテトチップスを食べてみましょう。\n空中の「次へ」ボタンを押してください。"),
                 conditions.Button);
             SetEnum(s6d, "onCompletedCommand", GameCommandId.None);
             SetField(s6d, "skippableOnRepeat", true);
@@ -317,7 +317,7 @@ namespace YummyVerse.Editor
             SetField(config, "mainSequence", main);
             SetField(config, "freePlaySequence", freePlay);
             SetField(config, "attractMessage",
-                Str(table, "S1", "Aボタンを押してスタート"));
+                Str(table, "S1", "空中の「スタート」ボタンを押してスタート"));
             SetField(config, "foodPlacementRequiredMessage",
                 Str(table, "S0.FoodPlacementRequired",
                     "食べ物の表示位置を設定してください。\n設定画面はAとXの同時押しで表示されます。"));

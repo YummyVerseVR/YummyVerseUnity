@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using R3;
 using UnityEngine.InputSystem;
 using YummyVerse.Scripts.InputActions;
@@ -72,6 +72,8 @@ namespace YummyVerse.Scripts.Infrastructure
                     h => restaurantInput.Eating.StaffReset.performed -= h)
                 .Subscribe(_ => OnStaffResetPressed?.Invoke()).AddTo(_disposables);
         }
+
+        public void PressStartFromHand() => OnStartButtonPressed?.Invoke();
 
         private static bool IsAButton(InputAction.CallbackContext context)
         {

@@ -1,4 +1,5 @@
-using R3;
+﻿using R3;
+using YummyVerse.Scripts.Model;
 using UnityEngine;
 using YummyVerse.Scripts.Model.Interface;
 using YummyVerse.Scripts.Model.Struct;
@@ -10,7 +11,7 @@ namespace YummyVerse.Scripts.View
 {
     /// <summary>
     /// 圧力センサーの CLOSED イベントで、表示中の食品の咀嚼音を1回再生する。
-    /// 次の咀嚼では重ねずに頭から再生し直す。
+    /// OPEN または最大0.8秒で一時停止し、次のCLOSEDで続きから再開する。
     /// </summary>
     [RequireComponent(typeof(AudioSource))]
     public class ChewingSoundView : MonoBehaviour
@@ -19,6 +20,7 @@ namespace YummyVerse.Scripts.View
         private IFoodViewModel _foodViewModel;
         private ChewingSensorConfig _config;
         private AudioSource _audioSource;
+        private readonly ChewPlaybackTimeline _timeline = new();
 
         /// <summary>
         /// 実行時に生成した AudioClip。アセットではないので、差し替え時に自分で破棄する。
@@ -40,7 +42,7 @@ namespace YummyVerse.Scripts.View
         {
             _audioSource = GetComponent<AudioSource>();
             _audioSource.playOnAwake = false;
-            _audioSource.loop = false;
+            _audioSource.loop = true;
 
             // 咀嚼音は本人の口の中の音なので、頭の向きで音量が変わらない 2D で鳴らす。
             _audioSource.spatialBlend = 0f;
@@ -58,8 +60,11 @@ namespace YummyVerse.Scripts.View
             // 前の食品の音がそのまま次の食品で鳴り続ける方が違和感が大きい。
             _foodViewModel.chewSound.Subscribe(SetFoodChewSound).AddTo(this);
 
-            _sensor.OnMouthEvent.Where(state => state == MouthState.Closed)
-                .Subscribe(_ => PlayFromStart()).AddTo(this);
+            _sensor.OnMouthEvent.Subscribe(state =>
+            {
+                if (state == MouthState.Closed) ResumeChew();
+                else PauseChew();
+            }).AddTo(this);
 
         }
 
@@ -71,6 +76,8 @@ namespace YummyVerse.Scripts.View
             _audioSource.clip = clip != null ? clip : _config.FallbackChewSound;
             Debug.Log($"[ChewAudio] Clip ready: {_audioSource.clip?.name ?? "none"}");
 
+            _timeline.Reset(_audioSource.clip != null
+                ? (double)_audioSource.clip.samples / _audioSource.clip.frequency : 0);
             ReleaseLoadedClip(clip);
             _loadedClip = clip;
         }
@@ -91,19 +98,34 @@ namespace YummyVerse.Scripts.View
             ReleaseLoadedClip(null);
         }
 
-        private void PlayFromStart()
+        private void Update()
         {
-            if (_audioSource.clip == null)
-            {
-                Debug.LogWarning("[ChewAudio] CLOSED received but no audio clip is selected.");
-                return;
-            }
+            if (_timeline.IsPlaying && AudioSettings.dspTime >= _timeline.Deadline) PauseChew();
+        }
 
-            // Stop() を挟まずに Play() だけだと再生位置が引き継がれる環境があるため、明示的に巻き戻す。
-            _audioSource.Stop();
-            _audioSource.time = 0f;
+        private void ResumeChew()
+        {
+            if (_audioSource.clip == null || !_timeline.Close(AudioSettings.dspTime)) return;
+            _audioSource.timeSamples = Mathf.Min(_audioSource.clip.samples - 1,
+                (int)(_timeline.Cursor * _audioSource.clip.frequency));
             _audioSource.Play();
-            Debug.Log($"[ChewAudio] Play: clip={_audioSource.clip.name}, volume={_audioSource.volume}, listenerVolume={AudioListener.volume}, paused={AudioListener.pause}, playing={_audioSource.isPlaying}");
+            // The audio thread cuts playback at 0.8s even if the next Update is late.
+            _audioSource.SetScheduledEndTime(_timeline.Deadline);
+        }
+
+        private void PauseChew()
+        {
+            if (!_timeline.IsPlaying) return;
+            _timeline.Open(AudioSettings.dspTime);
+            _audioSource.Pause();
+            if (_audioSource.clip != null)
+                _audioSource.timeSamples = Mathf.Min(_audioSource.clip.samples - 1,
+                    (int)(_timeline.Cursor * _audioSource.clip.frequency));
+        }
+
+        private void OnDisable()
+        {
+            if (_audioSource != null) PauseChew();
         }
     }
 }

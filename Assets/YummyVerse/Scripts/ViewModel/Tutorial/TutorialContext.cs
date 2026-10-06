@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -22,6 +22,8 @@ namespace YummyVerse.Scripts.ViewModel.Tutorial
         public IVoicePresenter Voice { get; }
         public IChoicePresenter Choice { get; }
         public ITutorialAnalytics Analytics { get; }
+
+        public R3.ReactiveProperty<bool> IsProgressButtonVisible { get; } = new(false);
 
         public bool IsFirstTimeUser { get; set; } = true;
 
