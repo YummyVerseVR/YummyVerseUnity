@@ -22,8 +22,12 @@ Ctrl + Shift + B でビルドウィンドウを開き、PlatformsをWindowsに�
 Quest LinkからWindowsを操作し、ビルドした実行ファイルをダブルクリックします。
 
 ## 6. ローカル食品データを用意する
-`C:\Users\[ユーザー名]\AppData\LocalLow\DefaultCompany\YummyTemplate\Foods` に食べ物を配置します。
-ここに配置した食べ物は、APIなしで利用することができます。
+リポジトリには初期食品として「ポテトチップス」が同梱されています。初回起動時に `Assets/StreamingAssets/Foods` から
+`C:\Users\[ユーザー名]\AppData\LocalLow\DefaultCompany\YummyTemplate\Foods` へ自動でコピーされるため、クローン後に手動で配置する必要はありません。
+
+同名ファイルがすでにある場合は上書きしません。既存の食品やユーザーが追加した食品はそのまま利用できます。
+追加の食べ物は、引き続き `Foods` フォルダに手動で配置できます。ここに置いた食べ物はAPIなしで利用できます。
+リポジトリに同梱する初期食品を増やす場合は、`Assets/StreamingAssets/Foods/default-foods.json` と食品ファイルを更新してください。
 
 また、後述する食べ物の出現位置を設定する際のテスト用食品としても用いられます。
 
@@ -35,7 +39,7 @@ Quest LinkからWindowsを操作し、ビルドした実行ファイルをダブ
 
 
 > [!Warning]
-> 少なくとも **1つ以上** のローカル食品データを用意してください。
+> 初期食品を使わず、独自の食品だけを使う場合は、少なくとも **1つ以上** のローカル食品データを用意してください。
 
 # 準備マニュアル(運営向け)
 ## 1. APIの設定

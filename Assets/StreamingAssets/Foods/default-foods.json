@@ -1,0 +1,8 @@
+{
+  "foods": [
+    {
+      "directoryName": "ポテトチップス",
+      "files": ["model.glb", "preview.png", "audio.wav"]
+    }
+  ]
+}
